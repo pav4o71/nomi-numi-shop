@@ -1,0 +1,117 @@
+---
+description: Mandatory Docker ownership and destructive-operation safety for nomi-numi-shop
+alwaysApply: true
+---
+
+# Docker Safety
+
+Read:
+
+`docs/PROTECTED_RESOURCES.md`
+
+before changing Docker resources.
+
+## Ownership principle
+
+> Prove ownership before mutation.
+
+Unknown Docker resources are protected.
+
+Do not assume a resource is disposable because:
+
+- it is stopped
+- it looks old
+- it has an unfamiliar name
+- no current process appears to use it
+- Docker labels are missing
+
+## Webshop namespaces
+
+Planned development Compose namespace:
+
+`nomi-numi-shop-dev`
+
+Planned test Compose namespace:
+
+`nomi-numi-shop-test`
+
+Only resources proven to belong to these namespaces may be modified by
+normal webshop tooling.
+
+## Protected existing resource
+
+The following container belongs to another project:
+
+`beautybook3-pg`
+
+Host port:
+
+`5433`
+
+Never:
+
+- stop it
+- restart it
+- delete it
+- rename it
+- reconfigure it
+- attach webshop services to it
+- execute webshop database commands against it
+
+## Protected existing networks and volumes
+
+Existing Docker networks and volumes not explicitly created by
+`nomi-numi-shop` are protected.
+
+Do not reuse external networks or volumes merely to save configuration.
+
+## Destructive Docker commands
+
+Do not automatically use:
+
+- `docker system prune`
+- `docker container prune`
+- `docker image prune`
+- `docker volume prune`
+- `docker network prune`
+- `docker volume rm`
+- `docker network rm`
+- `docker rm`
+- `docker compose down -v`
+
+unless:
+
+1. ownership is proven;
+2. the operation is in approved scope;
+3. destructive impact is understood;
+4. explicit approval exists when required.
+
+## Port bindings
+
+Webshop local services must bind only to their documented ports.
+
+Reserved:
+
+- app: `127.0.0.1:3100`
+- E2E app: `127.0.0.1:3101`
+- dev PostgreSQL: `127.0.0.1:55432`
+- test PostgreSQL: `127.0.0.1:55433`
+- Mailpit SMTP: `127.0.0.1:11025`
+- Mailpit UI: `127.0.0.1:18025`
+
+Prefer `127.0.0.1` host binding for local infrastructure rather than
+`0.0.0.0`.
+
+Do not bind any webshop service to host port `5433`.
+
+## Before Docker mutation
+
+Inspect the relevant state first using read-only operations such as:
+
+- `docker ps`
+- `docker ps -a`
+- `docker inspect`
+- `docker compose config`
+- `docker compose ps`
+
+If ownership is ambiguous, STOP.

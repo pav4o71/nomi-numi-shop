@@ -1,0 +1,42 @@
+# ==========================================================
+# nomi-numi-shop
+# Cursor sensitive/runtime exclusions
+# ==========================================================
+
+# Real environment files / secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# Keep templates accessible to agents
+!.env.example
+!.env.*.example
+
+# Private customer/runtime data
+/data/private/
+/var/private/
+/backups/
+
+# Runtime uploads
+/data/uploads/
+/var/uploads/
+
+# Credentials / certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Large/generated directories that agents normally do not need
+/node_modules/
+/.next/
+/coverage/
+/playwright-report/
+/test-results/
+/blob-report/
+
+# Git internals
+/.git/

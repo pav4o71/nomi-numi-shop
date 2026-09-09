@@ -1,0 +1,114 @@
+---
+description: Mandatory Git workflow and repository-state safety for nomi-numi-shop
+alwaysApply: true
+---
+
+# Git Workflow
+
+The canonical Git repository is:
+
+`/home/pav4o71/Projects/nomi-numi-shop`
+
+Stable integration branch:
+
+`main`
+
+## Before changing files
+
+Always inspect:
+
+- repository root
+- current branch
+- `git status --short`
+- relevant diff
+- recent history when applicable
+
+The repository root must be exactly:
+
+`/home/pav4o71/Projects/nomi-numi-shop`
+
+If not, STOP.
+
+## Branch discipline
+
+`main` is stable integration.
+
+Normal implementation must happen on a narrowly scoped branch:
+
+- `feature/...`
+- `fix/...`
+- `chore/...`
+- `docs/...`
+
+Do not implement normal feature work directly on `main`.
+
+Bootstrap work may occur on `main` only when the current explicitly
+approved project phase says so.
+
+## Scope
+
+A branch should represent one coherent change.
+
+Do not mix unrelated:
+
+- features
+- refactors
+- dependency upgrades
+- formatting rewrites
+- documentation changes
+- infrastructure modifications
+
+unless the approved step explicitly requires them together.
+
+## Before commit
+
+Inspect:
+
+- `git status --short`
+- `git diff`
+- `git diff --staged` when staged changes exist
+
+Verify:
+
+- only expected files changed
+- no secrets are staged
+- no unrelated project files changed
+- generated/runtime files are not staged
+- required validation passed
+
+## Forbidden shortcuts
+
+Do not routinely use:
+
+- `git reset --hard`
+- `git clean -fd`
+- `git clean -fdx`
+- force push
+- history rewriting
+- blind conflict resolution with `ours`
+- blind conflict resolution with `theirs`
+
+Unexpected Git state must be investigated rather than destroyed.
+
+## Push and PR policy
+
+Do not push, create a Pull Request, merge, tag, or publish a release
+unless the current step explicitly authorizes it.
+
+When a PR exists:
+
+1. inspect the complete diff;
+2. run required validation;
+3. resolve review findings;
+4. rerun validation;
+5. merge only when review and CI are clean.
+
+Never bypass failed validation just to progress to the next phase.
+
+## Other repositories
+
+Never execute Git mutations in sibling repositories.
+
+Known protected repositories are documented in:
+
+`docs/PROTECTED_RESOURCES.md`

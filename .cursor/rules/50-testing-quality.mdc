@@ -1,0 +1,93 @@
+---
+description: Mandatory validation, regression checks, and quality gates for nomi-numi-shop
+alwaysApply: true
+---
+
+# Testing and Quality
+
+Every implementation step must be validated according to its scope.
+
+## Before implementation
+
+Understand:
+
+- requested behavior
+- affected modules
+- existing tests
+- relevant architecture rules
+- expected failure cases
+
+Do not modify tests merely to make an incorrect implementation pass.
+
+## Required validation
+
+As the project develops, the standard validation pipeline will include:
+
+- formatting checks
+- lint
+- TypeScript type checking
+- unit tests
+- integration tests where applicable
+- Playwright E2E tests where applicable
+- production build
+
+Until those commands exist, do not invent fake success.
+
+State explicitly which validations are not yet available.
+
+## Test database
+
+Data-mutating automated tests must use:
+
+`nomi_numi_shop_test`
+
+on:
+
+`127.0.0.1:55433`
+
+They must never target the development database.
+
+## Regression coverage
+
+When fixing a reproducible bug, add or update a regression test when
+practical so the same defect is detected in the future.
+
+## Failure handling
+
+If validation fails:
+
+1. investigate the cause;
+2. fix only within approved scope;
+3. rerun the failed validation;
+4. rerun affected broader validation;
+5. inspect the final diff.
+
+Do not continue to the next phase while known relevant validation
+failures remain.
+
+## No false claims
+
+Never claim:
+
+- tests passed
+- build passed
+- lint passed
+- deployment succeeded
+- Bugbot approved
+
+unless that action actually ran and produced the stated result.
+
+## Review after implementation
+
+Inspect:
+
+- `git status`
+- `git diff`
+- unexpected files
+- generated artifacts
+- unrelated changes
+- security-sensitive changes
+- database migrations
+- environment changes
+
+Small validated steps are preferred over large speculative batches.

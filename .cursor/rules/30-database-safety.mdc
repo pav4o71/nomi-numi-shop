@@ -1,0 +1,105 @@
+---
+description: Mandatory database target verification, migration safety, and test isolation
+alwaysApply: true
+---
+
+# Database Safety
+
+Database mutations require verified environment ownership.
+
+## Development target
+
+Expected host:
+
+`127.0.0.1`
+
+Expected host port:
+
+`55432`
+
+Expected database:
+
+`nomi_numi_shop_dev`
+
+## Test target
+
+Expected host:
+
+`127.0.0.1`
+
+Expected host port:
+
+`55433`
+
+Expected database:
+
+`nomi_numi_shop_test`
+
+## Protected target
+
+Host port:
+
+`5433`
+
+belongs to another project's PostgreSQL container.
+
+Webshop tooling must refuse to operate against port `5433`.
+
+## Before database mutation
+
+Before any:
+
+- migration
+- schema push
+- seed
+- reset
+- truncate
+- database creation
+- database deletion
+- destructive integration test
+
+verify:
+
+1. project root;
+2. environment;
+3. database host;
+4. database port;
+5. database name.
+
+Mismatch means STOP.
+
+Do not guess or silently rewrite the target.
+
+## Migration policy
+
+Schema changes must be reproducible and reviewed.
+
+Prefer explicit migration workflows over uncontrolled direct schema
+mutation.
+
+Do not run a broad schema push against an unknown database.
+
+Generated migration files must be inspected before application.
+
+## Test isolation
+
+Tests that mutate data must use the test database.
+
+Destructive test helpers must refuse to run unless the database name is
+exactly the expected test database or passes a later explicitly defined
+test-only guard.
+
+Tests must never clear or reset the development database.
+
+## Production
+
+Production database details are not defined yet.
+
+Do not infer production credentials or reuse an existing database.
+
+Production migrations require a later separate policy including:
+
+- backup verification
+- explicit production target verification
+- migration review
+- rollback/recovery planning

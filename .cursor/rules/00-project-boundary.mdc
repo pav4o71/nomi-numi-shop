@@ -1,0 +1,119 @@
+---
+description: Mandatory repository, resource ownership, and cross-project safety boundary for nomi-numi-shop
+alwaysApply: true
+---
+
+# Mandatory Project Boundary
+
+You are operating on `nomi-numi-shop`.
+
+Canonical repository root:
+
+`/home/pav4o71/Projects/nomi-numi-shop`
+
+Before modifying anything, confirm the Git root is exactly the canonical
+repository root.
+
+If it is not, STOP.
+
+Do not repair or modify another repository.
+
+Read and obey:
+
+- `AGENTS.md`
+- `docs/PROTECTED_RESOURCES.md`
+
+## Core safety rule
+
+Unknown resources are protected resources.
+
+Prove project ownership before mutation.
+
+## External projects
+
+Never modify sibling repositories including:
+
+- `/home/pav4o71/Projects/beautybook3`
+- `/home/pav4o71/Projects/beautybook3-current`
+- `/home/pav4o71/Projects/biz-research`
+- `/home/pav4o71/Projects/game_of_night`
+- `/home/pav4o71/Projects/thirty-three`
+
+Read-only conflict inspection is permitted when necessary.
+
+## External Docker/database resource
+
+`beautybook3-pg` and host port `5433` do not belong to this project.
+
+Never stop, restart, remove, rename, reconfigure, migrate against, or
+repurpose that container or port.
+
+## Webshop resources
+
+Reserved development endpoints:
+
+- app: `127.0.0.1:3100`
+- E2E app: `127.0.0.1:3101`
+- dev PostgreSQL: `127.0.0.1:55432`
+- test PostgreSQL: `127.0.0.1:55433`
+- Mailpit SMTP: `127.0.0.1:11025`
+- Mailpit UI: `127.0.0.1:18025`
+
+Expected databases:
+
+- `nomi_numi_shop_dev`
+- `nomi_numi_shop_test`
+
+## Mutation restrictions
+
+Do not perform destructive or external mutations merely to resolve an
+unexpected state.
+
+Do not use destructive shortcuts such as:
+
+- `git reset --hard`
+- `git clean -fd`
+- force push
+- Docker prune
+- unknown Docker volume deletion
+- `docker compose down -v`
+- database dropping
+- filesystem deletion outside the repository
+
+without explicit authorization and proven ownership.
+
+## Git discipline
+
+`main` is stable integration.
+
+Normal implementation belongs on a scoped feature/fix/chore/docs branch.
+
+Inspect repository root, branch, status, diff, and relevant history
+before changing code.
+
+Implement only the requested scope.
+
+## Secrets
+
+Never expose or commit secrets.
+
+Do not weaken ignore rules to access `.env`, credentials, private
+customer data, keys, or backups.
+
+## Production
+
+Production infrastructure is not selected yet.
+
+Do not modify any Hetzner server, domain, DNS, reverse proxy, production
+database, or deployment unless a later explicitly authorized production
+phase says to do so.
+
+## Failure behavior
+
+When a safety check fails or ownership is ambiguous:
+
+STOP.
+
+Report what was found.
+
+Do not guess and do not automatically repair external state.

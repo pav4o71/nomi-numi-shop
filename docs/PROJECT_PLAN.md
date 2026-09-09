@@ -1,0 +1,452 @@
+# Nomi Numi Shop — Project Plan
+
+## 1. Objective
+
+Build a custom ecommerce platform containing:
+
+- public storefront
+- customer registration and login
+- customer account area
+- owner admin panel
+- catalog management
+- variants
+- inventory management
+- shopping cart
+- wishlist
+- checkout
+- orders
+- reviews
+- promotions
+- merchandising
+- custom-video fulfillment
+- owned-stock fulfillment
+- dropship fulfillment
+
+Expected initial scale:
+
+approximately 500 orders per month.
+
+## 2. Initial markets
+
+Markets:
+
+- Philippines
+- United States
+
+Currencies:
+
+- PHP
+- USD
+
+Language:
+
+- English
+
+Authoritative product/store prices are explicitly managed by currency.
+
+Live foreign-exchange conversion must not silently determine the
+customer's authoritative checkout price.
+
+## 3. Catalog
+
+Catalog structure is database-managed rather than hard-coded.
+
+The application needs both:
+
+- categories
+- collections
+
+A product may belong to multiple categories and multiple collections.
+
+Initial product families include the following.
+
+### Plushies
+
+- regular plushies
+- large 60 cm plushies
+- large 80 cm plushies
+
+### Apparel
+
+- hoodies
+- pajamas
+- night suits
+- Christmas clothing
+
+### Accessories
+
+- keychains
+- bags
+- tumblers
+- bottles
+- umbrellas
+- ornaments
+
+### Home
+
+- cushions
+- lamps
+- posters
+- calendars
+- magnetic toys
+
+### Seasonal collections
+
+- Christmas
+- Halloween
+- Valentine's Day
+
+### Services
+
+- custom videos
+
+Gift cards are excluded from the current project scope.
+
+## 4. Product variants
+
+Products may have options such as:
+
+- size
+- color
+- style
+- material
+
+Each sellable variant may independently contain:
+
+- SKU
+- PHP price
+- USD price
+- inventory
+- images
+- weight
+- dimensions
+- enabled/disabled state
+- fulfillment configuration
+
+Inventory is tracked at variant level.
+
+Money uses integer minor units.
+
+## 5. Merchandising
+
+The storefront should support:
+
+- featured products
+- featured categories
+- featured collections
+- best sellers / top sellers
+- new products
+- seasonal collections
+- promotional banners
+
+Best-seller ranking should primarily derive from valid completed
+commerce data.
+
+Admin may later pin or override selected merchandising positions without
+requiring source-code changes.
+
+## 6. Inventory and fulfillment
+
+Supported fulfillment modes:
+
+- owned stock
+- dropship
+- hybrid
+
+Inventory capabilities should include:
+
+- stock additions
+- reservations
+- successful purchase deduction
+- reservation release
+- cancellation restoration where applicable
+- return adjustments
+- manual adjustments
+
+Inventory changes require a traceable movement history.
+
+Overselling prevention is mandatory.
+
+Supplier API automation is not required initially.
+
+## 7. Customer accounts
+
+Customers should eventually be able to:
+
+- register
+- log in
+- log out
+- verify email
+- reset password
+- manage profile
+- manage addresses
+- view orders
+- view shipment/tracking status
+- manage wishlist
+- manage reviews
+- access completed custom videos
+
+Guest browsing is required.
+
+Guest cart usage is required.
+
+Whether checkout itself permits guest checkout or requires an account is
+an explicit open decision to lock before checkout implementation.
+
+## 8. Reviews
+
+Reviews require verified purchase eligibility.
+
+Planned review content:
+
+- 1–5 stars
+- title
+- written review
+- customer images
+
+Reviews publish without mandatory owner pre-approval.
+
+Owner moderation must remain available after publication.
+
+Review eligibility must be derived from server-side order data.
+
+The client cannot claim purchase eligibility.
+
+Duplicate-review behavior must be explicitly defined before the review
+implementation phase.
+
+## 9. Promotions
+
+Admin-controlled promotion capabilities should eventually support:
+
+- percentage discounts
+- fixed discounts
+- coupon codes
+- product promotions
+- category promotions
+- collection promotions
+- scheduled promotions
+- automatic discounts
+- free-shipping thresholds
+- buy-X-get-Y
+- seasonal campaigns
+- minimum-order requirements
+- global usage limits
+- per-customer usage limits
+- stacking/combination rules
+
+Promotion evaluation must be deterministic and server-authoritative.
+
+## 10. Custom videos
+
+Custom video is a special commerce workflow.
+
+Customer-provided information may include:
+
+- recipient name
+- occasion
+- message
+- instructions
+
+Conceptual workflow:
+
+- new
+- in progress
+- ready
+- delivered
+
+Completed videos are private customer media.
+
+Access requires authenticated authorization.
+
+## 11. Admin panel
+
+Initial administration model:
+
+- one OWNER
+
+The admin panel should control as much routine shop operation as
+practical without requiring source-code edits.
+
+Planned administration areas:
+
+- dashboard
+- products
+- variants
+- categories
+- collections
+- inventory
+- suppliers
+- orders
+- customers
+- reviews
+- promotions
+- merchandising
+- homepage
+- banners
+- navigation
+- content pages
+- custom videos
+- shipping configuration
+- payment configuration
+- media
+- SEO fields
+- store settings
+- basic analytics
+
+## 12. Payments
+
+Initial implementation:
+
+- MockPaymentProvider
+
+Real payment providers are deferred.
+
+The architecture must allow later provider adapters appropriate for:
+
+- Philippines
+- USD/international customers
+
+Core order and checkout logic must not directly depend on one payment
+vendor.
+
+## 13. Shipping
+
+Initial development uses internally configured shipping rules/zones.
+
+The architecture must allow later courier adapters and region-based
+shipping calculation.
+
+Shipping must support:
+
+- owned inventory
+- dropship fulfillment
+- hybrid fulfillment
+
+## 14. Media
+
+Initial media storage is local to controlled application
+infrastructure.
+
+Media classes:
+
+- public product media
+- public review media
+- private custom-video media
+
+Storage must be abstractable so a later object-storage migration does
+not require rewriting commerce logic.
+
+## 15. CMS scope
+
+Admin should eventually control:
+
+- homepage sections
+- hero content
+- promotional banners
+- navigation
+- footer
+- informational pages
+- seasonal merchandising
+- SEO metadata
+
+Do not build a general-purpose Wix-style page builder.
+
+Use controlled typed content blocks.
+
+## 16. Development phases
+
+### Phase 0
+
+Safe repository and environment foundation.
+
+### Phase 1
+
+Application skeleton and quality tooling.
+
+### Phase 2
+
+Database and authentication foundation.
+
+### Phase 3
+
+Catalog model.
+
+### Phase 4
+
+Admin catalog management.
+
+### Phase 5
+
+Inventory and fulfillment.
+
+### Phase 6
+
+Storefront and merchandising.
+
+### Phase 7
+
+Customer account, cart, wishlist and addresses.
+
+### Phase 8
+
+Checkout and order lifecycle using mock providers.
+
+### Phase 9
+
+Reviews and promotions.
+
+### Phase 10
+
+Custom-video workflow.
+
+### Phase 11
+
+CMS and admin completeness.
+
+### Phase 12
+
+Security, reliability and production-readiness hardening.
+
+### Phase 13
+
+Production infrastructure audit and selection.
+
+### Phase 14
+
+Real payments, couriers, transactional email and production
+integrations.
+
+Every phase must be divided into smaller reviewed implementation steps.
+
+## 17. Initial non-goals
+
+Do not initially introduce:
+
+- Kubernetes
+- microservices
+- Redis
+- Elasticsearch
+- separate frontend/backend repositories
+- real payment credentials
+- real courier credentials
+- production deployment
+- gift cards
+- general-purpose visual page builder
+
+New infrastructure must be justified by a demonstrated requirement.
+
+## 18. Explicit open decisions
+
+The following are intentionally not decided during Phase 0:
+
+- final public domain
+- production Hetzner topology
+- guest checkout versus account-required checkout
+- exact real payment providers
+- exact courier providers
+- return/refund policy details
+- tax implementation details
+- final transactional email provider
+
+Agents must not silently resolve these decisions during unrelated work.
