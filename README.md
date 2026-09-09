@@ -7,9 +7,14 @@ store.
 
 Phase 1A — Application Foundation
 
-Application package scaffolding has not been created yet. Webshop
-databases, production infrastructure, and real external integrations
-remain deferred.
+Phase 0 is complete. The minimal Next.js application foundation now
+exists, including App Router, TypeScript, Tailwind, ESLint, and
+Prettier.
+
+Ecommerce and domain functionality have not been implemented yet.
+Databases, authentication, payments, shipping, admin, catalog, and
+other business modules remain future phases. Production infrastructure
+and real external integrations remain deferred.
 
 ## Initial business scope
 
@@ -51,8 +56,8 @@ Architecture style:
 
 - modular monolith
 
-Exact application dependency versions will be pinned when Phase 1
-creates package.json and pnpm-lock.yaml.
+Exact application dependency versions are pinned in package.json and
+pnpm-lock.yaml.
 
 ## Development principles
 

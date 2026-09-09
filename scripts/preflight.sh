@@ -208,13 +208,45 @@ process_is_project_owned() {
     return 1
   fi
 
-  # Token/path-aware only. Do not use a bare "next" substring match: that
-  # falsely accepts names such as nextcloud-server or my-next-helper.
-  if printf '%s' "$process_command" | grep -Eqi '(^|[/[:space:]])(node|next)([/[:space:]]|$)'; then
+  if command_is_project_next_form "$process_command" "$process_pid"; then
     return 0
   fi
 
   return 1
+}
+
+# Token/path-aware Next.js recognition only.
+# Accepts node/next CLI tokens and the exact Next.js listener title
+# "next-server" / "next-server (v16.3.4)".
+# Rejects nextcloud-server, next-server-old-helper, nextsomething, etc.
+# Do not use a bare "next" or "next-server" substring match.
+command_is_project_next_form() {
+  local process_command="$1"
+  local process_pid="${2:-}"
+  local process_exe=""
+
+  if printf '%s' "$process_command" | grep -Eqi '(^|[/[:space:]])(node|next)([/[:space:]]|$)'; then
+    return 0
+  fi
+
+  # Exact process title used by Next.js HTTP listeners.
+  if ! printf '%s' "$process_command" | grep -Eq '^[[:space:]]*next-server([[:space:]]+\([^)]*\))?[[:space:]]*$'; then
+    return 1
+  fi
+
+  # Optional stronger evidence: when /proc/<pid>/exe is readable, require
+  # a Node executable. Missing/unreadable exe still allows the exact
+  # title form after user+cwd checks in process_is_project_owned.
+  if [[ -n "$process_pid" && -r "/proc/${process_pid}/exe" ]]; then
+    process_exe="$(readlink "/proc/${process_pid}/exe" 2>/dev/null || true)"
+    if [[ -n "$process_exe" ]]; then
+      if ! printf '%s' "$process_exe" | grep -Eqi '(^|/)node([0-9]+)?$'; then
+        return 1
+      fi
+    fi
+  fi
+
+  return 0
 }
 
 docker_port_owner_project() {
