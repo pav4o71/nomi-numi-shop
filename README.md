@@ -5,10 +5,11 @@ store.
 
 ## Current phase
 
-Phase 0 — Safe Project Foundation
+Phase 1A — Application Foundation
 
-Application code, webshop databases, production infrastructure, and real
-external integrations have not been created yet.
+Application package scaffolding has not been created yet. Webshop
+databases, production infrastructure, and real external integrations
+remain deferred.
 
 ## Initial business scope
 
@@ -88,11 +89,16 @@ Bugbot review rules:
 
 - .cursor/BUGBOT.md
 
-## Phase 0 preflight
+## Preflight
 
-Run from the canonical repository root:
+For current feature-branch development, run from the canonical
+repository root:
 
-    ./scripts/preflight.sh phase0
+    ./scripts/preflight.sh phase1
+
+Historical Phase 0 preflight modes remain documented in:
+
+`docs/ENVIRONMENTS.md`
 
 A failed preflight is evidence to investigate.
 

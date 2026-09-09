@@ -306,16 +306,24 @@ Scripts must fail safely rather than corrupting the shell environment.
 
 ---
 
-## 13. Current bootstrap restriction
+## 13. Current phase restriction
 
-Until the project plan explicitly advances beyond Phase 0:
+Phase 0 is complete. The project is in Phase 1A — Application
+Foundation.
 
-- do not create webshop feature code;
-- do not create production infrastructure;
-- do not connect real payments;
-- do not connect real couriers;
-- do not deploy;
-- do not modify external projects.
+Application development is allowed only when explicitly authorized by
+the current approved phase or step. Obey scoped phase instructions and
+do not begin future modules early.
 
-The current objective is to establish a reproducible, isolated, and
-reviewable project foundation.
+Normal implementation must occur on an approved non-`main` branch
+following `docs/GIT_WORKFLOW.md`.
+
+Until a dedicated production phase authorizes it:
+
+- do not create or mutate production infrastructure;
+- do not deploy to production;
+- do not connect real payment or courier credentials or production
+  integrations.
+
+External and sibling project mutation remains forbidden. Unknown
+external resources remain protected.

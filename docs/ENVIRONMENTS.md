@@ -131,12 +131,61 @@ Currently supported:
 - phase0
 - baseline-local
 - baseline-remote
+- phase1
 
 Mode meaning:
 
 - `phase0` — before the first commit and before a Git remote exists
 - `baseline-local` — committed local foundation before a Git remote exists
 - `baseline-remote` — committed foundation synchronized with canonical GitHub main
+- `phase1` — safe feature-branch development context for Phase 1 work
+
+### phase1 invariants
+
+`phase1` is the preflight mode for approved non-`main` development branches.
+
+It requires:
+
+- canonical repository root and working directory
+- current branch matching exactly one of:
+  - `feature/*`
+  - `fix/*`
+  - `chore/*`
+  - `docs/*`
+- current branch is not `main`
+- detached HEAD is refused
+- exactly one canonical `origin` remote
+- immutable Phase 0 baseline remains an ancestor of `HEAD`
+- current `origin/main` is an ancestor of `HEAD`
+- repository-local `core.hooksPath=.githooks`
+- `.githooks/pre-push` exists and is executable
+- Node `24.19.0` and pnpm `11.26.0`
+- protected external resources remain external
+- safety documents and mandatory Cursor rules remain present
+
+It does not require:
+
+- application artifacts to be absent
+- a clean working tree during active implementation
+- the work branch to have an upstream before its first push
+- `HEAD` to equal `origin/main`
+
+Dirty working trees are reported as INFO only. Beginning-of-step
+workflows remain responsible for requiring a clean tree when appropriate.
+
+Reserved webshop ports for `phase1`:
+
+- free → PASS
+- occupied by a provably nomi-numi-shop-owned process or owned Compose
+  project (`nomi-numi-shop-dev` / `nomi-numi-shop-test`) → PASS
+- occupied with unproven/unknown ownership → FAIL closed
+
+Do not fetch remotes inside preflight. Refresh `origin` before a
+phase-start check when ancestry must be evaluated against current main.
+
+Historical Phase 0 modes retain their original semantics, including the
+requirement to run on `main` and to expect application artifacts to be
+absent.
 
 Currently unsupported:
 
