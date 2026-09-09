@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+PROTECTED_REMOTE_REF="refs/heads/main"
+ZERO_SHA="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_sha remote_ref remote_sha
+do
+  if [[ "$remote_ref" != "$PROTECTED_REMOTE_REF" ]]; then
+    continue
+  fi
+
+  # A zero local SHA represents deletion. Deleting main must also be refused.
+  if [[ "$local_sha" == "$ZERO_SHA" ]]; then
+    printf '\nBLOCKED: deletion of remote main is prohibited.\n' >&2
+    printf 'Repository: nomi-numi-shop\n' >&2
+    exit 1
+  fi
+
+  printf '\nBLOCKED: direct pushes to remote main are prohibited.\n' >&2
+  printf '\nUse the project workflow:\n' >&2
+  printf '  1. work on feature/*, fix/*, chore/*, or docs/*\n' >&2
+  printf '  2. push that branch\n' >&2
+  printf '  3. open a Pull Request targeting main\n' >&2
+  printf '  4. review and validate the PR\n' >&2
+  printf '  5. squash-merge through GitHub\n' >&2
+  printf '\nDo not bypass this hook during normal development.\n' >&2
+
+  exit 1
+done
+
+exit 0
