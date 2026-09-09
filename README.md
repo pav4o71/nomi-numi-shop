@@ -96,10 +96,15 @@ Bugbot review rules:
 
 ## Preflight
 
-For current feature-branch development, run from the canonical
-repository root:
+On approved `feature/*`, `fix/*`, `chore/*`, or `docs/*` development
+branches, run from the canonical repository root:
 
     ./scripts/preflight.sh phase1
+
+On synchronized stable `main`, after refreshing remotes:
+
+    git fetch --prune origin
+    ./scripts/preflight.sh integration
 
 Historical Phase 0 preflight modes remain documented in:
 

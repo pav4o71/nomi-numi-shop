@@ -364,22 +364,82 @@ check_phase1_hooks() {
   fi
 }
 
-check_phase1_interrupted_git() {
+check_interrupted_git() {
+  local mode_label="$1"
+
   if [[ -e .git/MERGE_HEAD ]]; then
-    fail "phase1 refused: merge in progress"
+    fail "${mode_label} refused: merge in progress"
   fi
 
   if [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; then
-    fail "phase1 refused: rebase in progress"
+    fail "${mode_label} refused: rebase in progress"
   fi
 
   if [[ -e .git/CHERRY_PICK_HEAD ]]; then
-    fail "phase1 refused: cherry-pick in progress"
+    fail "${mode_label} refused: cherry-pick in progress"
   fi
 
   if [[ ! -e .git/MERGE_HEAD && ! -d .git/rebase-merge && ! -d .git/rebase-apply && ! -e .git/CHERRY_PICK_HEAD ]]; then
     pass "no interrupted merge/rebase/cherry-pick detected"
   fi
+}
+
+check_phase1_interrupted_git() {
+  check_interrupted_git "phase1"
+}
+
+check_integration_package_json() {
+  if [[ ! -f package.json ]]; then
+    fail "integration requires package.json to exist on main"
+    return
+  fi
+
+  if [[ ! -f pnpm-lock.yaml ]]; then
+    fail "integration requires pnpm-lock.yaml to exist on main"
+    return
+  fi
+
+  pass "required application lockfile exists: pnpm-lock.yaml"
+
+  if ! node -e '
+const fs = require("fs");
+const expectedName = process.argv[1];
+const expectedManager = process.argv[2];
+const expectedNode = process.argv[3];
+const expectedPnpm = process.argv[4];
+let pkg;
+try {
+  pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+} catch (error) {
+  console.error("unreadable or invalid package.json");
+  process.exit(2);
+}
+const failures = [];
+if (pkg.name !== expectedName) {
+  failures.push("name");
+}
+if (pkg.private !== true) {
+  failures.push("private");
+}
+if (pkg.packageManager !== expectedManager) {
+  failures.push("packageManager");
+}
+if (!pkg.engines || pkg.engines.node !== expectedNode) {
+  failures.push("engines.node");
+}
+if (!pkg.engines || pkg.engines.pnpm !== expectedPnpm) {
+  failures.push("engines.pnpm");
+}
+if (failures.length > 0) {
+  console.error(failures.join(","));
+  process.exit(1);
+}
+' "$EXPECTED_PACKAGE_NAME" "$EXPECTED_PACKAGE_MANAGER" "$EXPECTED_NVMRC" "$EXPECTED_PNPM"; then
+    fail "package.json failed integration name/private/packageManager/engines validation"
+    return
+  fi
+
+  pass "package.json name/private/packageManager/engines match integration expectations"
 }
 
 check_phase1_package_json() {
@@ -458,11 +518,11 @@ printf ' Mode: %s\n' "$MODE"
 printf '==================================================\n'
 
 case "$MODE" in
-  phase0|baseline-local|baseline-remote|phase1)
+  phase0|baseline-local|baseline-remote|phase1|integration)
     ;;
   *)
     printf '\nUnsupported preflight mode: %s\n' "$MODE" >&2
-    printf 'Currently supported modes: phase0, baseline-local, baseline-remote, phase1\n' >&2
+    printf 'Currently supported modes: phase0, baseline-local, baseline-remote, phase1, integration\n' >&2
     exit 2
     ;;
 esac
@@ -484,7 +544,7 @@ do
   require_command "$required_command"
 done
 
-if [[ "$MODE" == "phase1" ]]; then
+if [[ "$MODE" == "phase1" || "$MODE" == "integration" ]]; then
   for required_command in ps readlink id; do
     require_command "$required_command"
   done
@@ -542,6 +602,15 @@ case "$MODE" in
       pass "branch is approved for phase1: $CURRENT_BRANCH"
     else
       fail "phase1 branch must match feature/*, fix/*, chore/*, or docs/*; found '${CURRENT_BRANCH}'"
+    fi
+    ;;
+  integration)
+    if [[ -z "$CURRENT_BRANCH" ]]; then
+      fail "integration does not allow detached HEAD"
+    elif [[ "$CURRENT_BRANCH" == "main" ]]; then
+      pass "branch is main for mode: integration"
+    else
+      fail "integration requires branch main, found '${CURRENT_BRANCH}'"
     fi
     ;;
 esac
@@ -775,9 +844,101 @@ case "$MODE" in
       info "working tree is dirty during active development; phase1 does not fail for that alone"
     fi
     ;;
+
+  integration)
+    REMOTE_COUNT="$(git remote | wc -l | tr -d '[:space:]')"
+
+    if [[ "$REMOTE_COUNT" == "1" ]]; then
+      pass "exactly one Git remote exists"
+    else
+      fail "integration expected exactly 1 Git remote, found: $REMOTE_COUNT"
+    fi
+
+    if git remote get-url origin >/dev/null 2>&1; then
+      ORIGIN_FETCH_URL="$(git remote get-url origin)"
+      ORIGIN_PUSH_URL="$(git remote get-url --push origin)"
+
+      if [[ "$ORIGIN_FETCH_URL" == "$EXPECTED_REMOTE" ]]; then
+        pass "origin fetch URL matches canonical GitHub repository"
+      else
+        fail "unexpected origin fetch URL: '$ORIGIN_FETCH_URL'"
+      fi
+
+      if [[ "$ORIGIN_PUSH_URL" == "$EXPECTED_REMOTE" ]]; then
+        pass "origin push URL matches canonical GitHub repository"
+      else
+        fail "unexpected origin push URL: '$ORIGIN_PUSH_URL'"
+      fi
+    else
+      fail "required origin remote does not exist"
+    fi
+
+    if git rev-parse --verify refs/remotes/origin/main >/dev/null 2>&1; then
+      pass "refs/remotes/origin/main exists"
+    else
+      fail "refs/remotes/origin/main is missing; run git fetch --prune origin before integration"
+    fi
+
+    UPSTREAM_BRANCH="$(
+      git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true
+    )"
+
+    if [[ "$UPSTREAM_BRANCH" == "origin/main" ]]; then
+      pass "main tracks origin/main"
+    else
+      fail "expected upstream origin/main, found '${UPSTREAM_BRANCH:-NONE}'"
+    fi
+
+    if git cat-file -e "${BASELINE_SHA}^{commit}" 2>/dev/null; then
+      pass "immutable Phase 0 baseline commit exists"
+
+      if git merge-base --is-ancestor "$BASELINE_SHA" HEAD; then
+        pass "immutable Phase 0 baseline is an ancestor of HEAD"
+      else
+        fail "immutable Phase 0 baseline is not an ancestor of HEAD"
+      fi
+    else
+      fail "immutable Phase 0 baseline commit is missing: $BASELINE_SHA"
+    fi
+
+    check_interrupted_git "integration"
+
+    WORKTREE_STATE="$(git status --porcelain)"
+
+    if [[ -z "$WORKTREE_STATE" ]]; then
+      pass "integration working tree is clean"
+    else
+      fail "integration working tree is not clean"
+    fi
+
+    LOCAL_HEAD="$(git rev-parse HEAD 2>/dev/null || true)"
+    TRACKING_HEAD="$(git rev-parse refs/remotes/origin/main 2>/dev/null || true)"
+
+    REMOTE_MAIN_HEAD="$(
+      git ls-remote origin refs/heads/main 2>/dev/null | awk '{print $1}' || true
+    )"
+
+    if [[ -n "$LOCAL_HEAD" && -n "$TRACKING_HEAD" && "$LOCAL_HEAD" == "$TRACKING_HEAD" ]]; then
+      pass "local HEAD matches local origin/main tracking ref"
+    else
+      fail "local HEAD does not match origin/main; run git fetch --prune origin and synchronize main"
+    fi
+
+    if [[ -n "$REMOTE_MAIN_HEAD" && "$REMOTE_MAIN_HEAD" =~ ^[0-9a-f]{40}$ && "$LOCAL_HEAD" == "$REMOTE_MAIN_HEAD" ]]; then
+      pass "local HEAD matches live remote refs/heads/main"
+    else
+      fail "local HEAD does not match live remote main (ls-remote failed, ambiguous, or diverged)"
+    fi
+
+    if [[ -n "$REMOTE_MAIN_HEAD" && "$REMOTE_MAIN_HEAD" =~ ^[0-9a-f]{40}$ && "$TRACKING_HEAD" == "$REMOTE_MAIN_HEAD" ]]; then
+      pass "origin/main tracking ref matches live remote refs/heads/main"
+    else
+      fail "origin/main tracking ref does not match live remote main"
+    fi
+    ;;
 esac
 
-if [[ "$MODE" == "phase1" ]]; then
+if [[ "$MODE" == "phase1" || "$MODE" == "integration" ]]; then
   section "HOOK SAFETY"
   check_phase1_hooks
 fi
@@ -843,8 +1004,8 @@ case "$MODE" in
       check_phase0_port_free "$reserved_port"
     done
     ;;
-  phase1)
-    section "PHASE 1 RESERVED PORTS"
+  phase1|integration)
+    section "RESERVED WEBSHOP PORTS"
 
     for reserved_port in "${RESERVED_PORTS[@]}"; do
       check_phase1_reserved_port "$reserved_port"
@@ -943,6 +1104,10 @@ case "$MODE" in
     section "PHASE 1 APPLICATION STATE"
     check_phase1_package_json
     ;;
+  integration)
+    section "INTEGRATION APPLICATION STATE"
+    check_integration_package_json
+    ;;
 esac
 
 case "$MODE" in
@@ -962,7 +1127,7 @@ case "$MODE" in
       fail "unexpected webshop Docker containers already exist: $WEBSHOP_DOCKER_RESOURCES"
     fi
     ;;
-  phase1)
+  phase1|integration)
     section "WEBSHOP DOCKER OWNERSHIP"
     check_phase1_webshop_docker
     ;;
@@ -985,6 +1150,9 @@ if [[ "$FAILURES" -eq 0 ]]; then
       ;;
     phase1)
       printf 'Phase 1 feature-branch development context is consistent and protected.\n'
+      ;;
+    integration)
+      printf 'Stable main integration state is synchronized, protected, and clean.\n'
       ;;
   esac
 
