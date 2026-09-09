@@ -11,6 +11,12 @@ MODE="${1:-phase0}"
 
 EXPECTED_ROOT="/home/pav4o71/Projects/nomi-numi-shop"
 
+EXPECTED_REMOTE="git@github.com:pav4o71/nomi-numi-shop.git"
+
+BASELINE_SHA="6b70c53d8be977ee80d24b98415ab794defaf48b"
+BASELINE_SUBJECT="chore: establish phase 0 foundation"
+BASELINE_TRACKED_COUNT="24"
+
 EXPECTED_NODE="v24.19.0"
 EXPECTED_PNPM="11.26.0"
 
@@ -102,11 +108,11 @@ printf ' Mode: %s\n' "$MODE"
 printf '==================================================\n'
 
 case "$MODE" in
-  phase0|baseline-local)
+  phase0|baseline-local|baseline-remote)
     ;;
   *)
     printf '\nUnsupported preflight mode: %s\n' "$MODE" >&2
-    printf 'Currently supported modes: phase0, baseline-local\n' >&2
+    printf 'Currently supported modes: phase0, baseline-local, baseline-remote\n' >&2
     exit 2
     ;;
 esac
@@ -200,12 +206,12 @@ case "$MODE" in
         fail "baseline-local expected exactly 1 commit, found: $COMMIT_COUNT"
       fi
 
-      BASELINE_SUBJECT="$(git log -1 --pretty=%s)"
+      ACTUAL_BASELINE_SUBJECT="$(git log -1 --pretty=%s)"
 
-      if [[ "$BASELINE_SUBJECT" == "chore: establish phase 0 foundation" ]]; then
+      if [[ "$ACTUAL_BASELINE_SUBJECT" == "$BASELINE_SUBJECT" ]]; then
         pass "baseline commit subject matches"
       else
-        fail "unexpected baseline commit subject: '$BASELINE_SUBJECT'"
+        fail "unexpected baseline commit subject: '$ACTUAL_BASELINE_SUBJECT'"
       fi
     fi
 
@@ -225,10 +231,114 @@ case "$MODE" in
 
     TRACKED_COUNT="$(git ls-files | wc -l | tr -d '[:space:]')"
 
-    if [[ "$TRACKED_COUNT" == "24" ]]; then
-      pass "baseline tracks exactly 24 foundation files"
+    if [[ "$TRACKED_COUNT" == "$BASELINE_TRACKED_COUNT" ]]; then
+      pass "baseline tracks exactly $BASELINE_TRACKED_COUNT foundation files"
     else
-      fail "baseline expected 24 tracked files, found: $TRACKED_COUNT"
+      fail "baseline expected $BASELINE_TRACKED_COUNT tracked files, found: $TRACKED_COUNT"
+    fi
+    ;;
+
+  baseline-remote)
+    REMOTE_COUNT="$(git remote | wc -l | tr -d '[:space:]')"
+
+    if [[ "$REMOTE_COUNT" == "1" ]]; then
+      pass "exactly one Git remote exists"
+    else
+      fail "baseline-remote expected exactly 1 Git remote, found: $REMOTE_COUNT"
+    fi
+
+    if git remote get-url origin >/dev/null 2>&1; then
+      ORIGIN_FETCH_URL="$(git remote get-url origin)"
+      ORIGIN_PUSH_URL="$(git remote get-url --push origin)"
+
+      if [[ "$ORIGIN_FETCH_URL" == "$EXPECTED_REMOTE" ]]; then
+        pass "origin fetch URL matches canonical GitHub repository"
+      else
+        fail "unexpected origin fetch URL: '$ORIGIN_FETCH_URL'"
+      fi
+
+      if [[ "$ORIGIN_PUSH_URL" == "$EXPECTED_REMOTE" ]]; then
+        pass "origin push URL matches canonical GitHub repository"
+      else
+        fail "unexpected origin push URL: '$ORIGIN_PUSH_URL'"
+      fi
+    else
+      fail "required origin remote does not exist"
+    fi
+
+    UPSTREAM_BRANCH="$(
+      git rev-parse         --abbrev-ref         --symbolic-full-name         '@{u}' 2>/dev/null || true
+    )"
+
+    if [[ "$UPSTREAM_BRANCH" == "origin/main" ]]; then
+      pass "main tracks origin/main"
+    else
+      fail "expected upstream origin/main, found '${UPSTREAM_BRANCH:-NONE}'"
+    fi
+
+    if git cat-file -e "${BASELINE_SHA}^{commit}" 2>/dev/null; then
+      pass "immutable Phase 0 baseline commit exists"
+
+      ACTUAL_BASELINE_SUBJECT="$(
+        git log -1 --pretty=%s "$BASELINE_SHA"
+      )"
+
+      if [[ "$ACTUAL_BASELINE_SUBJECT" == "$BASELINE_SUBJECT" ]]; then
+        pass "immutable baseline commit subject matches"
+      else
+        fail "immutable baseline subject mismatch: '$ACTUAL_BASELINE_SUBJECT'"
+      fi
+
+      BASELINE_FILE_COUNT="$(
+        git ls-tree -r --name-only "$BASELINE_SHA"           | wc -l           | tr -d '[:space:]'
+      )"
+
+      if [[ "$BASELINE_FILE_COUNT" == "$BASELINE_TRACKED_COUNT" ]]; then
+        pass "immutable baseline contains exactly $BASELINE_TRACKED_COUNT files"
+      else
+        fail "immutable baseline expected $BASELINE_TRACKED_COUNT files, found: $BASELINE_FILE_COUNT"
+      fi
+
+      if git merge-base --is-ancestor "$BASELINE_SHA" HEAD; then
+        pass "immutable baseline is an ancestor of current HEAD"
+      else
+        fail "immutable baseline is not an ancestor of current HEAD"
+      fi
+    else
+      fail "immutable Phase 0 baseline commit is missing: $BASELINE_SHA"
+    fi
+
+    LOCAL_HEAD="$(git rev-parse HEAD 2>/dev/null || true)"
+    TRACKING_HEAD="$(git rev-parse origin/main 2>/dev/null || true)"
+
+    REMOTE_MAIN_HEAD="$(
+      git ls-remote origin refs/heads/main 2>/dev/null         | awk '{print $1}'         || true
+    )"
+
+    if [[ -n "$LOCAL_HEAD" && "$LOCAL_HEAD" == "$TRACKING_HEAD" ]]; then
+      pass "local HEAD matches local origin/main tracking ref"
+    else
+      fail "local HEAD does not match origin/main"
+    fi
+
+    if [[ -n "$REMOTE_MAIN_HEAD" && "$LOCAL_HEAD" == "$REMOTE_MAIN_HEAD" ]]; then
+      pass "local HEAD matches actual GitHub main"
+    else
+      fail "local HEAD does not match actual GitHub main"
+    fi
+
+    if [[ -n "$REMOTE_MAIN_HEAD" && "$TRACKING_HEAD" == "$REMOTE_MAIN_HEAD" ]]; then
+      pass "origin/main tracking ref matches actual GitHub main"
+    else
+      fail "origin/main tracking ref does not match actual GitHub main"
+    fi
+
+    WORKTREE_STATE="$(git status --porcelain)"
+
+    if [[ -z "$WORKTREE_STATE" ]]; then
+      pass "baseline-remote working tree is clean"
+    else
+      fail "baseline-remote working tree is not clean"
     fi
     ;;
 esac
@@ -403,6 +513,9 @@ if [[ "$FAILURES" -eq 0 ]]; then
       ;;
     baseline-local)
       printf 'Local committed foundation baseline is consistent and clean.\n'
+      ;;
+    baseline-remote)
+      printf 'Remote Phase 0 foundation is synchronized, protected, and clean.\n'
       ;;
   esac
 

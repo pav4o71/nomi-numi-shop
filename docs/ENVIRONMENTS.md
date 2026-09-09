@@ -129,6 +129,14 @@ See:
 Currently supported:
 
 - phase0
+- baseline-local
+- baseline-remote
+
+Mode meaning:
+
+- `phase0` — before the first commit and before a Git remote exists
+- `baseline-local` — committed local foundation before a Git remote exists
+- `baseline-remote` — committed foundation synchronized with canonical GitHub main
 
 Currently unsupported:
 
