@@ -2,12 +2,7 @@ import Link from "next/link";
 
 import { Container } from "@/components/container";
 import { Button } from "@/components/ui/button";
-
-const navItems = [
-  { href: "/#gifts", label: "Gifts" },
-  { href: "/#why-nomi-numi", label: "Why Nomi Numi" },
-  { href: "/#how-it-works", label: "How It Works" },
-] as const;
+import { siteNavigation } from "@/lib/site-navigation";
 
 export function SiteHeader() {
   return (
@@ -22,7 +17,7 @@ export function SiteHeader() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
           <nav aria-label="Primary" className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {navItems.map((item) => (
+            {siteNavigation.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

@@ -147,7 +147,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <ol className="mt-10 grid gap-8 sm:grid-cols-3">
+          <ul className="mt-10 grid gap-8 sm:grid-cols-3">
             {reasons.map((reason) => (
               <li key={reason.title} className="space-y-3 border-t border-border pt-5">
                 <h3 className="font-display text-xl font-semibold tracking-tight text-foreground">
@@ -158,7 +158,7 @@ export default function HomePage() {
                 </p>
               </li>
             ))}
-          </ol>
+          </ul>
         </Container>
       </section>
 

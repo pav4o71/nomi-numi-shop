@@ -1,12 +1,7 @@
 import Link from "next/link";
 
 import { Container } from "@/components/container";
-
-const footerLinks = [
-  { href: "/#gifts", label: "Gifts" },
-  { href: "/#why-nomi-numi", label: "Why Nomi Numi" },
-  { href: "/#how-it-works", label: "How It Works" },
-] as const;
+import { siteNavigation } from "@/lib/site-navigation";
 
 export function SiteFooter() {
   return (
@@ -22,7 +17,7 @@ export function SiteFooter() {
         </div>
 
         <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
-          {footerLinks.map((item) => (
+          {siteNavigation.map((item) => (
             <Link
               key={item.href}
               href={item.href}

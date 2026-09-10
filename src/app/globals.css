@@ -26,6 +26,7 @@
   --radius-xl: calc(var(--radius) + 0.25rem);
   --font-sans: var(--font-family-sans);
   --font-display: var(--font-family-display);
+  --max-width-content: var(--content-max);
 }
 
 :root {
