@@ -23,8 +23,16 @@ EXPECTED_PNPM="11.26.0"
 EXPECTED_NVMRC="24.19.0"
 EXPECTED_NODE_VERSION_FILE="24.19.0"
 
+EXPECTED_PACKAGE_NAME="nomi-numi-shop"
+EXPECTED_PACKAGE_MANAGER="pnpm@11.26.0"
+
 PROTECTED_DB_CONTAINER="beautybook3-pg"
 PROTECTED_DB_PORT="5433"
+
+OWNED_COMPOSE_PROJECTS=(
+  "nomi-numi-shop-dev"
+  "nomi-numi-shop-test"
+)
 
 RESERVED_PORTS=(
   3100
@@ -102,17 +110,419 @@ check_phase0_port_free() {
   fi
 }
 
+is_owned_compose_project() {
+  local compose_project="$1"
+  local owned_project
+
+  for owned_project in "${OWNED_COMPOSE_PROJECTS[@]}"; do
+    if [[ "$compose_project" == "$owned_project" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+path_is_inside_expected_root() {
+  local candidate_path="$1"
+
+  if [[ "$candidate_path" == "$EXPECTED_ROOT" ]]; then
+    return 0
+  fi
+
+  if [[ "$candidate_path" == "$EXPECTED_ROOT"/* ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+collect_listener_pids() {
+  local reserved_port="$1"
+  local ss_output
+  local pid_list=()
+  local pid_candidate
+
+  ss_output="$(ss -ltnp 2>/dev/null || true)"
+
+  while IFS= read -r pid_candidate; do
+    if [[ -n "$pid_candidate" ]]; then
+      pid_list+=("$pid_candidate")
+    fi
+  done < <(
+    printf '%s\n' "$ss_output" \
+      | grep -E ":${reserved_port}[[:space:]]" \
+      | grep -oE 'pid=[0-9]+' \
+      | cut -d= -f2 \
+      | sort -u
+  )
+
+  if [[ "${#pid_list[@]}" -eq 0 ]]; then
+    return 1
+  fi
+
+  printf '%s\n' "${pid_list[@]}"
+  return 0
+}
+
+process_is_project_owned() {
+  local process_pid="$1"
+  local process_user
+  local process_cwd
+  local process_command
+  local current_user
+
+  current_user="$(id -un 2>/dev/null || true)"
+
+  if [[ -z "$current_user" ]]; then
+    return 1
+  fi
+
+  if ! process_user="$(ps -o user= -p "$process_pid" 2>/dev/null)"; then
+    return 1
+  fi
+
+  process_user="$(printf '%s' "$process_user" | tr -d '[:space:]')"
+
+  if [[ -z "$process_user" || "$process_user" != "$current_user" ]]; then
+    return 1
+  fi
+
+  if [[ ! -r "/proc/${process_pid}/cwd" ]]; then
+    return 1
+  fi
+
+  if ! process_cwd="$(readlink "/proc/${process_pid}/cwd" 2>/dev/null)"; then
+    return 1
+  fi
+
+  if ! path_is_inside_expected_root "$process_cwd"; then
+    return 1
+  fi
+
+  if ! process_command="$(ps -o args= -p "$process_pid" 2>/dev/null)"; then
+    return 1
+  fi
+
+  if [[ -z "$process_command" ]]; then
+    return 1
+  fi
+
+  if command_is_project_next_form "$process_command" "$process_pid"; then
+    return 0
+  fi
+
+  return 1
+}
+
+# Token/path-aware Next.js recognition only.
+# Accepts node/next CLI tokens and the exact Next.js listener title
+# "next-server" / "next-server (v16.3.4)".
+# Rejects nextcloud-server, next-server-old-helper, nextsomething, etc.
+# Do not use a bare "next" or "next-server" substring match.
+command_is_project_next_form() {
+  local process_command="$1"
+  local process_pid="${2:-}"
+  local process_exe=""
+
+  if printf '%s' "$process_command" | grep -Eqi '(^|[/[:space:]])(node|next)([/[:space:]]|$)'; then
+    return 0
+  fi
+
+  # Exact process title used by Next.js HTTP listeners.
+  if ! printf '%s' "$process_command" | grep -Eq '^[[:space:]]*next-server([[:space:]]+\([^)]*\))?[[:space:]]*$'; then
+    return 1
+  fi
+
+  # Optional stronger evidence: when /proc/<pid>/exe is readable, require
+  # a Node executable. Missing/unreadable exe still allows the exact
+  # title form after user+cwd checks in process_is_project_owned.
+  if [[ -n "$process_pid" && -r "/proc/${process_pid}/exe" ]]; then
+    process_exe="$(readlink "/proc/${process_pid}/exe" 2>/dev/null || true)"
+    if [[ -n "$process_exe" ]]; then
+      if ! printf '%s' "$process_exe" | grep -Eqi '(^|/)node([0-9]+)?$'; then
+        return 1
+      fi
+    fi
+  fi
+
+  return 0
+}
+
+docker_port_owner_project() {
+  local reserved_port="$1"
+  local container_id
+  local compose_project
+  local ports_field
+  local matched_projects=()
+
+  while IFS=$'\t' read -r container_id ports_field compose_project; do
+    if [[ -z "$container_id" ]]; then
+      continue
+    fi
+
+    if ! printf '%s' "$ports_field" | grep -Eq "(^|[^0-9])${reserved_port}->|:${reserved_port}->|:[[:digit:].]*:${reserved_port}->|::${reserved_port}->"; then
+      if ! printf '%s' "$ports_field" | grep -Eq ":${reserved_port}([[:space:],]|$)"; then
+        continue
+      fi
+    fi
+
+    if [[ -n "$compose_project" ]] && is_owned_compose_project "$compose_project"; then
+      matched_projects+=("$compose_project")
+    else
+      return 1
+    fi
+  done < <(
+    docker ps \
+      --format '{{.ID}}\t{{.Ports}}\t{{.Label "com.docker.compose.project"}}' \
+      2>/dev/null || true
+  )
+
+  if [[ "${#matched_projects[@]}" -eq 0 ]]; then
+    return 1
+  fi
+
+  printf '%s\n' "${matched_projects[0]}"
+  return 0
+}
+
+check_phase1_reserved_port() {
+  local reserved_port="$1"
+  local listener_pids
+  local listener_pid
+  local owned_process_count=0
+  local unproven_process_count=0
+  local docker_project
+  local ownership_notes=()
+
+  # Classification is port-level, not first-PID-level:
+  # A free → PASS
+  # B all identifiable PIDs project-owned → PASS
+  # C otherwise inspect Docker Compose ownership before failing
+  # D neither proven → FAIL closed (no kill/stop/rebind)
+
+  if ! ss -ltn 2>/dev/null | grep -Eq ":${reserved_port}[[:space:]]"; then
+    pass "phase1 reserved port is free: $reserved_port"
+    return
+  fi
+
+  listener_pids="$(collect_listener_pids "$reserved_port" || true)"
+
+  if [[ -n "$listener_pids" ]]; then
+    while IFS= read -r listener_pid; do
+      if [[ -z "$listener_pid" ]]; then
+        continue
+      fi
+
+      if process_is_project_owned "$listener_pid"; then
+        owned_process_count=$((owned_process_count + 1))
+        ownership_notes+=("pid ${listener_pid} under ${EXPECTED_ROOT}")
+      else
+        # Do not fail yet. Docker may publish this host port through
+        # docker-proxy, which is not a project Node/Next process.
+        unproven_process_count=$((unproven_process_count + 1))
+      fi
+    done <<< "$listener_pids"
+  fi
+
+  if [[ "$owned_process_count" -gt 0 && "$unproven_process_count" -eq 0 ]]; then
+    pass "phase1 reserved port ${reserved_port} is occupied by project-owned process (${ownership_notes[*]})"
+    return
+  fi
+
+  if docker_project="$(docker_port_owner_project "$reserved_port")"; then
+    pass "phase1 reserved port ${reserved_port} is occupied by owned Compose project: ${docker_project}"
+    return
+  fi
+
+  fail "phase1 reserved port ${reserved_port} is in use with unproven ownership"
+}
+
+check_phase1_hooks() {
+  local hooks_path
+  local hook_file=".githooks/pre-push"
+
+  hooks_path="$(git config --local --get core.hooksPath 2>/dev/null || true)"
+
+  if [[ "$hooks_path" == ".githooks" ]]; then
+    pass "core.hooksPath is .githooks"
+  else
+    fail "core.hooksPath expected '.githooks', found '${hooks_path:-NONE}'"
+  fi
+
+  if [[ -f "$hook_file" ]]; then
+    pass "hook file exists: $hook_file"
+  else
+    fail "required hook file missing: $hook_file"
+    return
+  fi
+
+  if [[ -x "$hook_file" ]]; then
+    pass "hook file is executable: $hook_file"
+  else
+    fail "hook file is not executable: $hook_file"
+  fi
+}
+
+check_interrupted_git() {
+  local mode_label="$1"
+
+  if [[ -e .git/MERGE_HEAD ]]; then
+    fail "${mode_label} refused: merge in progress"
+  fi
+
+  if [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; then
+    fail "${mode_label} refused: rebase in progress"
+  fi
+
+  if [[ -e .git/CHERRY_PICK_HEAD ]]; then
+    fail "${mode_label} refused: cherry-pick in progress"
+  fi
+
+  if [[ ! -e .git/MERGE_HEAD && ! -d .git/rebase-merge && ! -d .git/rebase-apply && ! -e .git/CHERRY_PICK_HEAD ]]; then
+    pass "no interrupted merge/rebase/cherry-pick detected"
+  fi
+}
+
+check_phase1_interrupted_git() {
+  check_interrupted_git "phase1"
+}
+
+check_integration_package_json() {
+  if [[ ! -f package.json ]]; then
+    fail "integration requires package.json to exist on main"
+    return
+  fi
+
+  if [[ ! -f pnpm-lock.yaml ]]; then
+    fail "integration requires pnpm-lock.yaml to exist on main"
+    return
+  fi
+
+  pass "required application lockfile exists: pnpm-lock.yaml"
+
+  if ! node -e '
+const fs = require("fs");
+const expectedName = process.argv[1];
+const expectedManager = process.argv[2];
+const expectedNode = process.argv[3];
+const expectedPnpm = process.argv[4];
+let pkg;
+try {
+  pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+} catch (error) {
+  console.error("unreadable or invalid package.json");
+  process.exit(2);
+}
+const failures = [];
+if (pkg.name !== expectedName) {
+  failures.push("name");
+}
+if (pkg.private !== true) {
+  failures.push("private");
+}
+if (pkg.packageManager !== expectedManager) {
+  failures.push("packageManager");
+}
+if (!pkg.engines || pkg.engines.node !== expectedNode) {
+  failures.push("engines.node");
+}
+if (!pkg.engines || pkg.engines.pnpm !== expectedPnpm) {
+  failures.push("engines.pnpm");
+}
+if (failures.length > 0) {
+  console.error(failures.join(","));
+  process.exit(1);
+}
+' "$EXPECTED_PACKAGE_NAME" "$EXPECTED_PACKAGE_MANAGER" "$EXPECTED_NVMRC" "$EXPECTED_PNPM"; then
+    fail "package.json failed integration name/private/packageManager/engines validation"
+    return
+  fi
+
+  pass "package.json name/private/packageManager/engines match integration expectations"
+}
+
+check_phase1_package_json() {
+  if [[ ! -f package.json ]]; then
+    info "package.json is absent; application foundation has not yet been created"
+    pass "phase1 allows absent package.json before application creation"
+    return
+  fi
+
+  if ! node -e '
+const fs = require("fs");
+const expectedName = process.argv[1];
+const expectedManager = process.argv[2];
+let pkg;
+try {
+  pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+} catch (error) {
+  console.error("unreadable or invalid package.json");
+  process.exit(2);
+}
+const failures = [];
+if (pkg.name !== expectedName) {
+  failures.push("name");
+}
+if (pkg.private !== true) {
+  failures.push("private");
+}
+if (pkg.packageManager !== expectedManager) {
+  failures.push("packageManager");
+}
+if (failures.length > 0) {
+  console.error(failures.join(","));
+  process.exit(1);
+}
+' "$EXPECTED_PACKAGE_NAME" "$EXPECTED_PACKAGE_MANAGER"; then
+    fail "package.json exists but failed name/private/packageManager validation"
+    return
+  fi
+
+  pass "package.json name/private/packageManager match Phase 1 expectations"
+}
+
+check_phase1_webshop_docker() {
+  local container_name
+  local compose_project
+  local found_any=0
+
+  while IFS=$'\t' read -r container_name compose_project; do
+    if [[ -z "$container_name" ]]; then
+      continue
+    fi
+
+    if [[ "$container_name" == nomi-numi-shop* ]] || is_owned_compose_project "$compose_project"; then
+      found_any=1
+
+      if is_owned_compose_project "$compose_project"; then
+        pass "webshop-related container has owned Compose project: ${container_name} (${compose_project})"
+      else
+        fail "webshop-related container has unproven ownership: ${container_name} (compose project: ${compose_project:-NONE})"
+      fi
+    fi
+  done < <(
+    docker ps -a \
+      --format '{{.Names}}\t{{.Label "com.docker.compose.project"}}' \
+      2>/dev/null || true
+  )
+
+  if [[ "$found_any" -eq 0 ]]; then
+    pass "no webshop Docker containers currently exist"
+  fi
+}
+
 printf '==================================================\n'
 printf ' NOMI-NUMI-SHOP PREFLIGHT\n'
 printf ' Mode: %s\n' "$MODE"
 printf '==================================================\n'
 
 case "$MODE" in
-  phase0|baseline-local|baseline-remote)
+  phase0|baseline-local|baseline-remote|phase1|integration)
     ;;
   *)
     printf '\nUnsupported preflight mode: %s\n' "$MODE" >&2
-    printf 'Currently supported modes: phase0, baseline-local, baseline-remote\n' >&2
+    printf 'Currently supported modes: phase0, baseline-local, baseline-remote, phase1, integration\n' >&2
     exit 2
     ;;
 esac
@@ -133,6 +543,12 @@ for required_command in \
 do
   require_command "$required_command"
 done
+
+if [[ "$MODE" == "phase1" || "$MODE" == "integration" ]]; then
+  for required_command in ps readlink id; do
+    require_command "$required_command"
+  done
+fi
 
 if ! command -v git >/dev/null 2>&1; then
   printf '\nPreflight cannot continue without Git.\n' >&2
@@ -169,11 +585,35 @@ fi
 
 CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || true)"
 
-if [[ "$CURRENT_BRANCH" == "main" ]]; then
-  pass "branch is main for mode: $MODE"
-else
-  fail "expected branch main, found '${CURRENT_BRANCH:-DETACHED/UNKNOWN}'"
-fi
+case "$MODE" in
+  phase0|baseline-local|baseline-remote)
+    if [[ "$CURRENT_BRANCH" == "main" ]]; then
+      pass "branch is main for mode: $MODE"
+    else
+      fail "expected branch main, found '${CURRENT_BRANCH:-DETACHED/UNKNOWN}'"
+    fi
+    ;;
+  phase1)
+    if [[ -z "$CURRENT_BRANCH" ]]; then
+      fail "phase1 does not allow detached HEAD"
+    elif [[ "$CURRENT_BRANCH" == "main" ]]; then
+      fail "phase1 must not run on main"
+    elif [[ "$CURRENT_BRANCH" =~ ^(feature|fix|chore|docs)/.+$ ]]; then
+      pass "branch is approved for phase1: $CURRENT_BRANCH"
+    else
+      fail "phase1 branch must match feature/*, fix/*, chore/*, or docs/*; found '${CURRENT_BRANCH}'"
+    fi
+    ;;
+  integration)
+    if [[ -z "$CURRENT_BRANCH" ]]; then
+      fail "integration does not allow detached HEAD"
+    elif [[ "$CURRENT_BRANCH" == "main" ]]; then
+      pass "branch is main for mode: integration"
+    else
+      fail "integration requires branch main, found '${CURRENT_BRANCH}'"
+    fi
+    ;;
+esac
 
 section "GIT STATE"
 
@@ -341,7 +781,167 @@ case "$MODE" in
       fail "baseline-remote working tree is not clean"
     fi
     ;;
+
+  phase1)
+    REMOTE_COUNT="$(git remote | wc -l | tr -d '[:space:]')"
+
+    if [[ "$REMOTE_COUNT" == "1" ]]; then
+      pass "exactly one Git remote exists"
+    else
+      fail "phase1 expected exactly 1 Git remote, found: $REMOTE_COUNT"
+    fi
+
+    if git remote get-url origin >/dev/null 2>&1; then
+      ORIGIN_FETCH_URL="$(git remote get-url origin)"
+      ORIGIN_PUSH_URL="$(git remote get-url --push origin)"
+
+      if [[ "$ORIGIN_FETCH_URL" == "$EXPECTED_REMOTE" ]]; then
+        pass "origin fetch URL matches canonical GitHub repository"
+      else
+        fail "unexpected origin fetch URL: '$ORIGIN_FETCH_URL'"
+      fi
+
+      if [[ "$ORIGIN_PUSH_URL" == "$EXPECTED_REMOTE" ]]; then
+        pass "origin push URL matches canonical GitHub repository"
+      else
+        fail "unexpected origin push URL: '$ORIGIN_PUSH_URL'"
+      fi
+    else
+      fail "required origin remote does not exist"
+    fi
+
+    if git cat-file -e "${BASELINE_SHA}^{commit}" 2>/dev/null; then
+      pass "immutable Phase 0 baseline commit exists"
+
+      if git merge-base --is-ancestor "$BASELINE_SHA" HEAD; then
+        pass "immutable Phase 0 baseline is an ancestor of HEAD"
+      else
+        fail "immutable Phase 0 baseline is not an ancestor of HEAD"
+      fi
+    else
+      fail "immutable Phase 0 baseline commit is missing: $BASELINE_SHA"
+    fi
+
+    if git rev-parse --verify origin/main >/dev/null 2>&1; then
+      pass "origin/main tracking ref exists"
+
+      if git merge-base --is-ancestor origin/main HEAD; then
+        pass "origin/main is an ancestor of HEAD"
+      else
+        fail "origin/main is not an ancestor of HEAD"
+      fi
+    else
+      fail "origin/main tracking ref is missing"
+    fi
+
+    check_phase1_interrupted_git
+
+    WORKTREE_STATE="$(git status --porcelain)"
+
+    if [[ -z "$WORKTREE_STATE" ]]; then
+      pass "working tree is clean"
+    else
+      info "working tree is dirty during active development; phase1 does not fail for that alone"
+    fi
+    ;;
+
+  integration)
+    REMOTE_COUNT="$(git remote | wc -l | tr -d '[:space:]')"
+
+    if [[ "$REMOTE_COUNT" == "1" ]]; then
+      pass "exactly one Git remote exists"
+    else
+      fail "integration expected exactly 1 Git remote, found: $REMOTE_COUNT"
+    fi
+
+    if git remote get-url origin >/dev/null 2>&1; then
+      ORIGIN_FETCH_URL="$(git remote get-url origin)"
+      ORIGIN_PUSH_URL="$(git remote get-url --push origin)"
+
+      if [[ "$ORIGIN_FETCH_URL" == "$EXPECTED_REMOTE" ]]; then
+        pass "origin fetch URL matches canonical GitHub repository"
+      else
+        fail "unexpected origin fetch URL: '$ORIGIN_FETCH_URL'"
+      fi
+
+      if [[ "$ORIGIN_PUSH_URL" == "$EXPECTED_REMOTE" ]]; then
+        pass "origin push URL matches canonical GitHub repository"
+      else
+        fail "unexpected origin push URL: '$ORIGIN_PUSH_URL'"
+      fi
+    else
+      fail "required origin remote does not exist"
+    fi
+
+    if git rev-parse --verify refs/remotes/origin/main >/dev/null 2>&1; then
+      pass "refs/remotes/origin/main exists"
+    else
+      fail "refs/remotes/origin/main is missing; run git fetch --prune origin before integration"
+    fi
+
+    UPSTREAM_BRANCH="$(
+      git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true
+    )"
+
+    if [[ "$UPSTREAM_BRANCH" == "origin/main" ]]; then
+      pass "main tracks origin/main"
+    else
+      fail "expected upstream origin/main, found '${UPSTREAM_BRANCH:-NONE}'"
+    fi
+
+    if git cat-file -e "${BASELINE_SHA}^{commit}" 2>/dev/null; then
+      pass "immutable Phase 0 baseline commit exists"
+
+      if git merge-base --is-ancestor "$BASELINE_SHA" HEAD; then
+        pass "immutable Phase 0 baseline is an ancestor of HEAD"
+      else
+        fail "immutable Phase 0 baseline is not an ancestor of HEAD"
+      fi
+    else
+      fail "immutable Phase 0 baseline commit is missing: $BASELINE_SHA"
+    fi
+
+    check_interrupted_git "integration"
+
+    WORKTREE_STATE="$(git status --porcelain)"
+
+    if [[ -z "$WORKTREE_STATE" ]]; then
+      pass "integration working tree is clean"
+    else
+      fail "integration working tree is not clean"
+    fi
+
+    LOCAL_HEAD="$(git rev-parse HEAD 2>/dev/null || true)"
+    TRACKING_HEAD="$(git rev-parse refs/remotes/origin/main 2>/dev/null || true)"
+
+    REMOTE_MAIN_HEAD="$(
+      git ls-remote origin refs/heads/main 2>/dev/null | awk '{print $1}' || true
+    )"
+
+    if [[ -n "$LOCAL_HEAD" && -n "$TRACKING_HEAD" && "$LOCAL_HEAD" == "$TRACKING_HEAD" ]]; then
+      pass "local HEAD matches local origin/main tracking ref"
+    else
+      fail "local HEAD does not match origin/main; run git fetch --prune origin and synchronize main"
+    fi
+
+    if [[ -n "$REMOTE_MAIN_HEAD" && "$REMOTE_MAIN_HEAD" =~ ^[0-9a-f]{40}$ && "$LOCAL_HEAD" == "$REMOTE_MAIN_HEAD" ]]; then
+      pass "local HEAD matches live remote refs/heads/main"
+    else
+      fail "local HEAD does not match live remote main (ls-remote failed, ambiguous, or diverged)"
+    fi
+
+    if [[ -n "$REMOTE_MAIN_HEAD" && "$REMOTE_MAIN_HEAD" =~ ^[0-9a-f]{40}$ && "$TRACKING_HEAD" == "$REMOTE_MAIN_HEAD" ]]; then
+      pass "origin/main tracking ref matches live remote refs/heads/main"
+    else
+      fail "origin/main tracking ref does not match live remote main"
+    fi
+    ;;
 esac
+
+if [[ "$MODE" == "phase1" || "$MODE" == "integration" ]]; then
+  section "HOOK SAFETY"
+  check_phase1_hooks
+fi
 
 section "RUNTIME"
 
@@ -396,11 +996,22 @@ else
   info "protected container '$PROTECTED_DB_CONTAINER' is currently absent; it remains protected if it reappears"
 fi
 
-section "PHASE 0 RESERVED PORTS"
+case "$MODE" in
+  phase0|baseline-local|baseline-remote)
+    section "PHASE 0 RESERVED PORTS"
 
-for reserved_port in "${RESERVED_PORTS[@]}"; do
-  check_phase0_port_free "$reserved_port"
-done
+    for reserved_port in "${RESERVED_PORTS[@]}"; do
+      check_phase0_port_free "$reserved_port"
+    done
+    ;;
+  phase1|integration)
+    section "RESERVED WEBSHOP PORTS"
+
+    for reserved_port in "${RESERVED_PORTS[@]}"; do
+      check_phase1_reserved_port "$reserved_port"
+    done
+    ;;
+esac
 
 section "SAFETY DOCUMENTS"
 
@@ -468,39 +1079,59 @@ else
   pass ".env.example remains trackable"
 fi
 
-section "PHASE 0 APPLICATION STATE"
+case "$MODE" in
+  phase0|baseline-local|baseline-remote)
+    section "PHASE 0 APPLICATION STATE"
 
-for forbidden_artifact in \
-  "package.json" \
-  "pnpm-lock.yaml" \
-  "compose.yaml" \
-  "docker-compose.yml" \
-  "src" \
-  "app" \
-  "public" \
-  "drizzle"
-do
-  if [[ -e "$forbidden_artifact" ]]; then
-    fail "application artifact exists before Phase 1: $forbidden_artifact"
-  else
-    pass "application artifact absent as expected: $forbidden_artifact"
-  fi
-done
+    for forbidden_artifact in \
+      "package.json" \
+      "pnpm-lock.yaml" \
+      "compose.yaml" \
+      "docker-compose.yml" \
+      "src" \
+      "app" \
+      "public" \
+      "drizzle"
+    do
+      if [[ -e "$forbidden_artifact" ]]; then
+        fail "application artifact exists before Phase 1: $forbidden_artifact"
+      else
+        pass "application artifact absent as expected: $forbidden_artifact"
+      fi
+    done
+    ;;
+  phase1)
+    section "PHASE 1 APPLICATION STATE"
+    check_phase1_package_json
+    ;;
+  integration)
+    section "INTEGRATION APPLICATION STATE"
+    check_integration_package_json
+    ;;
+esac
 
-section "WEBSHOP DOCKER OWNERSHIP"
+case "$MODE" in
+  phase0|baseline-local|baseline-remote)
+    section "WEBSHOP DOCKER OWNERSHIP"
 
-WEBSHOP_DOCKER_RESOURCES="$(
-  docker ps -a \
-    --format '{{.Names}}' 2>/dev/null \
-    | grep -E '^nomi-numi-shop' \
-    || true
-)"
+    WEBSHOP_DOCKER_RESOURCES="$(
+      docker ps -a \
+        --format '{{.Names}}' 2>/dev/null \
+        | grep -E '^nomi-numi-shop' \
+        || true
+    )"
 
-if [[ -z "$WEBSHOP_DOCKER_RESOURCES" ]]; then
-  pass "no webshop Docker containers exist during Phase 0"
-else
-  fail "unexpected webshop Docker containers already exist: $WEBSHOP_DOCKER_RESOURCES"
-fi
+    if [[ -z "$WEBSHOP_DOCKER_RESOURCES" ]]; then
+      pass "no webshop Docker containers exist during Phase 0"
+    else
+      fail "unexpected webshop Docker containers already exist: $WEBSHOP_DOCKER_RESOURCES"
+    fi
+    ;;
+  phase1|integration)
+    section "WEBSHOP DOCKER OWNERSHIP"
+    check_phase1_webshop_docker
+    ;;
+esac
 
 section "FINAL RESULT"
 
@@ -516,6 +1147,12 @@ if [[ "$FAILURES" -eq 0 ]]; then
       ;;
     baseline-remote)
       printf 'Remote Phase 0 foundation is synchronized, protected, and clean.\n'
+      ;;
+    phase1)
+      printf 'Phase 1 feature-branch development context is consistent and protected.\n'
+      ;;
+    integration)
+      printf 'Stable main integration state is synchronized, protected, and clean.\n'
       ;;
   esac
 

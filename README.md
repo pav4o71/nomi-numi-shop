@@ -5,10 +5,16 @@ store.
 
 ## Current phase
 
-Phase 0 — Safe Project Foundation
+Phase 1A — Application Foundation
 
-Application code, webshop databases, production infrastructure, and real
-external integrations have not been created yet.
+Phase 0 is complete. The minimal Next.js application foundation now
+exists, including App Router, TypeScript, Tailwind, ESLint, and
+Prettier.
+
+Ecommerce and domain functionality have not been implemented yet.
+Databases, authentication, payments, shipping, admin, catalog, and
+other business modules remain future phases. Production infrastructure
+and real external integrations remain deferred.
 
 ## Initial business scope
 
@@ -50,8 +56,8 @@ Architecture style:
 
 - modular monolith
 
-Exact application dependency versions will be pinned when Phase 1
-creates package.json and pnpm-lock.yaml.
+Exact application dependency versions are pinned in package.json and
+pnpm-lock.yaml.
 
 ## Development principles
 
@@ -88,11 +94,21 @@ Bugbot review rules:
 
 - .cursor/BUGBOT.md
 
-## Phase 0 preflight
+## Preflight
 
-Run from the canonical repository root:
+On approved `feature/*`, `fix/*`, `chore/*`, or `docs/*` development
+branches, run from the canonical repository root:
 
-    ./scripts/preflight.sh phase0
+    ./scripts/preflight.sh phase1
+
+On synchronized stable `main`, after refreshing remotes:
+
+    git fetch --prune origin
+    ./scripts/preflight.sh integration
+
+Historical Phase 0 preflight modes remain documented in:
+
+`docs/ENVIRONMENTS.md`
 
 A failed preflight is evidence to investigate.
 
