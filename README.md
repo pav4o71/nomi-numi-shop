@@ -5,11 +5,12 @@ store.
 
 ## Current phase
 
-Phase 1A — Application Foundation
+Phase 1B — Testing & Local Development Foundation
 
-Phase 0 is complete. The minimal Next.js application foundation now
-exists, including App Router, TypeScript, Tailwind, ESLint, and
-Prettier.
+Phase 0 and Phase 1A are complete. The minimal Next.js application
+foundation now includes reproducible Vitest unit testing and Playwright
+Chromium E2E smoke testing alongside App Router, TypeScript, Tailwind,
+ESLint, and Prettier.
 
 Ecommerce and domain functionality have not been implemented yet.
 Databases, authentication, payments, shipping, admin, catalog, and
