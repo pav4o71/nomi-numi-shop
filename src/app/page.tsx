@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { Container } from "@/components/container";
 import { Button } from "@/components/ui/button";
 
@@ -86,10 +84,10 @@ export default function HomePage() {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button asChild size="lg">
-              <Link href="/#gifts">Explore Gifts</Link>
+              <a href="#gifts">Explore Gifts</a>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/#how-it-works">See How It Works</Link>
+              <a href="#how-it-works">See How It Works</a>
             </Button>
           </div>
         </Container>
@@ -227,7 +225,7 @@ export default function HomePage() {
                   variant="secondary"
                   className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
                 >
-                  <Link href="/#gifts">Explore Gifts</Link>
+                  <a href="#gifts">Explore Gifts</a>
                 </Button>
               </div>
             </div>
