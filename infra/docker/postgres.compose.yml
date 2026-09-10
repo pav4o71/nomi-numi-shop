@@ -1,0 +1,46 @@
+# ==========================================================
+# nomi-numi-shop
+# Isolated local PostgreSQL (dev / test)
+# ==========================================================
+#
+# Use with separate Compose project namespaces only:
+#   nomi-numi-shop-dev
+#   nomi-numi-shop-test
+#
+# Invoked only through scripts/db-local.sh (or pnpm db:* wrappers).
+# Do not bind host port 5433. Do not reuse external networks/volumes.
+
+services:
+  postgres:
+    image: postgres:16.15-bookworm
+    labels:
+      com.nomimumi.project: nomi-numi-shop
+      com.nomimumi.environment: ${NOMI_ENVIRONMENT:?NOMI_ENVIRONMENT is required}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:?POSTGRES_HOST_PORT is required}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - postgres_net
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  postgres_data:
+    labels:
+      com.nomimumi.project: nomi-numi-shop
+      com.nomimumi.environment: ${NOMI_ENVIRONMENT:?NOMI_ENVIRONMENT is required}
+
+networks:
+  postgres_net:
+    labels:
+      com.nomimumi.project: nomi-numi-shop
+      com.nomimumi.environment: ${NOMI_ENVIRONMENT:?NOMI_ENVIRONMENT is required}

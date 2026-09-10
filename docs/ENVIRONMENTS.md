@@ -57,6 +57,12 @@ Compose project:
 
 - nomi-numi-shop-dev
 
+Lifecycle helper:
+
+    pnpm db:dev:up
+    pnpm db:dev:status
+    pnpm db:dev:stop
+
 ## 4. Test / E2E environment
 
 Application:
@@ -75,6 +81,12 @@ Compose project:
 
 - nomi-numi-shop-test
 
+Lifecycle helper:
+
+    pnpm db:test:up
+    pnpm db:test:status
+    pnpm db:test:stop
+
 ## 5. Mailpit
 
 SMTP:
@@ -85,17 +97,28 @@ Web UI:
 
 - 127.0.0.1:18025
 
+Mailpit is reserved but not provisioned in Phase 1D.
+
 ## 6. Environment files
 
 Real environment values are never committed.
 
-Expected pattern later:
+Phase 1D local database credentials:
 
-- .env.example
+- ignored `var/docker/dev.env`
+- ignored `var/docker/test.env`
+
+Generated once by `scripts/db-local.sh`, reused on subsequent starts,
+different between development and test, and never printed by normal
+lifecycle commands.
+
+Expected pattern later for application secrets:
+
+- `.env.example`
 - ignored local development environment
 - ignored local test environment
 
-Production secrets are outside Phase 0.
+Production secrets are outside the current phase.
 
 ## 7. Local network exposure
 
@@ -108,6 +131,11 @@ unless an explicitly approved requirement needs wider network exposure.
 Development PostgreSQL and Mailpit must not be exposed on 0.0.0.0 by
 default.
 
+PostgreSQL host ports bind only as:
+
+- `127.0.0.1:55432`
+- `127.0.0.1:55433`
+
 ## 8. Protected external database
 
 Existing container:
@@ -119,6 +147,9 @@ Existing host port:
 - 5433
 
 This resource does not belong to nomi-numi-shop.
+
+Unknown Docker resources are protected. Ownership must be proven before
+mutation.
 
 See:
 
