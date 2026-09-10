@@ -5,17 +5,17 @@ store.
 
 ## Current phase
 
-Phase 1B — Testing & Local Development Foundation
+Phase 1C — Storefront Design System & Public Shell
 
-Phase 0 and Phase 1A are complete. The minimal Next.js application
-foundation now includes reproducible Vitest unit testing and Playwright
-Chromium E2E smoke testing alongside App Router, TypeScript, Tailwind,
-ESLint, and Prettier.
+Phase 0, Phase 1A, and Phase 1B are complete. The application now includes
+a public storefront shell with design tokens, typography, responsive
+header/footer layout primitives, a polished homepage, and shadcn/ui Button
+foundation, plus Vitest unit testing and Playwright Chromium E2E coverage.
 
 Ecommerce and domain functionality have not been implemented yet.
-Databases, authentication, payments, shipping, admin, catalog, and
-other business modules remain future phases. Production infrastructure
-and real external integrations remain deferred.
+Databases, authentication, payments, shipping, admin, catalog, cart,
+checkout, and other business modules remain future phases. Production
+infrastructure and real external integrations remain deferred.
 
 ## Initial business scope
 

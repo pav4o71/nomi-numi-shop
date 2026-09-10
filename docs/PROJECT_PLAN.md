@@ -364,6 +364,12 @@ Safe repository and environment foundation.
 
 Application skeleton and quality tooling.
 
+Phase 1 is delivered in smaller reviewed steps. Phase 1C establishes the
+public storefront design system and shell (tokens, typography, header,
+footer, homepage, and minimal shadcn/ui foundation). Catalog backend,
+database, authentication, cart, checkout, and payments remain later
+phases.
+
 ### Phase 2
 
 Database and authentication foundation.

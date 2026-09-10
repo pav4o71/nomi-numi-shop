@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Nomi Numi">
+  <rect width="32" height="32" rx="8" fill="#8a4557"/>
+  <path
+    fill="#fff8f6"
+    d="M9.2 23.2V8.8h3.1l5.4 9.5V8.8h3.1v14.4h-3.1l-5.4-9.5v9.5H9.2z"
+  />
+</svg>
