@@ -12,11 +12,23 @@ set -Eeuo pipefail
 #
 # Fixed allowlist only. No arbitrary project names, ports,
 # databases, compose files, or SQL from the caller.
+#
+# Compose interpolation variables controlled by this helper:
+#   NOMI_ENVIRONMENT
+#   POSTGRES_HOST_PORT
+#   POSTGRES_DB
+#   POSTGRES_USER
+#   POSTGRES_PASSWORD
+# Ambient shell values for these must never win over validated state.
 
 EXPECTED_ROOT="/home/pav4o71/Projects/nomi-numi-shop"
 COMPOSE_FILE="${EXPECTED_ROOT}/infra/docker/postgres.compose.yml"
 PROTECTED_HOST_PORT="5433"
 OWNED_PROJECT_LABEL="nomi-numi-shop"
+COMPOSE_SERVICE_NAME="postgres"
+PASSWORD_BYTE_LENGTH="32"
+# base64url encoding of 32 bytes is 43 characters without padding.
+PASSWORD_EXPECTED_LENGTH="43"
 
 ENV_ID="${1:-}"
 ACTION="${2:-}"
@@ -63,6 +75,33 @@ require_repo_root() {
   if [[ ! -f "$COMPOSE_FILE" ]]; then
     fail "Compose file missing: ${COMPOSE_FILE}"
   fi
+
+  if [[ -L "$COMPOSE_FILE" ]]; then
+    fail "Compose file must not be a symlink: ${COMPOSE_FILE}"
+  fi
+}
+
+validate_cli_arguments() {
+  if [[ -z "$ENV_ID" || -z "$ACTION" ]]; then
+    usage
+    fail "environment and action are required"
+  fi
+
+  case "$ACTION" in
+    up | stop | status) ;;
+    *)
+      usage
+      fail "unsupported action '${ACTION}'"
+      ;;
+  esac
+
+  case "$ENV_ID" in
+    dev | test) ;;
+    *)
+      usage
+      fail "unsupported environment '${ENV_ID}' (only 'dev' or 'test')"
+      ;;
+  esac
 }
 
 resolve_environment() {
@@ -71,12 +110,14 @@ resolve_environment() {
       COMPOSE_PROJECT="nomi-numi-shop-dev"
       HOST_PORT="55432"
       DATABASE_NAME="nomi_numi_shop_dev"
+      EXPECTED_USER="nomi_numi_dev"
       ENV_FILE="${EXPECTED_ROOT}/var/docker/dev.env"
       ;;
     test)
       COMPOSE_PROJECT="nomi-numi-shop-test"
       HOST_PORT="55433"
       DATABASE_NAME="nomi_numi_shop_test"
+      EXPECTED_USER="nomi_numi_test"
       ENV_FILE="${EXPECTED_ROOT}/var/docker/test.env"
       ;;
     *)
@@ -84,6 +125,59 @@ resolve_environment() {
       fail "unsupported environment '${ENV_ID:-}' (only 'dev' or 'test')"
       ;;
   esac
+
+  # Deterministic Compose v2 resource names for -p <project>.
+  EXPECTED_CONTAINER="${COMPOSE_PROJECT}-${COMPOSE_SERVICE_NAME}-1"
+  EXPECTED_VOLUME="${COMPOSE_PROJECT}_postgres_data"
+  EXPECTED_NETWORK="${COMPOSE_PROJECT}_postgres_net"
+  CREDENTIAL_DIR="${EXPECTED_ROOT}/var/docker"
+  VAR_DIR="${EXPECTED_ROOT}/var"
+}
+
+path_is_under_expected_root() {
+  local candidate_path="$1"
+
+  if [[ "$candidate_path" == "$EXPECTED_ROOT" ]]; then
+    return 0
+  fi
+
+  if [[ "$candidate_path" == "$EXPECTED_ROOT"/* ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+reject_symlink() {
+  local target_path="$1"
+
+  if [[ -L "$target_path" ]]; then
+    fail "refusing symlink path (fail closed): ${target_path}"
+  fi
+}
+
+require_existing_directory() {
+  local target_path="$1"
+
+  reject_symlink "$target_path"
+
+  if [[ ! -d "$target_path" ]]; then
+    fail "expected directory is missing or not a directory: ${target_path}"
+  fi
+}
+
+require_canonical_under_root() {
+  local target_path="$1"
+  local resolved_path
+
+  resolved_path="$(realpath -e "$target_path" 2>/dev/null || true)"
+  if [[ -z "$resolved_path" ]]; then
+    fail "unable to resolve canonical path for: ${target_path}"
+  fi
+
+  if ! path_is_under_expected_root "$resolved_path"; then
+    fail "path resolves outside canonical repository: ${target_path}"
+  fi
 }
 
 require_path_mode() {
@@ -101,50 +195,164 @@ require_path_mode() {
   fi
 }
 
-ensure_credentials() {
-  local generated_password
-  local postgres_user
-  local docker_dir="${EXPECTED_ROOT}/var/docker"
+require_owned_by_current_user() {
+  local target_path="$1"
+  local actual_uid
+  local expected_uid
+
+  expected_uid="$(id -u)"
+  actual_uid="$(stat -c '%u' "$target_path")"
+
+  if [[ "$actual_uid" != "$expected_uid" ]]; then
+    fail "unsafe ownership on ${target_path}: uid ${actual_uid}, expected ${expected_uid}"
+  fi
+}
+
+validate_password_format() {
+  local candidate_password="$1"
+
+  if [[ ${#candidate_password} -ne "$PASSWORD_EXPECTED_LENGTH" ]]; then
+    fail "POSTGRES_PASSWORD length must be ${PASSWORD_EXPECTED_LENGTH} (base64url of ${PASSWORD_BYTE_LENGTH} bytes)"
+  fi
+
+  if [[ ! "$candidate_password" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    fail "POSTGRES_PASSWORD must match the base64url generator character set"
+  fi
+}
+
+validate_var_parent_directory() {
+  if [[ -e "$VAR_DIR" || -L "$VAR_DIR" ]]; then
+    reject_symlink "$VAR_DIR"
+    require_existing_directory "$VAR_DIR"
+    require_canonical_under_root "$VAR_DIR"
+  fi
+}
+
+ensure_credential_directory() {
   local previous_umask
 
-  previous_umask="$(umask)"
-  umask 077
-  mkdir -p "$docker_dir"
-  umask "$previous_umask"
+  validate_var_parent_directory
 
-  chmod 700 "$docker_dir"
-  require_path_mode "$docker_dir" "700"
-
-  if [[ -f "$ENV_FILE" ]]; then
-    # Do not rotate/regenerate existing credentials. Require safe mode.
-    require_path_mode "$ENV_FILE" "600"
+  if [[ -e "$CREDENTIAL_DIR" || -L "$CREDENTIAL_DIR" ]]; then
+    reject_symlink "$CREDENTIAL_DIR"
+    require_existing_directory "$CREDENTIAL_DIR"
+    require_canonical_under_root "$CREDENTIAL_DIR"
+    # Existing directory: refuse unsafe mode; do not silently repair.
+    require_path_mode "$CREDENTIAL_DIR" "700"
+    require_owned_by_current_user "$CREDENTIAL_DIR"
     return 0
   fi
 
-  postgres_user="nomi_numi_${ENV_ID}"
-  generated_password="$(
-    node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64url'))"
-  )"
-
-  if [[ -z "$generated_password" || ${#generated_password} -lt 32 ]]; then
-    fail "failed to generate a secure local database password"
-  fi
-
   previous_umask="$(umask)"
   umask 077
-  cat >"$ENV_FILE" <<EOF
-# Generated local-only credentials for nomi-numi-shop (${ENV_ID}).
-# Do not commit. Do not reuse outside this repository.
-NOMI_ENVIRONMENT=${ENV_ID}
-POSTGRES_HOST_PORT=${HOST_PORT}
-POSTGRES_DB=${DATABASE_NAME}
-POSTGRES_USER=${postgres_user}
-POSTGRES_PASSWORD=${generated_password}
-EOF
+  mkdir -p "$CREDENTIAL_DIR"
   umask "$previous_umask"
 
-  chmod 600 "$ENV_FILE"
+  reject_symlink "$CREDENTIAL_DIR"
+  require_existing_directory "$CREDENTIAL_DIR"
+  require_canonical_under_root "$CREDENTIAL_DIR"
+  require_path_mode "$CREDENTIAL_DIR" "700"
+  require_owned_by_current_user "$CREDENTIAL_DIR"
+}
+
+create_credential_file_exclusively() {
+  local generated_password="$1"
+  local write_status
+
+  # Exclusive create (O_CREAT|O_EXCL via Node 'wx') avoids following a
+  # pre-existing symlink and refuses to overwrite an unexpected file.
+  set +e
+  NOMI_CRED_PATH="$ENV_FILE" node - "$generated_password" <<'NODE'
+const fs = require("fs");
+const filePath = process.env.NOMI_CRED_PATH;
+const password = process.argv[2];
+const envId = process.env.NOMI_ENVIRONMENT;
+const hostPort = process.env.POSTGRES_HOST_PORT;
+const databaseName = process.env.POSTGRES_DB;
+const postgresUser = process.env.POSTGRES_USER;
+
+if (!filePath || !password || !envId || !hostPort || !databaseName || !postgresUser) {
+  process.stderr.write("missing credential creation inputs\n");
+  process.exit(1);
+}
+
+const contents =
+  `# Generated local-only credentials for nomi-numi-shop (${envId}).\n` +
+  `# Do not commit. Do not reuse outside this repository.\n` +
+  `NOMI_ENVIRONMENT=${envId}\n` +
+  `POSTGRES_HOST_PORT=${hostPort}\n` +
+  `POSTGRES_DB=${databaseName}\n` +
+  `POSTGRES_USER=${postgresUser}\n` +
+  `POSTGRES_PASSWORD=${password}\n`;
+
+let fd;
+try {
+  fd = fs.openSync(filePath, "wx", 0o600);
+  fs.writeFileSync(fd, contents);
+} catch (error) {
+  if (error && error.code === "EEXIST") {
+    process.exit(2);
+  }
+  process.stderr.write("credential file creation failed\n");
+  process.exit(1);
+} finally {
+  if (fd !== undefined) {
+    fs.closeSync(fd);
+  }
+}
+NODE
+  write_status=$?
+  set -e
+
+  if [[ "$write_status" -eq 2 ]]; then
+    fail "credential file unexpectedly already exists: ${ENV_FILE}"
+  fi
+
+  if [[ "$write_status" -ne 0 ]]; then
+    fail "failed to create credential file exclusively: ${ENV_FILE}"
+  fi
+}
+
+ensure_credentials() {
+  local generated_password
+
+  ensure_credential_directory
+
+  if [[ -e "$ENV_FILE" || -L "$ENV_FILE" ]]; then
+    reject_symlink "$ENV_FILE"
+
+    if [[ ! -f "$ENV_FILE" ]]; then
+      fail "credential path exists but is not a regular file: ${ENV_FILE}"
+    fi
+
+    require_canonical_under_root "$ENV_FILE"
+    # Existing file: refuse unsafe mode; do not silently repair.
+    require_path_mode "$ENV_FILE" "600"
+    require_owned_by_current_user "$ENV_FILE"
+    return 0
+  fi
+
+  generated_password="$(
+    node -e "process.stdout.write(require('crypto').randomBytes(${PASSWORD_BYTE_LENGTH}).toString('base64url'))"
+  )"
+
+  validate_password_format "$generated_password"
+
+  # Provide fixed identity values to the exclusive writer via env.
+  # Shell ambient overrides are not trusted for these names.
+  NOMI_ENVIRONMENT="$ENV_ID" \
+    POSTGRES_HOST_PORT="$HOST_PORT" \
+    POSTGRES_DB="$DATABASE_NAME" \
+    POSTGRES_USER="$EXPECTED_USER" \
+    create_credential_file_exclusively "$generated_password"
+
+  reject_symlink "$ENV_FILE"
+  if [[ ! -f "$ENV_FILE" ]]; then
+    fail "credential file missing after exclusive create: ${ENV_FILE}"
+  fi
+  require_canonical_under_root "$ENV_FILE"
   require_path_mode "$ENV_FILE" "600"
+  require_owned_by_current_user "$ENV_FILE"
   info "Created ignored local credentials file for ${ENV_ID}."
 }
 
@@ -154,15 +362,22 @@ load_and_validate_credentials() {
   local loaded_db=""
   local loaded_user=""
   local loaded_password=""
+  local seen_environment=0
+  local seen_port=0
+  local seen_db=0
+  local seen_user=0
+  local seen_password=0
   local line
   local key
   local value
 
+  reject_symlink "$ENV_FILE"
   if [[ ! -f "$ENV_FILE" ]]; then
-    fail "credentials file missing: ${ENV_FILE}"
+    fail "credentials file missing or not a regular file: ${ENV_FILE}"
   fi
-
+  require_canonical_under_root "$ENV_FILE"
   require_path_mode "$ENV_FILE" "600"
+  require_owned_by_current_user "$ENV_FILE"
 
   if [[ ! -r "$ENV_FILE" ]]; then
     fail "credentials file is not readable: ${ENV_FILE}"
@@ -184,18 +399,38 @@ load_and_validate_credentials() {
 
     case "$key" in
       NOMI_ENVIRONMENT)
+        if [[ "$seen_environment" -eq 1 ]]; then
+          fail "duplicate key NOMI_ENVIRONMENT in ${ENV_FILE}"
+        fi
+        seen_environment=1
         loaded_environment="$value"
         ;;
       POSTGRES_HOST_PORT)
+        if [[ "$seen_port" -eq 1 ]]; then
+          fail "duplicate key POSTGRES_HOST_PORT in ${ENV_FILE}"
+        fi
+        seen_port=1
         loaded_port="$value"
         ;;
       POSTGRES_DB)
+        if [[ "$seen_db" -eq 1 ]]; then
+          fail "duplicate key POSTGRES_DB in ${ENV_FILE}"
+        fi
+        seen_db=1
         loaded_db="$value"
         ;;
       POSTGRES_USER)
+        if [[ "$seen_user" -eq 1 ]]; then
+          fail "duplicate key POSTGRES_USER in ${ENV_FILE}"
+        fi
+        seen_user=1
         loaded_user="$value"
         ;;
       POSTGRES_PASSWORD)
+        if [[ "$seen_password" -eq 1 ]]; then
+          fail "duplicate key POSTGRES_PASSWORD in ${ENV_FILE}"
+        fi
+        seen_password=1
         loaded_password="$value"
         ;;
       *)
@@ -203,6 +438,10 @@ load_and_validate_credentials() {
         ;;
     esac
   done <"$ENV_FILE"
+
+  if [[ "$seen_environment" -ne 1 || "$seen_port" -ne 1 || "$seen_db" -ne 1 || "$seen_user" -ne 1 || "$seen_password" -ne 1 ]]; then
+    fail "credentials file ${ENV_FILE} is missing one or more required keys"
+  fi
 
   if [[ "$loaded_environment" != "$ENV_ID" ]]; then
     fail "NOMI_ENVIRONMENT in ${ENV_FILE} must be '${ENV_ID}'"
@@ -220,23 +459,142 @@ load_and_validate_credentials() {
     fail "POSTGRES_DB in ${ENV_FILE} must be '${DATABASE_NAME}'"
   fi
 
-  if [[ -z "$loaded_user" ]]; then
-    fail "POSTGRES_USER is missing in ${ENV_FILE}"
+  if [[ "$loaded_user" != "$EXPECTED_USER" ]]; then
+    fail "POSTGRES_USER in ${ENV_FILE} must be '${EXPECTED_USER}'"
   fi
 
-  if [[ -z "$loaded_password" ]]; then
-    fail "POSTGRES_PASSWORD is missing in ${ENV_FILE}"
-  fi
+  validate_password_format "$loaded_password"
 
+  # Retained only for sanitized Compose child env; never printed.
+  VALIDATED_PASSWORD="$loaded_password"
   unset loaded_password
 }
 
 compose() {
-  docker compose \
+  # Docker Compose prefers ambient shell variables over --env-file.
+  # Force every project-controlled interpolation variable from validated
+  # helper state, and clear COMPOSE_* knobs that could swap file/project
+  # identity or naming compatibility.
+  env \
+    -u COMPOSE_FILE \
+    -u COMPOSE_PROJECT_NAME \
+    -u COMPOSE_PATH \
+    -u COMPOSE_ENV_FILES \
+    -u COMPOSE_PROFILES \
+    -u COMPOSE_COMPATIBILITY \
+    -u COMPOSE_IGNORE_ORPHANS \
+    -u COMPOSE_REMOVE_ORPHANS \
+    NOMI_ENVIRONMENT="$ENV_ID" \
+    POSTGRES_HOST_PORT="$HOST_PORT" \
+    POSTGRES_DB="$DATABASE_NAME" \
+    POSTGRES_USER="$EXPECTED_USER" \
+    POSTGRES_PASSWORD="$VALIDATED_PASSWORD" \
+    docker compose \
     -p "$COMPOSE_PROJECT" \
     --env-file "$ENV_FILE" \
     -f "$COMPOSE_FILE" \
     "$@"
+}
+
+container_label() {
+  local container_name="$1"
+  local label_key="$2"
+
+  docker inspect \
+    --format "{{index .Config.Labels \"${label_key}\"}}" \
+    "$container_name" 2>/dev/null || true
+}
+
+volume_label() {
+  local volume_name="$1"
+  local label_key="$2"
+
+  docker volume inspect \
+    --format "{{index .Labels \"${label_key}\"}}" \
+    "$volume_name" 2>/dev/null || true
+}
+
+network_label() {
+  local network_name="$1"
+  local label_key="$2"
+
+  docker network inspect \
+    --format "{{index .Labels \"${label_key}\"}}" \
+    "$network_name" 2>/dev/null || true
+}
+
+assert_owned_container_name() {
+  local container_name="$1"
+  local project_label
+  local service_label
+  local owned_project
+  local owned_environment
+
+  if ! docker inspect "$container_name" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  project_label="$(container_label "$container_name" "com.docker.compose.project")"
+  service_label="$(container_label "$container_name" "com.docker.compose.service")"
+  owned_project="$(container_label "$container_name" "com.nomimumi.project")"
+  owned_environment="$(container_label "$container_name" "com.nomimumi.environment")"
+
+  if [[ "$project_label" != "$COMPOSE_PROJECT" \
+    || "$service_label" != "$COMPOSE_SERVICE_NAME" \
+    || "$owned_project" != "$OWNED_PROJECT_LABEL" \
+    || "$owned_environment" != "$ENV_ID" ]]; then
+    fail "deterministic container name '${container_name}' exists with missing/foreign ownership; refusing to adopt"
+  fi
+}
+
+assert_owned_volume_name() {
+  local volume_name="$1"
+  local project_label
+  local owned_project
+  local owned_environment
+
+  if ! docker volume inspect "$volume_name" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  project_label="$(volume_label "$volume_name" "com.docker.compose.project")"
+  owned_project="$(volume_label "$volume_name" "com.nomimumi.project")"
+  owned_environment="$(volume_label "$volume_name" "com.nomimumi.environment")"
+
+  if [[ "$project_label" != "$COMPOSE_PROJECT" \
+    || "$owned_project" != "$OWNED_PROJECT_LABEL" \
+    || "$owned_environment" != "$ENV_ID" ]]; then
+    fail "deterministic volume name '${volume_name}' exists with missing/foreign ownership; refusing to adopt"
+  fi
+}
+
+assert_owned_network_name() {
+  local network_name="$1"
+  local project_label
+  local owned_project
+  local owned_environment
+
+  if ! docker network inspect "$network_name" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  project_label="$(network_label "$network_name" "com.docker.compose.project")"
+  owned_project="$(network_label "$network_name" "com.nomimumi.project")"
+  owned_environment="$(network_label "$network_name" "com.nomimumi.environment")"
+
+  if [[ "$project_label" != "$COMPOSE_PROJECT" \
+    || "$owned_project" != "$OWNED_PROJECT_LABEL" \
+    || "$owned_environment" != "$ENV_ID" ]]; then
+    fail "deterministic network name '${network_name}' exists with missing/foreign ownership; refusing to adopt"
+  fi
+}
+
+assert_deterministic_resources_safe() {
+  # Exact-name checks catch foreign/unlabelled collisions that label
+  # filters would miss before Compose can reuse them.
+  assert_owned_container_name "$EXPECTED_CONTAINER"
+  assert_owned_volume_name "$EXPECTED_VOLUME"
+  assert_owned_network_name "$EXPECTED_NETWORK"
 }
 
 resource_count_for_project() {
@@ -277,12 +635,18 @@ verify_resource_labels() {
   local project_label=""
   local owned_project=""
   local owned_environment=""
+  local service_label=""
 
   case "$resource_kind" in
     container)
       project_label="$(
         docker inspect \
           --format '{{index .Config.Labels "com.docker.compose.project"}}' \
+          "$resource_id" 2>/dev/null || true
+      )"
+      service_label="$(
+        docker inspect \
+          --format '{{index .Config.Labels "com.docker.compose.service"}}' \
           "$resource_id" 2>/dev/null || true
       )"
       owned_project="$(
@@ -295,6 +659,10 @@ verify_resource_labels() {
           --format '{{index .Config.Labels "com.nomimumi.environment"}}' \
           "$resource_id" 2>/dev/null || true
       )"
+
+      if [[ "$service_label" != "$COMPOSE_SERVICE_NAME" ]]; then
+        fail "ownership proof failed for container ${resource_id}: unexpected service '${service_label:-NONE}'"
+      fi
       ;;
     volume)
       project_label="$(
@@ -351,6 +719,8 @@ verify_resource_labels() {
 verify_project_ownership_or_absent() {
   local resource_id
   local found=0
+
+  assert_deterministic_resources_safe
 
   while IFS= read -r resource_id; do
     if [[ -z "$resource_id" ]]; then
@@ -476,6 +846,8 @@ action_stop() {
 
   count="$(resource_count_for_project)"
   if [[ "$count" -eq 0 ]]; then
+    # Still reject exact-name foreign collisions before any Compose call.
+    assert_deterministic_resources_safe
     info "No ${COMPOSE_PROJECT} resources present; nothing to stop."
     return 0
   fi
@@ -502,6 +874,7 @@ action_status() {
 
   count="$(resource_count_for_project)"
   if [[ "$count" -eq 0 ]]; then
+    assert_deterministic_resources_safe
     info "status: ${COMPOSE_PROJECT} has no containers/volumes yet"
     return 0
   fi
@@ -512,12 +885,8 @@ action_status() {
 
 main() {
   require_repo_root
-
-  if [[ -z "$ENV_ID" || -z "$ACTION" ]]; then
-    usage
-    fail "environment and action are required"
-  fi
-
+  # Reject invalid env/action before any credential filesystem mutation.
+  validate_cli_arguments
   resolve_environment
   ensure_credentials
   load_and_validate_credentials
