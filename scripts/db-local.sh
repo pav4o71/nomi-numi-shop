@@ -26,6 +26,10 @@ COMPOSE_FILE="${EXPECTED_ROOT}/infra/docker/postgres.compose.yml"
 PROTECTED_HOST_PORT="5433"
 OWNED_PROJECT_LABEL="nomi-numi-shop"
 COMPOSE_SERVICE_NAME="postgres"
+# Logical Compose resource names from postgres.compose.yml (verified on
+# retained Nomi volumes/networks via com.docker.compose.volume/network).
+EXPECTED_COMPOSE_VOLUME="postgres_data"
+EXPECTED_COMPOSE_NETWORK="postgres_net"
 PASSWORD_BYTE_LENGTH="32"
 # base64url encoding of 32 bytes is 43 characters without padding.
 PASSWORD_EXPECTED_LENGTH="43"
@@ -256,23 +260,53 @@ ensure_credential_directory() {
 }
 
 create_credential_file_exclusively() {
-  local generated_password="$1"
   local write_status
 
-  # Exclusive create (O_CREAT|O_EXCL via Node 'wx') avoids following a
+  # Password is generated INSIDE Node and written directly to the exclusive
+  # credential file. It never enters shell variables, argv, or stdout.
+  # Exclusive create (O_CREAT|O_EXCL via Node 'wx') also avoids following a
   # pre-existing symlink and refuses to overwrite an unexpected file.
   set +e
-  NOMI_CRED_PATH="$ENV_FILE" node - "$generated_password" <<'NODE'
+  NOMI_CRED_PATH="$ENV_FILE" \
+    NOMI_ENVIRONMENT="$ENV_ID" \
+    POSTGRES_HOST_PORT="$HOST_PORT" \
+    POSTGRES_DB="$DATABASE_NAME" \
+    POSTGRES_USER="$EXPECTED_USER" \
+    NOMI_PASSWORD_BYTES="$PASSWORD_BYTE_LENGTH" \
+    NOMI_PASSWORD_LENGTH="$PASSWORD_EXPECTED_LENGTH" \
+    node <<'NODE'
+const crypto = require("crypto");
 const fs = require("fs");
+
 const filePath = process.env.NOMI_CRED_PATH;
-const password = process.argv[2];
 const envId = process.env.NOMI_ENVIRONMENT;
 const hostPort = process.env.POSTGRES_HOST_PORT;
 const databaseName = process.env.POSTGRES_DB;
 const postgresUser = process.env.POSTGRES_USER;
+const passwordBytes = Number(process.env.NOMI_PASSWORD_BYTES);
+const passwordLength = Number(process.env.NOMI_PASSWORD_LENGTH);
 
-if (!filePath || !password || !envId || !hostPort || !databaseName || !postgresUser) {
+if (
+  !filePath ||
+  !envId ||
+  !hostPort ||
+  !databaseName ||
+  !postgresUser ||
+  !Number.isInteger(passwordBytes) ||
+  passwordBytes <= 0 ||
+  !Number.isInteger(passwordLength) ||
+  passwordLength <= 0
+) {
   process.stderr.write("missing credential creation inputs\n");
+  process.exit(1);
+}
+
+const password = crypto.randomBytes(passwordBytes).toString("base64url");
+if (
+  password.length !== passwordLength ||
+  !/^[A-Za-z0-9_-]+$/.test(password)
+) {
+  process.stderr.write("generated password failed contract checks\n");
   process.exit(1);
 }
 
@@ -314,8 +348,6 @@ NODE
 }
 
 ensure_credentials() {
-  local generated_password
-
   ensure_credential_directory
 
   if [[ -e "$ENV_FILE" || -L "$ENV_FILE" ]]; then
@@ -332,19 +364,8 @@ ensure_credentials() {
     return 0
   fi
 
-  generated_password="$(
-    node -e "process.stdout.write(require('crypto').randomBytes(${PASSWORD_BYTE_LENGTH}).toString('base64url'))"
-  )"
-
-  validate_password_format "$generated_password"
-
-  # Provide fixed identity values to the exclusive writer via env.
-  # Shell ambient overrides are not trusted for these names.
-  NOMI_ENVIRONMENT="$ENV_ID" \
-    POSTGRES_HOST_PORT="$HOST_PORT" \
-    POSTGRES_DB="$DATABASE_NAME" \
-    POSTGRES_USER="$EXPECTED_USER" \
-    create_credential_file_exclusively "$generated_password"
+  # Non-secret fixed identity only. Password stays inside Node.
+  create_credential_file_exclusively
 
   reject_symlink "$ENV_FILE"
   if [[ ! -f "$ENV_FILE" ]]; then
@@ -550,6 +571,7 @@ assert_owned_container_name() {
 assert_owned_volume_name() {
   local volume_name="$1"
   local project_label
+  local compose_volume_label
   local owned_project
   local owned_environment
 
@@ -558,10 +580,12 @@ assert_owned_volume_name() {
   fi
 
   project_label="$(volume_label "$volume_name" "com.docker.compose.project")"
+  compose_volume_label="$(volume_label "$volume_name" "com.docker.compose.volume")"
   owned_project="$(volume_label "$volume_name" "com.nomimumi.project")"
   owned_environment="$(volume_label "$volume_name" "com.nomimumi.environment")"
 
   if [[ "$project_label" != "$COMPOSE_PROJECT" \
+    || "$compose_volume_label" != "$EXPECTED_COMPOSE_VOLUME" \
     || "$owned_project" != "$OWNED_PROJECT_LABEL" \
     || "$owned_environment" != "$ENV_ID" ]]; then
     fail "deterministic volume name '${volume_name}' exists with missing/foreign ownership; refusing to adopt"
@@ -571,6 +595,7 @@ assert_owned_volume_name() {
 assert_owned_network_name() {
   local network_name="$1"
   local project_label
+  local compose_network_label
   local owned_project
   local owned_environment
 
@@ -579,10 +604,12 @@ assert_owned_network_name() {
   fi
 
   project_label="$(network_label "$network_name" "com.docker.compose.project")"
+  compose_network_label="$(network_label "$network_name" "com.docker.compose.network")"
   owned_project="$(network_label "$network_name" "com.nomimumi.project")"
   owned_environment="$(network_label "$network_name" "com.nomimumi.environment")"
 
   if [[ "$project_label" != "$COMPOSE_PROJECT" \
+    || "$compose_network_label" != "$EXPECTED_COMPOSE_NETWORK" \
     || "$owned_project" != "$OWNED_PROJECT_LABEL" \
     || "$owned_environment" != "$ENV_ID" ]]; then
     fail "deterministic network name '${network_name}' exists with missing/foreign ownership; refusing to adopt"
@@ -636,6 +663,8 @@ verify_resource_labels() {
   local owned_project=""
   local owned_environment=""
   local service_label=""
+  local compose_volume_label=""
+  local compose_network_label=""
 
   case "$resource_kind" in
     container)
@@ -670,6 +699,11 @@ verify_resource_labels() {
           --format '{{index .Labels "com.docker.compose.project"}}' \
           "$resource_id" 2>/dev/null || true
       )"
+      compose_volume_label="$(
+        docker volume inspect \
+          --format '{{index .Labels "com.docker.compose.volume"}}' \
+          "$resource_id" 2>/dev/null || true
+      )"
       owned_project="$(
         docker volume inspect \
           --format '{{index .Labels "com.nomimumi.project"}}' \
@@ -680,6 +714,10 @@ verify_resource_labels() {
           --format '{{index .Labels "com.nomimumi.environment"}}' \
           "$resource_id" 2>/dev/null || true
       )"
+
+      if [[ "$compose_volume_label" != "$EXPECTED_COMPOSE_VOLUME" ]]; then
+        fail "ownership proof failed for volume ${resource_id}: unexpected Compose volume '${compose_volume_label:-NONE}'"
+      fi
       ;;
     network)
       project_label="$(
@@ -687,6 +725,11 @@ verify_resource_labels() {
           --format '{{index .Labels "com.docker.compose.project"}}' \
           "$resource_id" 2>/dev/null || true
       )"
+      compose_network_label="$(
+        docker network inspect \
+          --format '{{index .Labels "com.docker.compose.network"}}' \
+          "$resource_id" 2>/dev/null || true
+      )"
       owned_project="$(
         docker network inspect \
           --format '{{index .Labels "com.nomimumi.project"}}' \
@@ -697,6 +740,10 @@ verify_resource_labels() {
           --format '{{index .Labels "com.nomimumi.environment"}}' \
           "$resource_id" 2>/dev/null || true
       )"
+
+      if [[ "$compose_network_label" != "$EXPECTED_COMPOSE_NETWORK" ]]; then
+        fail "ownership proof failed for network ${resource_id}: unexpected Compose network '${compose_network_label:-NONE}'"
+      fi
       ;;
     *)
       fail "unknown resource kind for ownership proof: ${resource_kind}"
