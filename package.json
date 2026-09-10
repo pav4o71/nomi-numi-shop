@@ -8,12 +8,18 @@
   },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3100",
+    "dev:e2e": "next dev --hostname 127.0.0.1 --port 3101",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 3100",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "mkdir -p var/tmp && TMPDIR=var/tmp vitest run",
+    "test:watch": "mkdir -p var/tmp && TMPDIR=var/tmp vitest",
+    "test:e2e": "mkdir -p var/playwright-browsers var/tmp && PLAYWRIGHT_BROWSERS_PATH=var/playwright-browsers TMPDIR=var/tmp playwright test",
+    "test:e2e:install": "mkdir -p var/playwright-browsers var/tmp && PLAYWRIGHT_BROWSERS_PATH=var/playwright-browsers TMPDIR=var/tmp playwright install chromium",
+    "test:all": "pnpm test && pnpm test:e2e"
   },
   "dependencies": {
     "next": "16.3.4",
@@ -21,6 +27,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
@@ -30,6 +37,7 @@
     "postcss": "8.5.28",
     "prettier": "3.9.6",
     "tailwindcss": "4.3.3",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "5.0.0"
   }
 }

@@ -1,16 +1,37 @@
-# Nomi Numi Shop — Testing Baseline
+# Nomi Numi Shop — Testing Foundation
 
-## 1. Planned tooling
+## 1. Tooling
 
-Unit/integration testing:
+Vitest runs fast foundation and unit tests in a Node environment. Tests
+live under:
 
-- Vitest
+- `tests/unit/`
 
-End-to-end testing:
+Playwright runs browser-level smoke tests against the application. E2E
+tests live under:
 
-- Playwright
+- `tests/e2e/`
 
-## 2. Environment isolation
+The current E2E scope uses Chromium only.
+
+## 2. Commands
+
+Install the project-local Chromium browser once:
+
+    pnpm test:e2e:install
+
+Run the available test commands:
+
+    pnpm test
+    pnpm test:watch
+    pnpm test:e2e
+    pnpm test:all
+
+Playwright browser binaries are stored under the ignored
+`var/playwright-browsers/` directory. Playwright temporary files use the
+ignored `var/tmp/` directory.
+
+## 3. Environment isolation
 
 Development application:
 
@@ -34,7 +55,11 @@ Data-mutating automated tests must use the test database.
 
 They must never reset or truncate the development database.
 
-## 3. Determinism
+Playwright starts the application through `pnpm dev:e2e` on
+`127.0.0.1:3101`. It must never reuse an unknown process already
+listening on port 3101.
+
+## 4. Determinism
 
 Automated tests should avoid unnecessary reliance on:
 
@@ -46,7 +71,7 @@ Automated tests should avoid unnecessary reliance on:
 
 Seed and test data should be deterministic where practical.
 
-## 4. Quality gate
+## 5. Quality gate
 
 As implementation develops, the standard validation pipeline should
 include:
@@ -60,11 +85,9 @@ include:
 7. production build
 8. Git diff/status review
 
-During Phase 0 many of these commands do not exist.
-
 Never report a validation as passing unless it actually ran.
 
-## 5. Critical commerce coverage
+## 6. Critical commerce coverage
 
 High-risk behavior requiring strong coverage includes:
 
@@ -85,7 +108,7 @@ High-risk behavior requiring strong coverage includes:
 - payment-state transitions
 - fulfillment-state transitions
 
-## 6. Authorization coverage
+## 7. Authorization coverage
 
 Test:
 
@@ -98,7 +121,7 @@ Test:
 - review mutation
 - custom-video access
 
-## 7. Review coverage
+## 8. Review coverage
 
 Test:
 
@@ -109,7 +132,7 @@ Test:
 - image validation
 - moderation authorization
 
-## 8. Upload coverage
+## 9. Upload coverage
 
 Test:
 
@@ -120,14 +143,14 @@ Test:
 - unauthorized private-media access
 - cross-customer custom-video access
 
-## 9. E2E application identity
+## 10. E2E application identity
 
 Before stateful E2E execution, the test harness should eventually verify
 that port 3101 is actually serving nomi-numi-shop.
 
 Never silently fall back to port 3000 or another running project.
 
-## 10. Regression policy
+## 11. Regression policy
 
 Reproducible defects should receive regression coverage where practical.
 
