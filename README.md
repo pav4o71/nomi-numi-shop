@@ -5,17 +5,17 @@ store.
 
 ## Current phase
 
-Phase 1C — Storefront Design System & Public Shell
+Phase 1D — Isolated Local PostgreSQL Infrastructure
 
-Phase 0, Phase 1A, and Phase 1B are complete. The application now includes
-a public storefront shell with design tokens, typography, responsive
-header/footer layout primitives, a polished homepage, and shadcn/ui Button
-foundation, plus Vitest unit testing and Playwright Chromium E2E coverage.
+Phase 0 through Phase 1C are complete. The repository now also includes
+isolated local PostgreSQL environments for development and testing via
+Docker Compose, guarded lifecycle helpers, and ignored local credentials
+under `var/docker/`.
 
-Ecommerce and domain functionality have not been implemented yet.
-Databases, authentication, payments, shipping, admin, catalog, cart,
-checkout, and other business modules remain future phases. Production
-infrastructure and real external integrations remain deferred.
+The Next.js application still has no database client, schema, migrations,
+or `DATABASE_URL` wiring. Drizzle ORM arrives in Phase 1E. Authentication,
+catalog, cart, checkout, payments, shipping, admin, and production
+infrastructure remain later phases.
 
 ## Initial business scope
 
@@ -94,6 +94,34 @@ Cursor project rules:
 Bugbot review rules:
 
 - .cursor/BUGBOT.md
+
+## Local PostgreSQL (Phase 1D)
+
+Development:
+
+- Compose project: `nomi-numi-shop-dev`
+- Host: `127.0.0.1:55432`
+- Database: `nomi_numi_shop_dev`
+
+Test:
+
+- Compose project: `nomi-numi-shop-test`
+- Host: `127.0.0.1:55433`
+- Database: `nomi_numi_shop_test`
+
+Commands:
+
+    pnpm db:dev:up
+    pnpm db:dev:status
+    pnpm db:dev:stop
+    pnpm db:test:up
+    pnpm db:test:status
+    pnpm db:test:stop
+
+Local credentials are generated once under ignored `var/docker/` and must
+never be committed. Stopping containers preserves environment-specific
+named volumes. Host port `5433` belongs to another project and must not
+be used. Unknown Docker resources remain protected.
 
 ## Preflight
 

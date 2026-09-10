@@ -6,15 +6,23 @@ Database:
 
 - PostgreSQL 16
 
-ORM:
+ORM (planned for Phase 1E):
 
 - Drizzle ORM
 
-Schema evolution:
+Schema evolution (planned after Phase 1D):
 
 - reviewed migrations
 
+Phase 1D establishes isolated local PostgreSQL containers only. The
+application does not yet include a database client, schema, migrations,
+or `DATABASE_URL` wiring.
+
 ## 2. Development database
+
+Compose project:
+
+- nomi-numi-shop-dev
 
 Host:
 
@@ -28,7 +36,17 @@ Database:
 
 - nomi_numi_shop_dev
 
+Lifecycle:
+
+    pnpm db:dev:up
+    pnpm db:dev:status
+    pnpm db:dev:stop
+
 ## 3. Test database
+
+Compose project:
+
+- nomi-numi-shop-test
 
 Host:
 
@@ -42,23 +60,46 @@ Database:
 
 - nomi_numi_shop_test
 
-Development and test data must remain isolated.
+Lifecycle:
 
-## 4. Protected external database
+    pnpm db:test:up
+    pnpm db:test:status
+    pnpm db:test:stop
+
+Development and test data must remain isolated. They use separate Compose
+projects, named volumes, database names, and local credentials.
+
+## 4. Local credentials and persistence
+
+Credentials are generated once under ignored local files:
+
+- `var/docker/dev.env`
+- `var/docker/test.env`
+
+Passwords must never be committed or pasted into documentation.
+
+PostgreSQL data uses environment-specific Docker named volumes. Stopping
+containers preserves persistent data. Destructive reset/remove tooling is
+intentionally deferred.
+
+## 5. Protected external database
 
 Host port:
 
 - 5433
 
-belongs to another project.
+belongs to another project (`beautybook3-pg`).
 
 Webshop tooling must never use that port as its database target.
+
+Unknown Docker containers, networks, and volumes are protected resources.
+Prove ownership before mutation.
 
 See:
 
 - docs/PROTECTED_RESOURCES.md
 
-## 5. Naming convention
+## 6. Naming convention
 
 Use one consistent PostgreSQL naming convention.
 
@@ -71,7 +112,7 @@ Recommended:
 
 Do not casually mix naming styles.
 
-## 6. Time
+## 7. Time
 
 Persist authoritative timestamps in UTC.
 
@@ -80,7 +121,7 @@ timezone.
 
 Do not store ambiguous local timestamps for commerce events.
 
-## 7. Conceptual schema domains
+## 8. Conceptual schema domains
 
 Authentication:
 
@@ -154,11 +195,10 @@ Custom video:
 - custom_video_requests
 - private_media_metadata
 
-These names are conceptual during Phase 0.
+These names are conceptual. Actual table design is reviewed during the
+corresponding schema phase. Phase 1D does not create product schema.
 
-Actual table design is reviewed during the corresponding schema phase.
-
-## 8. Core database invariants
+## 9. Core database invariants
 
 Schema design must protect:
 
@@ -173,7 +213,7 @@ Schema design must protect:
 - private media ownership
 - historical order integrity
 
-## 9. Historical orders
+## 10. Historical orders
 
 Historical order items must not depend on mutable catalog data to
 reconstruct the commercial purchase.
@@ -183,7 +223,7 @@ history.
 
 Editing or archiving a catalog item must not rewrite historical orders.
 
-## 10. Product deletion
+## 11. Product deletion
 
 Products/variants referenced by commerce history should normally be:
 
@@ -195,7 +235,7 @@ rather than hard deleted.
 
 Hard deletion must never destroy required historical order data.
 
-## 11. Inventory integrity
+## 12. Inventory integrity
 
 Inventory-changing operations must be auditable.
 
@@ -204,7 +244,7 @@ Concurrency controls must prevent overselling.
 Critical inventory/order operations should use atomic SQL and database
 transactions where appropriate.
 
-## 12. Foreign keys and deletion behavior
+## 13. Foreign keys and deletion behavior
 
 Cascade deletion must be chosen deliberately.
 
@@ -219,7 +259,7 @@ Particular caution is required for:
 - inventory movements
 - audit history
 
-## 13. Migrations
+## 14. Migrations
 
 Before database mutation verify:
 

@@ -362,13 +362,20 @@ Safe repository and environment foundation.
 
 ### Phase 1
 
-Application skeleton and quality tooling.
+Application skeleton, quality tooling, storefront shell, and isolated
+local PostgreSQL infrastructure.
 
-Phase 1 is delivered in smaller reviewed steps. Phase 1C establishes the
-public storefront design system and shell (tokens, typography, header,
-footer, homepage, and minimal shadcn/ui foundation). Catalog backend,
-database, authentication, cart, checkout, and payments remain later
-phases.
+Phase 1 is delivered in smaller reviewed steps:
+
+- Phase 1A — Next.js application foundation
+- Phase 1B — testing foundation
+- Phase 1C — storefront design system and public shell
+- Phase 1D — isolated local PostgreSQL infrastructure
+- Phase 1E — Drizzle ORM foundation (planned; not started)
+
+Phase 1D provides Docker Compose PostgreSQL for development and test
+only. It does not introduce Drizzle, schema migrations, application
+database clients, authentication, catalog, cart, checkout, or payments.
 
 ### Phase 2
 
