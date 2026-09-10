@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { Container } from "@/components/container";
 import { siteNavigation } from "@/lib/site-navigation";
 
@@ -18,13 +16,13 @@ export function SiteFooter() {
 
         <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
           {siteNavigation.map((item) => (
-            <Link
+            <a
               key={item.href}
               href={item.href}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               {item.label}
-            </Link>
+            </a>
           ))}
         </nav>
       </Container>
