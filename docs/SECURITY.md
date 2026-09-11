@@ -9,14 +9,15 @@ Authentication library:
 - Better Auth `1.7.3`
 - `@better-auth/drizzle-adapter` `1.7.3`
 
-Phase 2A foundation status:
+Phase 2A/2B foundation status:
 
 - server instance and `/api/auth/*` route exist
 - core auth tables are migrated through Drizzle
+- Phase 2B adds server-owned `user.role` (`customer` | `admin`)
 - local runtime requires ignored `.env.local` with
   `BETTER_AUTH_SECRET` (>= 32 chars), explicit `BETTER_AUTH_URL`
   (`http://127.0.0.1:3100`), and DEV-only `DATABASE_URL`
-- email/password, social providers, plugins, roles, and auth UI are
+- email/password, social providers, plugins, and auth UI are
   **not** enabled yet
 
 Later phases will add:
@@ -26,6 +27,7 @@ Later phases will add:
 - logout
 - email verification
 - password reset
+- first-admin provisioning
 - session policy hardening for production
 
 See `docs/AUTH.md`.
@@ -36,7 +38,23 @@ Sensitive actions require server-side authorization.
 
 UI visibility is never sufficient access control.
 
-Authorization must protect:
+Phase 2B primitives (`src/auth/authorization.ts`) authorize only from a
+server-validated Better Auth session (`auth.api.getSession`) plus
+runtime role validation. Cookie existence and client-visible role
+claims are never authorization proof.
+
+Application roles are mutually exclusive exact values:
+
+- `customer` (default for new users)
+- `admin`
+
+There is no role hierarchy. Missing/unknown role fails closed.
+
+Role is configured with Better Auth `input: false` so ordinary
+user/API/provider input cannot choose `admin`. No Admin plugin. No
+role-mutation endpoint in Phase 2B.
+
+Authorization must protect (in later phases that wire routes):
 
 - admin functions
 - customer profiles
@@ -49,16 +67,12 @@ Authorization must protect:
 
 Cross-customer access must fail closed.
 
-## 3. OWNER role
+## 3. Admin role
 
-Initial administration model:
-
-- one OWNER account
-
-There must be no public/customer-accessible mechanism for promoting an
-account to OWNER.
-
-Role mutation must be explicitly authorized.
+Phase 2B defines the `admin` application role and server checks
+(`requireAdmin`). First-admin provisioning and role mutation remain
+out of scope. There must be no public/customer-accessible mechanism for
+self-promotion to `admin`.
 
 ## 4. Sessions
 

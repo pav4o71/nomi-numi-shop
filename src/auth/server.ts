@@ -1,13 +1,15 @@
 /**
- * Phase 2A Better Auth server foundation.
+ * Phase 2A/2B Better Auth server foundation.
  *
  * Local development only. Email/password, social providers, plugins,
- * roles, and client auth are intentionally absent.
+ * and client auth remain intentionally absent. Phase 2B adds a
+ * server-owned application role via user.additionalFields only.
  */
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 
 import { PHASE2A_AUTH_BASE_PATH, PHASE2A_AUTH_ORIGIN, parseAuthRuntimeEnv } from "@/auth/env";
+import { APP_ROLE_ADDITIONAL_FIELD } from "@/auth/roles";
 import * as schema from "@/db/schema";
 import { getRuntimeDb } from "@/db/runtime";
 
@@ -68,6 +70,17 @@ function createAuthInstance() {
         verification: schema.verification,
       },
     }),
+    user: {
+      additionalFields: {
+        role: {
+          type: [...APP_ROLE_ADDITIONAL_FIELD.type],
+          required: APP_ROLE_ADDITIONAL_FIELD.required,
+          defaultValue: APP_ROLE_ADDITIONAL_FIELD.defaultValue,
+          input: APP_ROLE_ADDITIONAL_FIELD.input,
+          returned: APP_ROLE_ADDITIONAL_FIELD.returned,
+        },
+      },
+    },
   });
 }
 
@@ -81,7 +94,7 @@ export function getAuth(): AuthInstance {
   return globalForAuth.__nomiNumiShopAuth;
 }
 
-/** Phase 2A constants for tests and documentation alignment. */
+/** Phase 2A/2B constants for tests and documentation alignment. */
 export const authFoundationConstants = {
   packageName: "better-auth",
   packageVersion: "1.7.3",
@@ -92,4 +105,7 @@ export const authFoundationConstants = {
   emailAndPasswordEnabled: false,
   socialProvidersConfigured: false,
   pluginsConfigured: false,
+  adminPluginConfigured: false,
+  roleInputAllowed: false,
+  defaultAppRole: APP_ROLE_ADDITIONAL_FIELD.defaultValue,
 } as const;

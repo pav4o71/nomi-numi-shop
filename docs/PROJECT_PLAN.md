@@ -400,9 +400,11 @@ Database and authentication foundation, delivered in reviewed steps:
   login/signup UI, roles, email/password, social providers, or
   production auth.
 - Phase 2B — customer/admin identity roles and server authorization
-  model
+  foundation (server-owned role field, exact-role primitives, migration
+  `0002`). No auth UI, role mutation, or admin bootstrap.
 - Phase 2C — auth lifecycle/security/UI/E2E (signup/login, email
-  verification, password reset, session security, customer flows)
+  verification, password reset, session security, first-admin
+  provisioning decision, protected surfaces)
 
 ### Phase 3
 

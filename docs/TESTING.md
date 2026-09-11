@@ -62,14 +62,16 @@ Phase 1F workflow:
 
 That command requires the exact confirmation token, drops/recreates only
 `nomi_numi_shop_test`, refuses unexpected active sessions without
-terminating them, and reapplies committed migrations. After Phase 2A,
+terminating them, and reapplies committed migrations. After Phase 2B,
 a fresh TEST rebuild includes Drizzle bookkeeping plus Better Auth core
-tables derived from committed migrations. DEV has no rebuild command.
-There is no generic `db:reset` / `db:drop` / raw SQL console.
+tables and `user.role` derived from committed migrations. DEV has no
+rebuild command. There is no generic `db:reset` / `db:drop` / raw SQL
+console.
 
-Phase 2A auth foundation unit coverage lives in:
+Auth foundation unit coverage lives in:
 
 - `tests/unit/auth-foundation.test.ts`
+- `tests/unit/auth-authorization.test.ts`
 
 Playwright starts the application through `pnpm dev:e2e` on
 `127.0.0.1:3101`. It must never reuse an unknown process already
