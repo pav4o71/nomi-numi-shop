@@ -1,10 +1,12 @@
 /**
- * Better Auth 1.7.3 core schema.
+ * Better Auth 1.7.3 schema with Phase 2B application role.
  *
  * Generated with: `pnpm dlx auth@1.7.3 generate --adapter drizzle --dialect postgresql`
- * against a temporary config with no plugins and no email/password.
+ * against a temporary config with role additionalField (customer/admin,
+ * default customer, input false) and no plugins / email/password.
  *
- * Phase 2A foundation only — no application role or commerce fields.
+ * Authorization treats missing/invalid role as fail-closed invalid state.
+ * Do not trust TypeScript nullability alone.
  */
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
@@ -20,6 +22,7 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  role: text("role", { enum: ["customer", "admin"] }).default("customer"),
 });
 
 export const session = pgTable(

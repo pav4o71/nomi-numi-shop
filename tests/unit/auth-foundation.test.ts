@@ -53,7 +53,7 @@ describe("Phase 2A Better Auth foundation", () => {
     expect(authFoundationConstants.adapterPackageVersion).toBe("1.7.3");
   });
 
-  it("exports Better Auth core schema tables without role fields", () => {
+  it("exports Better Auth core schema tables with Phase 2B role only", () => {
     expect(getTableName(user)).toBe("user");
     expect(getTableName(session)).toBe("session");
     expect(getTableName(account)).toBe("account");
@@ -74,14 +74,18 @@ describe("Phase 2A Better Auth foundation", () => {
         "image",
         "createdAt",
         "updatedAt",
+        "role",
       ]),
     );
-    expect(userColumns).not.toContain("role");
+    expect(userColumns).toContain("role");
     expect(userColumns).not.toContain("isAdmin");
     expect(userColumns).not.toContain("permissions");
     expect(userColumns).not.toContain("organizationId");
     expect(userColumns).not.toContain("tenantId");
     expect(userColumns).not.toContain("customerType");
+    expect(userColumns).not.toContain("banned");
+    expect(userColumns).not.toContain("banReason");
+    expect(userColumns).not.toContain("banExpires");
   });
 
   it("accepts the Phase 2A local DEV auth runtime identity", () => {
@@ -216,6 +220,9 @@ describe("Phase 2A Better Auth foundation", () => {
     expect(authFoundationConstants.emailAndPasswordEnabled).toBe(false);
     expect(authFoundationConstants.socialProvidersConfigured).toBe(false);
     expect(authFoundationConstants.pluginsConfigured).toBe(false);
+    expect(authFoundationConstants.adminPluginConfigured).toBe(false);
+    expect(authFoundationConstants.roleInputAllowed).toBe(false);
+    expect(authFoundationConstants.defaultAppRole).toBe("customer");
     expect(authFoundationConstants.basePath).toBe(PHASE2A_AUTH_BASE_PATH);
     expect(authFoundationConstants.baseURL).toBe(PHASE2A_AUTH_ORIGIN);
 
@@ -224,7 +231,8 @@ describe("Phase 2A Better Auth foundation", () => {
     expect(serverSource).not.toMatch(/socialProviders\s*:/);
     expect(serverSource).not.toMatch(/plugins\s*:/);
     expect(serverSource).not.toMatch(/nextCookies/);
-    expect(serverSource).not.toMatch(/\brole\b/);
+    expect(serverSource).not.toMatch(/from\s+["']better-auth\/plugins["']/);
+    expect(serverSource).not.toMatch(/\badmin\s*\(/);
   });
 
   it("keeps the auth route at /api/auth and omits a client auth instance", () => {

@@ -5,17 +5,23 @@ store.
 
 ## Current phase
 
-Phase 2A — Better Auth Foundation
+Phase 2B — Customer/Admin Identity Roles and Server Authorization Foundation
 
 Phase 0 through Phase 1F are complete. The repository now includes
 isolated local PostgreSQL environments, Drizzle ORM, committed
 migrations, a guarded TEST-only database rebuild workflow, and the
 Phase 2A Better Auth server foundation (`better-auth@1.7.3` with the
-matching Drizzle adapter).
+matching Drizzle adapter). Phase 2B adds the server-owned Better Auth
+role field with exactly `customer` (default) and `admin`, `input: false`
+protection, and server authorization primitives with exact-role checks.
+Missing or invalid roles fail closed.
 
 Local auth runtime uses ignored `.env.local` (`BETTER_AUTH_SECRET`,
 `BETTER_AUTH_URL`, `DATABASE_URL`) and the `/api/auth/*` route.
-Email/password, social login, roles, and auth UI are not enabled yet.
+Login/signup UI, email/password lifecycle, social login, client auth UI,
+admin provisioning, role mutation, dashboards, and page/route protection
+are not enabled yet. No admin user is created by Phase 2B. Phase 2C is
+next.
 The public storefront still renders without PostgreSQL; auth connects
 lazily only when `/api/auth` is invoked. See `docs/AUTH.md`.
 
@@ -131,9 +137,13 @@ Migrations (migration-first; no `drizzle-kit push`):
 Canonical schema path: `src/db/schema/`
 Committed migrations: `drizzle/`
 
-Phase 2A Better Auth core tables live in `src/db/schema/auth.ts` and are
-applied by `drizzle/0001_phase2a_better_auth.sql`. Migrations remain
-Drizzle-managed (do not run Better Auth migrate).
+Better Auth tables live in `src/db/schema/auth.ts`:
+
+- `drizzle/0001_phase2a_better_auth.sql` — core auth tables
+- `drizzle/0002_phase2b_auth_role.sql` — server-owned `user.role`
+
+Migrations remain Drizzle-managed (do not run Better Auth migrate).
+Application roles are `customer` (default) and `admin`. See `docs/AUTH.md`.
 
 Local auth environment template (placeholders only): `.env.example`
 Runtime secrets belong in ignored `.env.local` only.

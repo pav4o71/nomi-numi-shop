@@ -20,9 +20,11 @@ Schema evolution:
 
 Phase 1E established the ORM/migration mechanism. Phase 2A adds Better
 Auth core tables (`user`, `session`, `account`, `verification`) through
-a reviewed Drizzle migration. Catalog/commerce domain tables remain
-absent. The public storefront still does not require PostgreSQL; only
-the lazy `/api/auth` runtime connects to local DEV.
+a reviewed Drizzle migration. Phase 2B extends `user` with a
+server-owned `role` column (`customer` | `admin`, default `customer`).
+Catalog/commerce domain tables remain absent. The public storefront
+still does not require PostgreSQL; only the lazy `/api/auth` runtime
+connects to local DEV.
 
 ## 2. Development database
 
@@ -105,6 +107,7 @@ Committed migrations:
 - `drizzle/`
 - `drizzle/0000_phase1e_baseline.sql`
 - `drizzle/0001_phase2a_better_auth.sql` (Better Auth core tables)
+- `drizzle/0002_phase2b_auth_role.sql` (`user.role` authorization field)
 
 Canonical auth schema module:
 

@@ -1,7 +1,7 @@
 /**
  * Canonical Drizzle schema export boundary for Nomi Numi Shop.
  *
- * Phase 2A adds Better Auth core tables only.
+ * Phase 2A/2B Better Auth tables only (including server-owned role).
  * Catalog/commerce domain tables remain intentionally absent.
  */
 
