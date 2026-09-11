@@ -371,11 +371,18 @@ Phase 1 is delivered in smaller reviewed steps:
 - Phase 1B — testing foundation
 - Phase 1C — storefront design system and public shell
 - Phase 1D — isolated local PostgreSQL infrastructure
-- Phase 1E — Drizzle ORM foundation (planned; not started)
+- Phase 1E — Drizzle ORM + migration foundation
+- Phase 1F — destructive/reset tooling and deeper migration safety
+  (planned; not started)
 
 Phase 1D provides Docker Compose PostgreSQL for development and test
-only. It does not introduce Drizzle, schema migrations, application
-database clients, authentication, catalog, cart, checkout, or payments.
+only.
+
+Phase 1E adds drizzle-orm, drizzle-kit, postgres.js, canonical schema
+export boundary, committed migrations, and guarded generate/check/migrate
+helpers. It does not introduce domain tables, application runtime DB
+wiring, authentication, catalog, cart, checkout, payments, or destructive
+reset tooling.
 
 ### Phase 2
 

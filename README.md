@@ -5,17 +5,15 @@ store.
 
 ## Current phase
 
-Phase 1D — Isolated Local PostgreSQL Infrastructure
+Phase 1E — Drizzle ORM + Migration Foundation
 
-Phase 0 through Phase 1C are complete. The repository now also includes
-isolated local PostgreSQL environments for development and testing via
-Docker Compose, guarded lifecycle helpers, and ignored local credentials
-under `var/docker/`.
+Phase 0 through Phase 1D are complete. The repository now includes
+isolated local PostgreSQL environments plus Drizzle ORM, Drizzle Kit,
+committed migrations, and guarded local generate/check/migrate helpers.
 
-The Next.js application still has no database client, schema, migrations,
-or `DATABASE_URL` wiring. Drizzle ORM arrives in Phase 1E. Authentication,
-catalog, cart, checkout, payments, shipping, admin, and production
-infrastructure remain later phases.
+The Next.js storefront still does not require PostgreSQL at runtime.
+Application domain schema (auth, catalog, commerce) remains later.
+Destructive reset tooling is deferred to Phase 1F.
 
 ## Initial business scope
 
@@ -95,7 +93,7 @@ Bugbot review rules:
 
 - .cursor/BUGBOT.md
 
-## Local PostgreSQL (Phase 1D)
+## Local PostgreSQL and Drizzle
 
 Development:
 
@@ -109,7 +107,7 @@ Test:
 - Host: `127.0.0.1:55433`
 - Database: `nomi_numi_shop_test`
 
-Commands:
+Lifecycle:
 
     pnpm db:dev:up
     pnpm db:dev:status
@@ -118,10 +116,20 @@ Commands:
     pnpm db:test:status
     pnpm db:test:stop
 
-Local credentials are generated once under ignored `var/docker/` and must
-never be committed. Stopping containers preserves environment-specific
-named volumes. Host port `5433` belongs to another project and must not
-be used. Unknown Docker resources remain protected.
+Migrations (migration-first; no `drizzle-kit push`):
+
+    pnpm db:generate
+    pnpm db:check
+    pnpm db:dev:migrate
+    pnpm db:test:migrate
+
+Canonical schema path: `src/db/schema/`
+Committed migrations: `drizzle/`
+
+Local credentials remain under ignored `var/docker/` and must never be
+committed. Start the matching PostgreSQL environment before migrate.
+Stopping containers preserves named volumes. Host port `5433` belongs to
+another project and must not be used.
 
 ## Preflight
 
