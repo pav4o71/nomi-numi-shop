@@ -308,12 +308,13 @@ Scripts must fail safely rather than corrupting the shell environment.
 
 ## 13. Current phase restriction
 
-Phase 0 is complete. The project is in Phase 1A — Application
+Phase 0 through Phase 1F and Phase 2A are complete. The project is in
+Phase 2B — Customer/Admin Identity Roles and Server Authorization
 Foundation.
 
-Application development is allowed only when explicitly authorized by
-the current approved phase or step. Obey scoped phase instructions and
-do not begin future modules early.
+Further application development is allowed only when explicitly
+authorized by the current approved phase or step. Obey scoped phase
+instructions and do not begin future modules early.
 
 Normal implementation must occur on an approved non-`main` branch
 following `docs/GIT_WORKFLOW.md`.
