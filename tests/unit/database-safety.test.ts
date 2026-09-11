@@ -257,6 +257,8 @@ describe("Phase 1F TEST-only destructive safety", () => {
     expect(rebuildHelper).toContain("run_namespaced_rebuild_runner verify");
     expect(rebuildHelper).toContain('node "$REBUILD_RUNNER" --confirm "$CONFIRMATION_TOKEN" "$@"');
     expect(rebuildRunner).toContain("__drizzle_migrations");
+    expect(rebuildRunner).toContain("expectedPublicTablesFromMigrations");
+    expect(rebuildRunner).toContain("public relation set mismatch after TEST rebuild");
     expect(drizzleHelper).toContain('--network "container:${VERIFIED_CONTAINER_ID}"');
     expect(dbLocalHelper).not.toContain("rebuild");
     expect(dbLocalHelper).not.toContain("DROP DATABASE");
