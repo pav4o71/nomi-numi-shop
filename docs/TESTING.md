@@ -23,9 +23,14 @@ Install the project-local Chromium browser once:
 Run the available test commands:
 
     pnpm test
+    pnpm test:ci
     pnpm test:watch
     pnpm test:e2e
     pnpm test:all
+
+`pnpm test:ci` is the portable GitHub Actions unit suite. It excludes
+path-locked `database-safety` and `drizzle-foundation` tests that require
+the workstation canonical root. Local full coverage remains `pnpm test`.
 
 Playwright browser binaries are stored under the ignored
 `var/playwright-browsers/` directory. Playwright temporary files use the
@@ -108,7 +113,9 @@ Exact portable commands (in order):
 2. `pnpm format:check`
 3. `pnpm lint`
 4. `pnpm typecheck`
-5. `pnpm test`
+5. `pnpm test:ci` (portable unit tests; excludes path-locked
+   `database-safety` and `drizzle-foundation` suites that require the
+   workstation canonical root)
 6. `pnpm build`
 7. Chromium install for Playwright (`playwright install --with-deps chromium`)
 8. `pnpm test:e2e`
@@ -118,10 +125,11 @@ production secrets, production resources, `pull_request_target`, write
 permissions, automatic merge, or protected workstation Docker resources
 such as `beautybook3-pg` / host port `5433`.
 
-Workstation-specific checks that require local protected Docker state,
-reserved host ports, or owned Compose PostgreSQL remain local-only
-(`./scripts/preflight.sh`, `pnpm db:*`). Do not duplicate those in
-GitHub Actions.
+Workstation-specific checks that require the local canonical root,
+protected Docker state, reserved host ports, or owned Compose PostgreSQL
+remain local-only (`./scripts/preflight.sh`, `pnpm test`, `pnpm db:*`).
+Do not duplicate those in GitHub Actions. Full local unit coverage is
+still `pnpm test`.
 
 ### Local validation
 
