@@ -63,6 +63,10 @@ Lifecycle helper:
     pnpm db:dev:status
     pnpm db:dev:stop
 
+Drizzle migrate:
+
+    pnpm db:dev:migrate
+
 ## 4. Test / E2E environment
 
 Application:
@@ -87,6 +91,15 @@ Lifecycle helper:
     pnpm db:test:status
     pnpm db:test:stop
 
+Drizzle migrate:
+
+    pnpm db:test:migrate
+
+Schema generation / migration consistency (no live DB required):
+
+    pnpm db:generate
+    pnpm db:check
+
 ## 5. Mailpit
 
 SMTP:
@@ -97,20 +110,21 @@ Web UI:
 
 - 127.0.0.1:18025
 
-Mailpit is reserved but not provisioned in Phase 1D.
+Mailpit is reserved but not provisioned yet.
 
 ## 6. Environment files
 
 Real environment values are never committed.
 
-Phase 1D local database credentials:
+Phase 1D/1E local database credentials (tooling only):
 
 - ignored `var/docker/dev.env`
 - ignored `var/docker/test.env`
 
 Generated once by `scripts/db-local.sh`, reused on subsequent starts,
 different between development and test, and never printed by normal
-lifecycle commands.
+lifecycle or migrate commands. Application runtime must not read these
+files directly.
 
 Expected pattern later for application secrets:
 
