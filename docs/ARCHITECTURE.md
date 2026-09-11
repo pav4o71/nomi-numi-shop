@@ -30,8 +30,8 @@ Framework major:
 
 - Next.js 16 App Router
 
-Exact package versions are pinned when Phase 1 creates package.json and
-pnpm-lock.yaml.
+Exact package versions are pinned in `package.json` and
+`pnpm-lock.yaml`.
 
 Do not use floating latest dependencies in reproducible project
 configuration after bootstrap.
@@ -40,8 +40,8 @@ Database major:
 
 - PostgreSQL 16
 
-The exact PostgreSQL container image tag is pinned when Compose
-infrastructure is implemented.
+The exact PostgreSQL container image tag is pinned in the implemented
+Compose infrastructure.
 
 ## 3. Planned stack
 
@@ -59,40 +59,26 @@ infrastructure is implemented.
 - Docker Compose
 - Mailpit
 
-## 4. Planned source organization
+## 4. Source organization
 
-Conceptual source layout:
+Current implemented source foundation:
 
     src/
       app/
-        (store)/
-        account/
-        admin/
         api/
+          auth/
+        layout.tsx
+        page.tsx
 
-      modules/
-        auth/
-        catalog/
-        inventory/
-        customers/
-        cart/
-        checkout/
-        orders/
-        fulfillment/
-        shipping/
-        payments/
-        promotions/
-        reviews/
-        wishlist/
-        custom-video/
-        cms/
-        analytics/
-
-      db/
-      lib/
+      auth/
       components/
+      db/
+        runtime.ts
+        schema/
+      lib/
 
-This is a planned structure only.
+Future domain modules will be added only as their phases are approved;
+their exact organization is not established by empty placeholder paths.
 
 Do not create empty directories merely to match the diagram.
 

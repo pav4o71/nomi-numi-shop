@@ -261,9 +261,18 @@ Access requires authenticated authorization.
 
 ## 11. Admin panel
 
-Initial administration model:
+Current Phase 2B application role model:
 
-- one OWNER
+- `customer` (default)
+- `admin`
+
+These roles are mutually exclusive and have no hierarchy. There is no
+`OWNER` role, one-admin cardinality constraint, admin provisioning, or
+role-mutation mechanism in the current implementation.
+
+Phase 2C must decide the first-admin provisioning design, including
+whether an `OWNER` role or any owner/admin cardinality constraint should
+be introduced.
 
 The admin panel should control as much routine shop operation as
 practical without requiring source-code edits.

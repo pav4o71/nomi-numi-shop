@@ -148,6 +148,9 @@ Required Phase 2A keys in `.env.local`:
 - `DATABASE_URL` targeting only DEV `127.0.0.1:55432` /
   `nomi_numi_shop_dev` / `nomi_numi_dev`
 
+Auth initialization is local-only and is rejected when
+`NODE_ENV=production`, `VERCEL=1`, or `VERCEL_ENV=production`.
+
 Never commit credential-bearing `DATABASE_URL` values or real auth
 secrets. Production secrets remain outside the current phase.
 

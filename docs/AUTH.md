@@ -128,6 +128,8 @@ Tracked placeholder template:
 Runtime validation:
 
 - `src/auth/env.ts` (`parseAuthRuntimeEnv`)
+- auth initialization is rejected when `NODE_ENV=production`,
+  `VERCEL=1`, or `VERCEL_ENV=production`; this foundation is local-only
 
 Lazy runtime database client:
 
