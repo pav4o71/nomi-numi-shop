@@ -78,6 +78,12 @@ Migrate:
 
     pnpm db:test:migrate
 
+Guarded TEST rebuild (drops/recreates only `nomi_numi_shop_test`):
+
+    pnpm db:test:rebuild -- --confirm RESET-NOMI-TEST-DATABASE
+
+The TEST database is disposable. DEV is not reset by Phase 1F.
+
 Development and test data must remain isolated. They use separate Compose
 projects, named volumes, database names, local credentials, and migration
 bookkeeping.
@@ -108,16 +114,23 @@ Credential parsing for tooling:
 
 - `scripts/drizzle-credentials.mjs`
 
+Guarded TEST rebuild:
+
+- `scripts/db-test-rebuild.sh`
+- `scripts/db-test-rebuild.mjs`
+
 Commands:
 
     pnpm db:generate
     pnpm db:check
     pnpm db:dev:migrate
     pnpm db:test:migrate
+    pnpm db:test:rebuild -- --confirm RESET-NOMI-TEST-DATABASE
 
 `generate` and `check` do not require a live database.
 `migrate` requires the matching owned PostgreSQL environment already up
-and healthy.
+and healthy. `db:test:rebuild` requires the TEST environment already up
+and healthy; it never starts or mutates DEV.
 
 Hardened migrate model:
 
@@ -152,8 +165,24 @@ must not import or read them directly.
 Passwords must never be committed or pasted into documentation.
 
 PostgreSQL data uses environment-specific Docker named volumes. Stopping
-containers preserves persistent data. Destructive reset/remove tooling is
-intentionally deferred to Phase 1F.
+containers preserves persistent data.
+
+Public destructive tooling is TEST-only. There is no `db:dev:reset`,
+`db:dev:rebuild`, `db:reset`, `db:drop`, or generic SQL console.
+
+Guarded TEST rebuild:
+
+    pnpm db:test:rebuild -- --confirm RESET-NOMI-TEST-DATABASE
+
+The exact confirmation token `RESET-NOMI-TEST-DATABASE` is required and
+is not a secret. Both the public wrapper and the internal rebuild runner
+require that token. Direct invocation of the runner without the wrapper
+is refused. The command drops and recreates only
+`nomi_numi_shop_test` on the owned TEST cluster, then reapplies committed
+migrations through the existing Phase 1E migrate path. DEV is never
+selected. Unexpected active TEST sessions cause refusal; the rebuild
+does not terminate other connections. Protected host port `5433` cannot
+be targeted. Production is not a rebuild target.
 
 ## 6. Protected external database
 

@@ -29,7 +29,8 @@
     "db:generate": "./scripts/drizzle-local.sh generate",
     "db:check": "./scripts/drizzle-local.sh check",
     "db:dev:migrate": "./scripts/drizzle-local.sh migrate dev",
-    "db:test:migrate": "./scripts/drizzle-local.sh migrate test"
+    "db:test:migrate": "./scripts/drizzle-local.sh migrate test",
+    "db:test:rebuild": "./scripts/db-test-rebuild.sh"
   },
   "dependencies": {
     "@radix-ui/react-slot": "1.3.3",

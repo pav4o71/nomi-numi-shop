@@ -5,15 +5,15 @@ store.
 
 ## Current phase
 
-Phase 1E — Drizzle ORM + Migration Foundation
+Phase 1F — Database / Test / Destructive-Operation Safety
 
-Phase 0 through Phase 1D are complete. The repository now includes
-isolated local PostgreSQL environments plus Drizzle ORM, Drizzle Kit,
-committed migrations, and guarded local generate/check/migrate helpers.
+Phase 0 through Phase 1E are complete. The repository now includes
+isolated local PostgreSQL environments, Drizzle ORM, committed
+migrations, and a guarded TEST-only database rebuild workflow.
 
 The Next.js storefront still does not require PostgreSQL at runtime.
 Application domain schema (auth, catalog, commerce) remains later.
-Destructive reset tooling is deferred to Phase 1F.
+Phase 2A starts authentication.
 
 ## Initial business scope
 
@@ -126,10 +126,21 @@ Migrations (migration-first; no `drizzle-kit push`):
 Canonical schema path: `src/db/schema/`
 Committed migrations: `drizzle/`
 
+TEST rebuild (destructive, TEST only; DEV is never reset by this command):
+
+    pnpm db:test:rebuild -- --confirm RESET-NOMI-TEST-DATABASE
+
+The confirmation token is required and is not a secret. Direct invocation
+of the internal rebuild runner is refused without the public wrapper.
+The command drops and recreates only `nomi_numi_shop_test`, then reapplies committed
+migrations. Unexpected active TEST sessions cause refusal; connections
+are not terminated. There is no `db:dev:reset`, generic drop tool, or
+raw SQL console. Production and host port `5433` cannot be selected.
+
 Local credentials remain under ignored `var/docker/` and must never be
-committed. Start the matching PostgreSQL environment before migrate.
-Stopping containers preserves named volumes. Host port `5433` belongs to
-another project and must not be used.
+committed. Start the matching PostgreSQL environment before migrate or
+TEST rebuild. Stopping containers preserves named volumes. Host port
+`5433` belongs to another project and must not be used.
 
 ## Preflight
 

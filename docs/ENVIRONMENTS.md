@@ -95,6 +95,16 @@ Drizzle migrate:
 
     pnpm db:test:migrate
 
+Guarded TEST rebuild:
+
+    pnpm db:test:rebuild -- --confirm RESET-NOMI-TEST-DATABASE
+
+The TEST database is disposable. Phase 1F does not reset DEV. The
+rebuild command requires the exact confirmation token, drops/recreates
+only `nomi_numi_shop_test`, refuses unexpected active sessions, and
+reapplies committed migrations. There is no DEV rebuild, generic drop
+tool, raw SQL console, or production target.
+
 Schema generation / migration consistency (no live DB required):
 
     pnpm db:generate
