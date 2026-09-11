@@ -306,15 +306,15 @@ Scripts must fail safely rather than corrupting the shell environment.
 
 ---
 
-## 13. Current phase restriction
-
-Phase 0 through Phase 1F and Phase 2A are complete. The project is in
-Phase 2B — Customer/Admin Identity Roles and Server Authorization
-Foundation.
+## 13. Phase authorization restriction
 
 Further application development is allowed only when explicitly
 authorized by the current approved phase or step. Obey scoped phase
 instructions and do not begin future modules early.
+
+This file does not hardcode the active phase label. Treat the current
+explicit authorization (for example the active phase prompt) as the
+source of truth for what may be implemented next.
 
 Normal implementation must occur on an approved non-`main` branch
 following `docs/GIT_WORKFLOW.md`.
