@@ -32,6 +32,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # Job-level TMPDIR / PLAYWRIGHT_BROWSERS_PATH live under var/; create
+      # them before any step that resolves temporary directories.
+      - name: Prepare project temp directories
+        run: mkdir -p var/playwright-browsers var/tmp
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -62,9 +67,7 @@ jobs:
         run: pnpm build
 
       - name: Install Chromium for Playwright
-        run: |
-          mkdir -p var/playwright-browsers var/tmp
-          pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Chromium Playwright E2E
         run: pnpm test:e2e
