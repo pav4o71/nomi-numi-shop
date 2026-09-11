@@ -372,8 +372,7 @@ Phase 1 is delivered in smaller reviewed steps:
 - Phase 1C — storefront design system and public shell
 - Phase 1D — isolated local PostgreSQL infrastructure
 - Phase 1E — Drizzle ORM + migration foundation
-- Phase 1F — destructive/reset tooling and deeper migration safety
-  (planned; not started)
+- Phase 1F — database / TEST destructive-operation safety
 
 Phase 1D provides Docker Compose PostgreSQL for development and test
 only.
@@ -381,8 +380,15 @@ only.
 Phase 1E adds drizzle-orm, drizzle-kit, postgres.js, canonical schema
 export boundary, committed migrations, and guarded generate/check/migrate
 helpers. It does not introduce domain tables, application runtime DB
-wiring, authentication, catalog, cart, checkout, payments, or destructive
-reset tooling.
+wiring, authentication, catalog, cart, checkout, or payments.
+
+Phase 1F adds the guarded TEST-only rebuild workflow
+(`pnpm db:test:rebuild -- --confirm RESET-NOMI-TEST-DATABASE`). It drops
+and recreates only `nomi_numi_shop_test`, refuses unexpected active
+sessions, and reapplies committed migrations. DEV is not reset. There is
+no generic drop/SQL tooling and no production target.
+
+Phase 2A is next after Phase 1F.
 
 ### Phase 2
 

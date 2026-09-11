@@ -55,6 +55,16 @@ Data-mutating automated tests must use the test database.
 
 They must never reset or truncate the development database.
 
+The TEST database is disposable. Recreate it only through the guarded
+Phase 1F workflow:
+
+    pnpm db:test:rebuild -- --confirm RESET-NOMI-TEST-DATABASE
+
+That command requires the exact confirmation token, drops/recreates only
+`nomi_numi_shop_test`, refuses unexpected active sessions without
+terminating them, and reapplies committed migrations. DEV has no rebuild
+command. There is no generic `db:reset` / `db:drop` / raw SQL console.
+
 Playwright starts the application through `pnpm dev:e2e` on
 `127.0.0.1:3101`. It must never reuse an unknown process already
 listening on port 3101.
