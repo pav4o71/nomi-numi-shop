@@ -1,9 +1,16 @@
 /**
  * Canonical Drizzle schema export boundary for Nomi Numi Shop.
  *
- * Phase 1E establishes the ORM/migration mechanism only.
- * Domain tables (auth, catalog, commerce, etc.) are intentionally absent
- * and will be introduced in later reviewed phases.
+ * Phase 2A adds Better Auth core tables only.
+ * Catalog/commerce domain tables remain intentionally absent.
  */
 
-export {};
+export {
+  account,
+  accountRelations,
+  session,
+  sessionRelations,
+  user,
+  userRelations,
+  verification,
+} from "./auth";

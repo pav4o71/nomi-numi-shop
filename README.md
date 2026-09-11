@@ -5,15 +5,19 @@ store.
 
 ## Current phase
 
-Phase 1F — Database / Test / Destructive-Operation Safety
+Phase 2A — Better Auth Foundation
 
-Phase 0 through Phase 1E are complete. The repository now includes
+Phase 0 through Phase 1F are complete. The repository now includes
 isolated local PostgreSQL environments, Drizzle ORM, committed
-migrations, and a guarded TEST-only database rebuild workflow.
+migrations, a guarded TEST-only database rebuild workflow, and the
+Phase 2A Better Auth server foundation (`better-auth@1.7.3` with the
+matching Drizzle adapter).
 
-The Next.js storefront still does not require PostgreSQL at runtime.
-Application domain schema (auth, catalog, commerce) remains later.
-Phase 2A starts authentication.
+Local auth runtime uses ignored `.env.local` (`BETTER_AUTH_SECRET`,
+`BETTER_AUTH_URL`, `DATABASE_URL`) and the `/api/auth/*` route.
+Email/password, social login, roles, and auth UI are not enabled yet.
+The public storefront still renders without PostgreSQL; auth connects
+lazily only when `/api/auth` is invoked. See `docs/AUTH.md`.
 
 ## Initial business scope
 
@@ -80,6 +84,7 @@ Before implementation, read the documents relevant to the current task:
 - docs/ARCHITECTURE.md
 - docs/COMMERCE_RULES.md
 - docs/DATABASE.md
+- docs/AUTH.md
 - docs/SECURITY.md
 - docs/TESTING.md
 - docs/ENVIRONMENTS.md
@@ -125,6 +130,13 @@ Migrations (migration-first; no `drizzle-kit push`):
 
 Canonical schema path: `src/db/schema/`
 Committed migrations: `drizzle/`
+
+Phase 2A Better Auth core tables live in `src/db/schema/auth.ts` and are
+applied by `drizzle/0001_phase2a_better_auth.sql`. Migrations remain
+Drizzle-managed (do not run Better Auth migrate).
+
+Local auth environment template (placeholders only): `.env.example`
+Runtime secrets belong in ignored `.env.local` only.
 
 TEST rebuild (destructive, TEST only; DEV is never reset by this command):
 

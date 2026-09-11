@@ -388,11 +388,21 @@ and recreates only `nomi_numi_shop_test`, refuses unexpected active
 sessions, and reapplies committed migrations. DEV is not reset. There is
 no generic drop/SQL tooling and no production target.
 
-Phase 2A is next after Phase 1F.
+Phase 2A establishes Better Auth foundation after Phase 1F.
 
 ### Phase 2
 
-Database and authentication foundation.
+Database and authentication foundation, delivered in reviewed steps:
+
+- Phase 2A — Better Auth foundation (dependencies, Drizzle adapter,
+  core auth schema/migration, local runtime env validation, server
+  instance, `/api/auth` route, unauthenticated session smoke). No
+  login/signup UI, roles, email/password, social providers, or
+  production auth.
+- Phase 2B — customer/admin identity roles and server authorization
+  model
+- Phase 2C — auth lifecycle/security/UI/E2E (signup/login, email
+  verification, password reset, session security, customer flows)
 
 ### Phase 3
 

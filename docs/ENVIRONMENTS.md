@@ -136,13 +136,20 @@ different between development and test, and never printed by normal
 lifecycle or migrate commands. Application runtime must not read these
 files directly.
 
-Expected pattern later for application secrets:
+Phase 2A application runtime (local development only):
 
-- `.env.example`
-- ignored local development environment
-- ignored local test environment
+- tracked placeholders: `.env.example`
+- ignored secrets: `.env.local` (mode `600`)
 
-Production secrets are outside the current phase.
+Required Phase 2A keys in `.env.local`:
+
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL=http://127.0.0.1:3100`
+- `DATABASE_URL` targeting only DEV `127.0.0.1:55432` /
+  `nomi_numi_shop_dev` / `nomi_numi_dev`
+
+Never commit credential-bearing `DATABASE_URL` values or real auth
+secrets. Production secrets remain outside the current phase.
 
 ## 7. Local network exposure
 

@@ -4,18 +4,31 @@ Security is a design requirement from the first implementation phase.
 
 ## 1. Authentication
 
-Planned authentication:
+Authentication library:
 
-- Better Auth
+- Better Auth `1.7.3`
+- `@better-auth/drizzle-adapter` `1.7.3`
 
-Expected capabilities:
+Phase 2A foundation status:
+
+- server instance and `/api/auth/*` route exist
+- core auth tables are migrated through Drizzle
+- local runtime requires ignored `.env.local` with
+  `BETTER_AUTH_SECRET` (>= 32 chars), explicit `BETTER_AUTH_URL`
+  (`http://127.0.0.1:3100`), and DEV-only `DATABASE_URL`
+- email/password, social providers, plugins, roles, and auth UI are
+  **not** enabled yet
+
+Later phases will add:
 
 - registration
 - login
 - logout
 - email verification
 - password reset
-- session management
+- session policy hardening for production
+
+See `docs/AUTH.md`.
 
 ## 2. Authorization
 

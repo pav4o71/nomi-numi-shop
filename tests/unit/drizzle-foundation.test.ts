@@ -185,10 +185,15 @@ describe("Phase 1E drizzle foundation invariants", () => {
       readFileSync(new URL("../../drizzle/meta/_journal.json", import.meta.url), "utf8"),
     ) as { entries: Array<{ tag: string }> };
 
-    expect(journal.entries).toHaveLength(1);
+    expect(journal.entries.length).toBeGreaterThanOrEqual(1);
+    expect(journal.entries.length).toBe(migrationSqlFiles.length);
     expect(journal.entries[0]?.tag).toBe("0000_phase1e_baseline");
     expect(
       path.basename(new URL("../../drizzle/0000_phase1e_baseline.sql", import.meta.url).pathname),
     ).toBe("0000_phase1e_baseline.sql");
+
+    for (const entry of journal.entries) {
+      expect(migrationSqlFiles.some((file) => file.name === `${entry.tag}.sql`)).toBe(true);
+    }
   });
 });

@@ -18,9 +18,11 @@ Schema evolution:
 - migration-first workflow only
 - `drizzle-kit push` is not the project strategy
 
-Phase 1E establishes the ORM/migration mechanism only. It does not create
-ecommerce domain tables and does not wire the Next.js application to
-PostgreSQL at runtime.
+Phase 1E established the ORM/migration mechanism. Phase 2A adds Better
+Auth core tables (`user`, `session`, `account`, `verification`) through
+a reviewed Drizzle migration. Catalog/commerce domain tables remain
+absent. The public storefront still does not require PostgreSQL; only
+the lazy `/api/auth` runtime connects to local DEV.
 
 ## 2. Development database
 
@@ -101,6 +103,12 @@ Drizzle Kit config:
 Committed migrations:
 
 - `drizzle/`
+- `drizzle/0000_phase1e_baseline.sql`
+- `drizzle/0001_phase2a_better_auth.sql` (Better Auth core tables)
+
+Canonical auth schema module:
+
+- `src/db/schema/auth.ts`
 
 Guarded local helper:
 

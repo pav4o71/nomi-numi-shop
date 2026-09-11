@@ -281,6 +281,36 @@ function expectedMigrationCount() {
   return journal.entries.length;
 }
 
+/**
+ * Derive expected public relation names from committed Drizzle SQL migrations.
+ * Keeps Phase 1F verify aligned with migration history without hard-coding
+ * a forever-empty public schema.
+ */
+function expectedPublicTablesFromMigrations() {
+  const migrationsFolder = requireCanonicalMigrationsFolder();
+  const tableNames = new Set();
+  const createTablePattern =
+    /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"public"\.)?"([A-Za-z_][A-Za-z0-9_]*)"/gi;
+
+  for (const entry of fs.readdirSync(migrationsFolder, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".sql")) {
+      continue;
+    }
+
+    const sqlPath = path.join(migrationsFolder, entry.name);
+    if (fs.lstatSync(sqlPath).isSymbolicLink()) {
+      fail(`migration SQL must not be a symlink: ${sqlPath}`);
+    }
+
+    const sqlText = fs.readFileSync(sqlPath, "utf8");
+    for (const match of sqlText.matchAll(createTablePattern)) {
+      tableNames.add(match[1]);
+    }
+  }
+
+  return [...tableNames].sort();
+}
+
 async function runRecreate(credentials) {
   const sql = createSqlClient(TEST_REBUILD_IDENTITY.maintenanceDatabase, credentials.password);
 
@@ -384,12 +414,26 @@ async function runVerify(credentials) {
       ORDER BY 1, 2
     `;
 
-    if (
-      tables.length !== 1 ||
-      tables[0]?.schema_name !== "drizzle" ||
-      tables[0]?.table_name !== "__drizzle_migrations"
-    ) {
-      fail("unexpected relations present after TEST rebuild");
+    const drizzleTables = tables.filter((row) => row.schema_name === "drizzle");
+    const publicTables = tables.filter((row) => row.schema_name === "public");
+    const otherTables = tables.filter(
+      (row) => row.schema_name !== "drizzle" && row.schema_name !== "public",
+    );
+
+    if (drizzleTables.length !== 1 || drizzleTables[0]?.table_name !== "__drizzle_migrations") {
+      fail("drizzle migration bookkeeping table missing after TEST rebuild");
+    }
+
+    if (otherTables.length > 0) {
+      fail("unexpected non-public relations present after TEST rebuild");
+    }
+
+    const expectedPublicTables = expectedPublicTablesFromMigrations();
+    const actualPublicTables = publicTables.map((row) => row.table_name).sort();
+    if (JSON.stringify(actualPublicTables) !== JSON.stringify(expectedPublicTables)) {
+      fail(
+        `public relation set mismatch after TEST rebuild: expected [${expectedPublicTables.join(", ")}], got [${actualPublicTables.join(", ")}]`,
+      );
     }
 
     process.stderr.write("TEST database exists\n");
