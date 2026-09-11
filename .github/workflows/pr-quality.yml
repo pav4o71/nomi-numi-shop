@@ -1,0 +1,70 @@
+# Portable PR quality gate for Phase 2C onward.
+# Read-only CI only: no production secrets, no deployment, no local Docker resources.
+name: PR Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: PR Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/var/playwright-browsers
+      TMPDIR: ${{ github.workspace }}/var/tmp
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.26.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Production build
+        run: pnpm build
+
+      - name: Install Chromium for Playwright
+        run: |
+          mkdir -p var/playwright-browsers var/tmp
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Chromium Playwright E2E
+        run: pnpm test:e2e

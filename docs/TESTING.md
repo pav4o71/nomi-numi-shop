@@ -91,19 +91,57 @@ Seed and test data should be deterministic where practical.
 
 ## 5. Quality gate
 
-As implementation develops, the standard validation pipeline should
-include:
+### Portable GitHub Actions gate
+
+From Phase 2C onward, every Pull Request and every push to `main` runs
+the portable workflow:
+
+`.github/workflows/pr-quality.yml`
+
+Stable check name:
+
+`PR Quality Gate`
+
+Exact portable commands (in order):
+
+1. `pnpm install --frozen-lockfile`
+2. `pnpm format:check`
+3. `pnpm lint`
+4. `pnpm typecheck`
+5. `pnpm test`
+6. `pnpm build`
+7. Chromium install for Playwright (`playwright install --with-deps chromium`)
+8. `pnpm test:e2e`
+
+That workflow uses read-only repository permissions. It does not use
+production secrets, production resources, `pull_request_target`, write
+permissions, automatic merge, or protected workstation Docker resources
+such as `beautybook3-pg` / host port `5433`.
+
+Workstation-specific checks that require local protected Docker state,
+reserved host ports, or owned Compose PostgreSQL remain local-only
+(`./scripts/preflight.sh`, `pnpm db:*`). Do not duplicate those in
+GitHub Actions.
+
+### Local validation
+
+As implementation develops, the standard local validation pipeline
+should include:
 
 1. formatting
 2. lint
 3. TypeScript
 4. unit tests
-5. integration tests where applicable
+5. integration tests where applicable (local only when they need owned
+   Docker/database resources)
 6. Playwright E2E where applicable
 7. production build
 8. Git diff/status review
 
 Never report a validation as passing unless it actually ran.
+
+Any new commit on a Pull Request invalidates the previous reviewed HEAD.
+Re-run relevant CI and review on the new HEAD before merge.
 
 ## 6. Critical commerce coverage
 

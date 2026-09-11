@@ -96,11 +96,29 @@ Do not bypass the hook during normal development.
 
 All normal integration into `main` occurs through a Pull Request.
 
-Before merge:
+### Standard review model (Phase 2C onward)
+
+| Role           | Responsibility                                    |
+| -------------- | ------------------------------------------------- |
+| Cursor         | Implementation and remediation                    |
+| GitHub Actions | Deterministic PR quality gate (`PR Quality Gate`) |
+| Cursor Bugbot  | Normal independent PR review                      |
+| Grok           | Extra review for security-sensitive phases only   |
+| Human owner    | Sole merge authority                              |
+
+Any new commit on a Pull Request changes the reviewed state. Relevant
+CI and review must run again on the new HEAD before merge.
+
+Do not invent unsupported Bugbot or Grok commands. Use the repository's
+configured review mechanisms only.
+
+### Before merge
 
 - inspect changed files
 - inspect the complete diff
-- run available quality checks
+- confirm GitHub Actions `PR Quality Gate` is green on the PR HEAD
+- run local quality checks when they cover workstation-only concerns
+  that CI intentionally omits
 - review Bugbot findings when available
 - resolve discovered defects
 - verify no unrelated changes
@@ -111,7 +129,8 @@ If validation finds a problem:
 1. fix it on the same feature branch
 2. commit the fix
 3. push the branch
-4. review again
+4. wait for CI and review to re-run on the new HEAD
+5. review again
 
 Do not merge known defects merely to continue to the next phase.
 

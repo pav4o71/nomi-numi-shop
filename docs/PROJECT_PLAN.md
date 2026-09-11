@@ -411,9 +411,17 @@ Database and authentication foundation, delivered in reviewed steps:
 - Phase 2B — customer/admin identity roles and server authorization
   foundation (server-owned role field, exact-role primitives, migration
   `0002`). No auth UI, role mutation, or admin bootstrap.
-- Phase 2C — auth lifecycle/security/UI/E2E (signup/login, email
-  verification, password reset, session security, first-admin
-  provisioning decision, protected surfaces)
+- Phase 2C — auth lifecycle/security/UI/E2E, delivered in reviewed
+  steps:
+  - Phase 2C-P — CI + PR review foundation (portable GitHub Actions
+    quality gate and durable review workflow)
+  - Phase 2C0 — auth architecture/design lock
+  - Phase 2C1 — local email/Mailpit infrastructure
+  - Phase 2C2 — email/password + verification/reset backend
+  - Phase 2C3 — auth client + signup/login/logout UI
+  - Phase 2C4 — first-admin provisioning
+  - Phase 2C5 — customer/admin protected surfaces
+  - Phase 2C6 — auth security + E2E closure
 
 ### Phase 3
 
