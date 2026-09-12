@@ -18,7 +18,9 @@ Phase 2A/2B foundation status:
   `BETTER_AUTH_SECRET` (>= 32 chars), explicit `BETTER_AUTH_URL`
   (`http://127.0.0.1:3100`), and DEV-only `DATABASE_URL`
 - email/password, social providers, plugins, and auth UI are
-  **not** enabled yet (locked for Phases 2C1–2C6; see `docs/AUTH.md`)
+  **not** enabled yet (locked for Phases 2C2–2C6; see `docs/AUTH.md`)
+- Phase 2C1 provides local Mailpit + `src/email/` transport only;
+  Better Auth is not wired to send mail yet
 
 Phase 2C0 locks the following lifecycle rules for later implementation:
 

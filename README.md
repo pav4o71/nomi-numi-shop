@@ -5,19 +5,19 @@ store.
 
 ## Current phase
 
-Phase 2C0 — Auth Architecture / Design Lock
+Phase 2C1 — Local Mailpit / email infrastructure
 
-Phase 0 through Phase 2B and Phase 2C-P are complete. The repository
-includes isolated local PostgreSQL, Drizzle ORM, committed migrations, a
-guarded TEST-only rebuild workflow, Better Auth (`better-auth@1.7.3` +
-matching Drizzle adapter), server-owned `customer`/`admin` roles with
-exact-role authorization primitives, and the portable PR quality gate.
+Phase 0 through Phase 2B, Phase 2C-P, and Phase 2C0 are complete. The
+repository includes isolated local PostgreSQL, Drizzle ORM, committed
+migrations, a guarded TEST-only rebuild workflow, Better Auth
+(`better-auth@1.7.3` + matching Drizzle adapter), server-owned
+`customer`/`admin` roles with exact-role authorization primitives, the
+portable PR quality gate, and the Phase 2C0 auth design lock.
 
-Phase 2C0 locks the auth lifecycle design (no `OWNER` role, multiple
-admins allowed, verification/reset/session/protected-surface rules, and
-DEV/TEST first-admin bootstrap in 2C4). Implementation of Mailpit,
-email/password, auth UI, bootstrap tooling, protected surfaces, and E2E
-closure remains in Phases 2C1–2C6. See `docs/AUTH.md`.
+Phase 2C1 provisions project-owned Mailpit for local development and the
+smallest local email transport abstraction for Phase 2C2. Email/password,
+auth UI, bootstrap tooling, protected surfaces, and E2E closure remain in
+Phases 2C2–2C6. See `docs/AUTH.md`.
 
 Local auth runtime still uses ignored `.env.local`
 (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`) and
@@ -164,6 +164,27 @@ Local credentials remain under ignored `var/docker/` and must never be
 committed. Start the matching PostgreSQL environment before migrate or
 TEST rebuild. Stopping containers preserves named volumes. Host port
 `5433` belongs to another project and must not be used.
+
+## Local Mailpit (Phase 2C1)
+
+Compose project: `nomi-numi-shop-dev` (same owned DEV namespace as
+PostgreSQL; separate compose file and project-owned `mailpit_net`)
+
+- SMTP: `127.0.0.1:11025`
+- UI: `http://127.0.0.1:18025`
+
+Lifecycle (only through project wrappers):
+
+    pnpm email:up
+    pnpm email:status
+    pnpm email:stop
+
+Local email transport placeholders live in `.env.example`
+(`EMAIL_PROVIDER=mailpit`, `EMAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`).
+Runtime values belong in ignored `.env.local`. The Mailpit provider
+abstraction lives under `src/email/` and is **not** wired into Better
+Auth until Phase 2C2. Do not start Mailpit with raw `docker compose`
+outside `scripts/email-local.sh`.
 
 ## Preflight
 

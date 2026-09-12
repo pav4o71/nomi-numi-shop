@@ -3,8 +3,9 @@
 Phase 2A established the minimum secure Better Auth infrastructure.
 Phase 2B added application roles and **server** authorization primitives.
 Phase 2C0 locks the auth lifecycle architecture for implementation in
-Phases 2C1–2C6. Implementation of email/password, Mailpit, UI, bootstrap
-tooling, and protected surfaces remains deferred to those later steps.
+Phases 2C1–2C6. Phase 2C1 provisions local Mailpit and the local email
+transport abstraction. Email/password, auth UI, bootstrap tooling, and
+protected surfaces remain deferred to later 2C steps.
 
 ## Versions
 
@@ -207,6 +208,20 @@ Required variables:
 - `BETTER_AUTH_URL` — exactly `http://127.0.0.1:3100`
 - `DATABASE_URL` — local DEV only (`127.0.0.1:55432`, `nomi_numi_shop_dev`, `nomi_numi_dev`)
 
+Phase 2C1 local email variables (placeholders in `.env.example`; used by
+`src/email/` only until Phase 2C2 wires Better Auth):
+
+- `EMAIL_PROVIDER=mailpit`
+- `EMAIL_FROM` — local mailbox such as `noreply@nomi-numi.local`
+- `SMTP_HOST=127.0.0.1`
+- `SMTP_PORT=11025`
+
+Mailpit lifecycle:
+
+- `pnpm email:up` / `pnpm email:status` / `pnpm email:stop`
+- SMTP `127.0.0.1:11025`, UI `http://127.0.0.1:18025`
+- owned Compose project `nomi-numi-shop-dev`, service `mailpit`
+
 Tracked placeholder template:
 
 - `.env.example`
@@ -237,7 +252,6 @@ Still **not implemented** (deferred to later 2C steps):
 
 - email/password authentication (2C2)
 - email verification / password-reset backend wiring (2C2)
-- Mailpit / local email delivery (2C1)
 - client auth instance (`createAuthClient`) and auth UI (2C3)
 - first-admin bootstrap tooling (2C4)
 - customer/admin protected surfaces (2C5)
@@ -246,6 +260,13 @@ Still **not implemented** (deferred to later 2C steps):
 - Better Auth plugins (including Admin / Organization)
 - general role-mutation endpoints
 - production cookies / production database auth
+
+Phase 2C1 **is** implemented:
+
+- project-owned Mailpit (`infra/docker/mailpit.compose.yml`,
+  `scripts/email-local.sh`, `pnpm email:*`)
+- local email provider abstraction (`src/email/`) for Phase 2C2
+- safe `.env.example` Mailpit transport placeholders
 
 ## Storefront independence
 
@@ -256,7 +277,7 @@ Auth modules initialize lazily when `/api/auth` is invoked.
 ## Phase 2C boundaries
 
 - **2C0** — auth architecture/design lock (this document)
-- **2C1** — Mailpit / local email infrastructure
+- **2C1** — Mailpit / local email infrastructure (complete)
 - **2C2** — email/password + verification/reset backend
 - **2C3** — auth client + signup/login/logout/verify/reset UI
 - **2C4** — guarded first-admin provisioning

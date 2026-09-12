@@ -496,6 +496,9 @@ compose() {
   # Force every project-controlled interpolation variable from validated
   # helper state, and clear COMPOSE_* knobs that could swap file/project
   # identity or naming compatibility.
+  # COMPOSE_IGNORE_ORPHANS=1 is intentional: DEV may host both PostgreSQL
+  # and Mailpit under the same project with separate compose files. Ambient
+  # COMPOSE_* identity knobs remain cleared so callers cannot retarget.
   env \
     -u COMPOSE_FILE \
     -u COMPOSE_PROJECT_NAME \
@@ -503,8 +506,8 @@ compose() {
     -u COMPOSE_ENV_FILES \
     -u COMPOSE_PROFILES \
     -u COMPOSE_COMPATIBILITY \
-    -u COMPOSE_IGNORE_ORPHANS \
     -u COMPOSE_REMOVE_ORPHANS \
+    COMPOSE_IGNORE_ORPHANS=1 \
     NOMI_ENVIRONMENT="$ENV_ID" \
     POSTGRES_HOST_PORT="$HOST_PORT" \
     POSTGRES_DB="$DATABASE_NAME" \
@@ -656,6 +659,61 @@ resource_count_for_project() {
   printf '%s\n' "$((container_count + volume_count + network_count))"
 }
 
+# Phase 2C1: nomi-numi-shop-dev may host PostgreSQL and Mailpit together.
+# TEST remains PostgreSQL-only. Refuse unknown sibling services/networks.
+is_allowed_compose_service() {
+  local service_name="$1"
+
+  case "$ENV_ID" in
+    dev)
+      case "$service_name" in
+        postgres | mailpit) return 0 ;;
+        *) return 1 ;;
+      esac
+      ;;
+    test)
+      case "$service_name" in
+        postgres) return 0 ;;
+        *) return 1 ;;
+      esac
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+is_allowed_compose_network() {
+  local network_name="$1"
+
+  case "$ENV_ID" in
+    dev)
+      case "$network_name" in
+        postgres_net | mailpit_net) return 0 ;;
+        *) return 1 ;;
+      esac
+      ;;
+    test)
+      case "$network_name" in
+        postgres_net) return 0 ;;
+        *) return 1 ;;
+      esac
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+is_allowed_compose_volume() {
+  local volume_name="$1"
+
+  case "$volume_name" in
+    postgres_data) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 verify_resource_labels() {
   local resource_kind="$1"
   local resource_id="$2"
@@ -689,7 +747,7 @@ verify_resource_labels() {
           "$resource_id" 2>/dev/null || true
       )"
 
-      if [[ "$service_label" != "$COMPOSE_SERVICE_NAME" ]]; then
+      if ! is_allowed_compose_service "$service_label"; then
         fail "ownership proof failed for container ${resource_id}: unexpected service '${service_label:-NONE}'"
       fi
       ;;
@@ -715,7 +773,7 @@ verify_resource_labels() {
           "$resource_id" 2>/dev/null || true
       )"
 
-      if [[ "$compose_volume_label" != "$EXPECTED_COMPOSE_VOLUME" ]]; then
+      if ! is_allowed_compose_volume "$compose_volume_label"; then
         fail "ownership proof failed for volume ${resource_id}: unexpected Compose volume '${compose_volume_label:-NONE}'"
       fi
       ;;
@@ -741,7 +799,7 @@ verify_resource_labels() {
           "$resource_id" 2>/dev/null || true
       )"
 
-      if [[ "$compose_network_label" != "$EXPECTED_COMPOSE_NETWORK" ]]; then
+      if ! is_allowed_compose_network "$compose_network_label"; then
         fail "ownership proof failed for network ${resource_id}: unexpected Compose network '${compose_network_label:-NONE}'"
       fi
       ;;
