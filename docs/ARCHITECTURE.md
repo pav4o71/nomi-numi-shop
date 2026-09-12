@@ -67,11 +67,16 @@ Current implemented source foundation:
       app/
         api/
           auth/
+        signup/ login/ logout/ check-email/
+        email-verified/ forgot-password/ reset-password/
         layout.tsx
         page.tsx
 
       auth/
+        client.ts   (Phase 2C3 browser createAuthClient)
+        server.ts / lifecycle.ts / authorization.ts / …
       components/
+        auth/
       db/
         runtime.ts
         schema/

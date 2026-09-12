@@ -6,8 +6,9 @@ Phase 2C0 locks the auth lifecycle architecture for implementation in
 Phases 2C1–2C6. Phase 2C1 provisions local Mailpit and the local email
 transport abstraction. Phase 2C2 enables email/password signup,
 required verification, and password-reset on the Better Auth backend
-through that email abstraction. Auth UI, bootstrap tooling, and
-protected surfaces remain deferred to later 2C steps.
+through that email abstraction. Phase 2C3 adds the browser auth
+client and customer lifecycle UI. Bootstrap tooling and protected
+surfaces remain deferred to later 2C steps.
 
 ## Versions
 
@@ -244,6 +245,12 @@ Better Auth server instance:
 - `src/auth/lifecycle.ts` (Phase 2C2 session/verification/reset policy
   and email dispatch helpers)
 
+Better Auth browser client (Phase 2C3):
+
+- `src/auth/client.ts` (`createAuthClient` from `better-auth/react`)
+- `src/auth/routes.ts` / `src/auth/ui-messages.ts`
+- public UI under `src/app/{signup,login,logout,check-email,email-verified,forgot-password,reset-password}/`
+
 Next.js App Router handler:
 
 - `src/app/api/auth/[...all]/route.ts`
@@ -254,7 +261,6 @@ Next.js App Router handler:
 
 Still **not implemented** (deferred to later 2C steps):
 
-- client auth instance (`createAuthClient`) and auth UI (2C3)
 - first-admin bootstrap tooling (2C4)
 - customer/admin protected surfaces (2C5)
 - auth security + E2E closure (2C6)
@@ -262,6 +268,7 @@ Still **not implemented** (deferred to later 2C steps):
 - Better Auth plugins (including Admin / Organization)
 - general role-mutation endpoints
 - production cookies / production database auth
+- authenticated change-password (deferred past Phase 2C)
 
 Phase 2C1 **is** implemented:
 
@@ -279,6 +286,18 @@ Phase 2C2 **is** implemented:
 - session policy `expiresIn` 7 days / `updateAge` 1 day
 - lifecycle helpers in `src/auth/lifecycle.ts`
 
+Phase 2C3 **is** implemented:
+
+- browser client `createAuthClient` in `src/auth/client.ts`
+  (`better-auth/react`, base URL/path aligned with Phase 2A)
+- customer auth UI routes: `/signup`, `/login`, `/logout`,
+  `/check-email`, `/email-verified`, `/forgot-password`,
+  `/reset-password`
+- safe non-enumerating copy helpers in `src/auth/ui-messages.ts`
+- header Sign in / Sign up / Sign out affordances (client session is
+  UX only — never authorization)
+- no client role selection; server-owned `customer` assignment preserved
+
 ## Storefront independence
 
 The public homepage must start and render without PostgreSQL.
@@ -290,7 +309,7 @@ Auth modules initialize lazily when `/api/auth` is invoked.
 - **2C0** — auth architecture/design lock (this document)
 - **2C1** — Mailpit / local email infrastructure (complete)
 - **2C2** — email/password + verification/reset backend (complete)
-- **2C3** — auth client + signup/login/logout/verify/reset UI
+- **2C3** — auth client + signup/login/logout/verify/reset UI (complete)
 - **2C4** — guarded first-admin provisioning
 - **2C5** — customer/admin protected surfaces
 - **2C6** — auth security + E2E closure
