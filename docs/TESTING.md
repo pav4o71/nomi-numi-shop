@@ -89,9 +89,10 @@ Auth foundation unit coverage lives in:
   `pnpm test` only)
 - `tests/unit/auth-protected-surfaces.test.ts` (Phase 2C5 page guards,
   API 401/403 mapping, safe next paths / open-redirect refusals,
-  client UX is not authorization)
+  client UX is not authorization; portable)
 - `tests/e2e/auth-ui.spec.ts` (Phase 2C3 public auth page smoke +
-  Phase 2C5 anonymous protected redirects / API 401)
+  Phase 2C5 `/forbidden` landing; live protected redirects/APIs need
+  local auth runtime and are covered by the unit suite above)
 
 Local email / Mailpit coverage lives in:
 
