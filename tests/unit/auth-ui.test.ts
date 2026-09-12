@@ -43,6 +43,10 @@ describe("Phase 2C3 auth client + lifecycle UI", () => {
     expect(existsSync(path.join(process.cwd(), "src/auth/client.ts"))).toBe(true);
     expect(authClientConstants.packageImport).toBe("better-auth/react");
     expect(authClientConstants.baseURL).toBe("http://127.0.0.1:3100");
+    expect(authClientConstants.allowedLocalOrigins).toEqual([
+      "http://127.0.0.1:3100",
+      "http://127.0.0.1:3101",
+    ]);
     expect(authClientConstants.basePath).toBe("/api/auth");
     expect(authClientConstants.roleInputAllowed).toBe(false);
     expect(authClientConstants.clientStateIsAuthorization).toBe(false);
@@ -50,7 +54,11 @@ describe("Phase 2C3 auth client + lifecycle UI", () => {
 
     const clientSource = readSrc("src/auth/client.ts");
     expect(clientSource).toMatch(/from\s+["']better-auth\/react["']/);
-    expect(clientSource).toMatch(/createAuthClient/);
+    expect(clientSource).toMatch(/createAuthClient\(\{\s*basePath:/);
+    expect(clientSource).toMatch(/usesSameOriginRequests:\s*true/);
+    expect(clientSource).toContain("createAuthClient({");
+    expect(clientSource).toContain("basePath: PHASE2A_AUTH_BASE_PATH");
+    expect(clientSource).not.toMatch(/createAuthClient\(\{[^}]*baseURL:/);
     expect(clientSource).not.toMatch(/role\s*:/);
     expect(clientSource).not.toMatch(/socialProviders\s*:/);
     expect(clientSource).toMatch(/Client session state is for UX only/);

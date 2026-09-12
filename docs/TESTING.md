@@ -90,9 +90,14 @@ Auth foundation unit coverage lives in:
 - `tests/unit/auth-protected-surfaces.test.ts` (Phase 2C5 page guards,
   API 401/403 mapping, safe next paths / open-redirect refusals,
   client UX is not authorization; portable)
+- `tests/unit/auth-security-closure.test.ts` (Phase 2C6 portable
+  contracts: origins, revocation policy, enumeration copy, open-redirect,
+  test-hook removal, E2E wiring)
 - `tests/e2e/auth-ui.spec.ts` (Phase 2C3 public auth page smoke +
-  Phase 2C5 `/forbidden` landing; live protected redirects/APIs need
-  local auth runtime and are covered by the unit suite above)
+  Phase 2C5 `/forbidden` landing; portable CI)
+- `tests/e2e/auth-security.spec.ts` (Phase 2C6 live lifecycle/security
+  evidence via browser + Mailpit + DEV Postgres; skipped when `CI=true`;
+  required for local `pnpm test:e2e` closure)
 
 Local email / Mailpit coverage lives in:
 
@@ -101,7 +106,22 @@ Local email / Mailpit coverage lives in:
 
 Playwright starts the application through `pnpm dev:e2e` on
 `127.0.0.1:3101`. It must never reuse an unknown process already
-listening on port 3101.
+listening on port 3101. Local live auth E2E overrides
+`BETTER_AUTH_URL=http://127.0.0.1:3101` for the Playwright webServer so
+verification/reset links match the E2E origin. Auth runtime still uses
+DEV Postgres (`55432` / `nomi_numi_shop_dev`) only.
+
+### Live auth E2E vs portable CI
+
+`pnpm test:e2e` in GitHub Actions runs portable Chromium smoke
+(`auth-ui`, storefront). Live `auth-security` cases detect `CI` and
+skip. Full local closure requires owned DEV Postgres, Mailpit, and
+`.env.local`, then `pnpm test:e2e` without `CI`.
+
+`pnpm test:ci` still excludes path-locked suites
+(`database-safety`, `drizzle-foundation`, `email-local-safety`,
+`auth-first-admin-bootstrap-local`). Local full unit coverage remains
+`pnpm test` (includes first-admin TEST DB regression).
 
 ## 4. Determinism
 

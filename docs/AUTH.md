@@ -10,7 +10,8 @@ through that email abstraction. Phase 2C3 adds the browser auth
 client and customer lifecycle UI. Phase 2C4 adds guarded DEV/TEST-only
 first-admin bootstrap tooling. Phase 2C5 adds minimal customer/admin
 protected surfaces that prove exact-role server authorization
-end-to-end. Auth security + E2E closure remains deferred to Phase 2C6.
+end-to-end. Phase 2C6 closes auth security with portable contracts plus
+live Playwright/Mailpit evidence (local; skipped in portable CI).
 
 ## Versions
 
@@ -231,7 +232,8 @@ Ignored local environment file:
 Required variables:
 
 - `BETTER_AUTH_SECRET` — high entropy, at least 32 characters
-- `BETTER_AUTH_URL` — exactly `http://127.0.0.1:3100`
+- `BETTER_AUTH_URL` — exactly `http://127.0.0.1:3100` (dev) or
+  `http://127.0.0.1:3101` (Playwright E2E); loopback only
 - `DATABASE_URL` — local DEV only (`127.0.0.1:55432`, `nomi_numi_shop_dev`, `nomi_numi_dev`)
 
 Phase 2C1/2C2 local email variables (placeholders in `.env.example`;
@@ -282,14 +284,15 @@ Next.js App Router handler:
 
 ## Implementation status vs locked design
 
-Still **not implemented** (deferred to later 2C steps):
+Still **not implemented** (deferred past Phase 2C):
 
-- auth security + E2E closure (2C6)
 - social providers
 - Better Auth plugins (including Admin / Organization)
 - general role-mutation endpoints
 - production cookies / production database auth
 - authenticated change-password (deferred past Phase 2C)
+- production email provider
+- production first-admin mechanism
 
 Phase 2C1 **is** implemented:
 
@@ -336,6 +339,23 @@ Phase 2C5 **is** implemented:
 - safe `next` navigation helpers (no open redirect)
 - header Account/Admin links are UX-only; server remains authoritative
 
+Phase 2C6 **is** implemented:
+
+- portable contracts in `tests/unit/auth-security-closure.test.ts`
+- live Playwright + Mailpit lifecycle/security evidence in
+  `tests/e2e/auth-security.spec.ts` (local DEV/Mailpit; skipped in CI)
+- email lifecycle through Mailpit verification
+- non-enumerating public UX comparisons
+- password-reset session revocation
+- logout invalidation
+- anonymous/customer/admin protected-surface matrix
+- invalid-role fail-closed (test-only SQL role nulling; no HTTP inject)
+- open-redirect hostile `next` refusals
+- first-admin regression retained in Phase 2C4 unit/local suites
+- removed `data-user-id` DOM hooks from protected pages (testid-only)
+- `BETTER_AUTH_URL` may be `:3100` or `:3101`; browser client uses page
+  origin among allowlisted loopback origins
+
 ## Storefront independence
 
 The public homepage must start and render without PostgreSQL.
@@ -349,5 +369,5 @@ Auth modules initialize lazily when `/api/auth` is invoked.
 - **2C2** — email/password + verification/reset backend (complete)
 - **2C3** — auth client + signup/login/logout/verify/reset UI (complete)
 - **2C4** — guarded first-admin provisioning (complete)
-- **2C5** — customer/admin protected surfaces
-- **2C6** — auth security + E2E closure
+- **2C5** — customer/admin protected surfaces (complete)
+- **2C6** — auth security + E2E closure (complete)

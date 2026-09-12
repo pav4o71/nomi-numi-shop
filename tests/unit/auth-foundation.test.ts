@@ -6,7 +6,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   AuthEnvValidationError,
+  LOCAL_AUTH_ORIGINS,
   PHASE2A_AUTH_BASE_PATH,
+  PHASE2A_AUTH_E2E_ORIGIN,
   PHASE2A_AUTH_ORIGIN,
   parseAuthRuntimeEnv,
 } from "@/auth/env";
@@ -100,6 +102,10 @@ describe("Phase 2A Better Auth foundation", () => {
       username: "nomi_numi_dev",
     });
     expect(config.secret).toBe(validSecret);
+
+    const e2eConfig = parseAuthRuntimeEnv(validEnv({ BETTER_AUTH_URL: PHASE2A_AUTH_E2E_ORIGIN }));
+    expect(e2eConfig.baseURL).toBe(PHASE2A_AUTH_E2E_ORIGIN);
+    expect(LOCAL_AUTH_ORIGINS).toEqual([PHASE2A_AUTH_ORIGIN, PHASE2A_AUTH_E2E_ORIGIN]);
   });
 
   it("rejects production while accepting explicit development runtime", () => {

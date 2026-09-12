@@ -18,7 +18,8 @@ export const metadata: Metadata = {
  */
 export default async function AdminPage() {
   const headerList = await headers();
-  const principal = await requireAdminPage(headerList, PROTECTED_SURFACE_ROUTES.admin);
+  // Exact-role gate; principal identity is not rendered in the DOM.
+  await requireAdminPage(headerList, PROTECTED_SURFACE_ROUTES.admin);
 
   return (
     <main className="section-shell py-12 sm:py-16">
@@ -38,7 +39,6 @@ export default async function AdminPage() {
 
         <div
           data-testid="admin-surface"
-          data-user-id={principal.userId}
           className="rounded-xl border border-border/80 bg-surface px-5 py-4 text-sm text-muted-foreground"
         >
           <p>
