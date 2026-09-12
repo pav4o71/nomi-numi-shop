@@ -1,0 +1,42 @@
+# ==========================================================
+# nomi-numi-shop
+# Isolated local Mailpit (development email capture)
+# ==========================================================
+#
+# Compose project namespace:
+#   nomi-numi-shop-dev
+#
+# Invoked only through scripts/email-local.sh (or pnpm email:* wrappers).
+# Host binds are fixed loopback only:
+#   SMTP 127.0.0.1:11025 -> 1025
+#   UI   127.0.0.1:18025 -> 8025
+#
+# Architecture note (Phase 2C1):
+# Mailpit uses Docker's built-in `bridge` network_mode so loopback host
+# publishes work on this workstation Docker. User-defined Compose bridge
+# networks currently accept TCP to 127.0.0.1 publishes but do not forward
+# application bytes (observed with Docker 28.x + docker-proxy). Host ports
+# remain 127.0.0.1-only. Do not change host binds to 0.0.0.0.
+
+services:
+  mailpit:
+    image: axllent/mailpit:v1.31.1
+    network_mode: bridge
+    labels:
+      com.nomimumi.project: nomi-numi-shop
+      com.nomimumi.environment: ${NOMI_ENVIRONMENT:?NOMI_ENVIRONMENT is required}
+    # IPv4 listen inside the container; host publish stays loopback-only.
+    command:
+      - "--smtp"
+      - "0.0.0.0:1025"
+      - "--listen"
+      - "0.0.0.0:8025"
+    ports:
+      - "127.0.0.1:11025:1025"
+      - "127.0.0.1:18025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s

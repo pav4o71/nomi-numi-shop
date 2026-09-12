@@ -120,10 +120,30 @@ Web UI:
 
 - 127.0.0.1:18025
 
-Mailpit ports are reserved now. Provisioning of the owned Compose
-Mailpit service and local email delivery wiring is Phase **2C1** (after
-the Phase 2C0 auth design lock). Do not introduce a real transactional
-email provider in Phase 2C.
+Phase 2C1 provisions project-owned Mailpit inside the
+`nomi-numi-shop-dev` Compose namespace via:
+
+- compose: `infra/docker/mailpit.compose.yml`
+- helper: `scripts/email-local.sh`
+- wrappers: `pnpm email:up` / `pnpm email:status` / `pnpm email:stop`
+
+Mailpit shares the DEV Compose project with PostgreSQL but uses its own
+service (`mailpit`) on Docker's built-in `bridge` network mode so that
+loopback host publishes remain functional. Lifecycle commands must go
+through the project helper so ownership labels and loopback binds are
+enforced. Stopping Mailpit does not stop PostgreSQL, and stopping
+PostgreSQL does not stop Mailpit.
+
+Local email transport configuration (placeholders in `.env.example`):
+
+- `EMAIL_PROVIDER=mailpit`
+- `EMAIL_FROM=noreply@nomi-numi.local`
+- `SMTP_HOST=127.0.0.1`
+- `SMTP_PORT=11025`
+
+Application abstraction: `src/email/`. Production transactional providers
+remain out of scope for Phase 2C. Better Auth email/password wiring is
+Phase 2C2.
 
 ## 6. Environment files
 
@@ -151,8 +171,16 @@ Required Phase 2A keys in `.env.local`:
 - `DATABASE_URL` targeting only DEV `127.0.0.1:55432` /
   `nomi_numi_shop_dev` / `nomi_numi_dev`
 
+Phase 2C1 local email keys (optional until Phase 2C2 wires auth email):
+
+- `EMAIL_PROVIDER=mailpit`
+- `EMAIL_FROM=noreply@nomi-numi.local`
+- `SMTP_HOST=127.0.0.1`
+- `SMTP_PORT=11025`
+
 Auth initialization is local-only and is rejected when
 `NODE_ENV=production`, `VERCEL=1`, or `VERCEL_ENV=production`.
+Local email config parsing uses the same production refusal.
 
 Never commit credential-bearing `DATABASE_URL` values or real auth
 secrets. Production secrets remain outside the current phase.

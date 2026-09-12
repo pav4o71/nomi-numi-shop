@@ -105,12 +105,28 @@ Development:
 
 `nomi-numi-shop-dev`
 
+Services that may exist under this namespace:
+
+- `postgres` (Phase 1D; project network `postgres_net`)
+- `mailpit` (Phase 2C1; `network_mode: bridge` with host ports
+  bound only to `127.0.0.1`)
+
+Explicit architecture decision: Mailpit attaches to Docker's built-in
+`bridge` only so `127.0.0.1` host publishes forward correctly on the
+development workstation Docker. Host binds remain loopback-only. Do not
+widen Mailpit to `0.0.0.0` on the host.
+
 Test:
 
 `nomi-numi-shop-test`
 
+Services that may exist under this namespace:
+
+- `postgres` only
+
 Only Docker resources explicitly created by these project namespaces may
-be modified by webshop automation.
+be modified by webshop automation. Mailpit must be started and stopped
+only through `scripts/email-local.sh` / `pnpm email:*`.
 
 ---
 

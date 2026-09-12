@@ -29,8 +29,9 @@ Run the available test commands:
     pnpm test:all
 
 `pnpm test:ci` is the portable GitHub Actions unit suite. It excludes
-path-locked `database-safety` and `drizzle-foundation` tests that require
-the workstation canonical root. Local full coverage remains `pnpm test`.
+path-locked `database-safety`, `drizzle-foundation`, and
+`email-local-safety` tests that require the workstation canonical root.
+Local full coverage remains `pnpm test`.
 
 Playwright browser binaries are stored under the ignored
 `var/playwright-browsers/` directory. Playwright temporary files use the
@@ -77,6 +78,11 @@ Auth foundation unit coverage lives in:
 
 - `tests/unit/auth-foundation.test.ts`
 - `tests/unit/auth-authorization.test.ts`
+
+Local email / Mailpit coverage lives in:
+
+- `tests/unit/email-foundation.test.ts` (portable)
+- `tests/unit/email-local-safety.test.ts` (path-locked helper/ownership)
 
 Playwright starts the application through `pnpm dev:e2e` on
 `127.0.0.1:3101`. It must never reuse an unknown process already

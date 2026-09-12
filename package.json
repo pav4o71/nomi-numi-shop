@@ -16,7 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest run",
-    "test:ci": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest run --exclude tests/unit/database-safety.test.ts --exclude tests/unit/drizzle-foundation.test.ts",
+    "test:ci": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest run --exclude tests/unit/database-safety.test.ts --exclude tests/unit/drizzle-foundation.test.ts --exclude tests/unit/email-local-safety.test.ts",
     "test:watch": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest",
     "test:e2e": "mkdir -p var/playwright-browsers var/tmp && PLAYWRIGHT_BROWSERS_PATH=var/playwright-browsers TMPDIR=\"$PWD/var/tmp\" playwright test",
     "test:e2e:install": "mkdir -p var/playwright-browsers var/tmp && PLAYWRIGHT_BROWSERS_PATH=var/playwright-browsers TMPDIR=\"$PWD/var/tmp\" playwright install chromium",
@@ -31,7 +31,10 @@
     "db:check": "./scripts/drizzle-local.sh check",
     "db:dev:migrate": "./scripts/drizzle-local.sh migrate dev",
     "db:test:migrate": "./scripts/drizzle-local.sh migrate test",
-    "db:test:rebuild": "./scripts/db-test-rebuild.sh"
+    "db:test:rebuild": "./scripts/db-test-rebuild.sh",
+    "email:up": "./scripts/email-local.sh up",
+    "email:stop": "./scripts/email-local.sh stop",
+    "email:status": "./scripts/email-local.sh status"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.3",

@@ -75,6 +75,7 @@ Current implemented source foundation:
       db/
         runtime.ts
         schema/
+      email/
       lib/
 
 Future domain modules will be added only as their phases are approved;
@@ -116,7 +117,7 @@ Conceptual shipping providers:
 Conceptual email providers:
 
     EmailProvider
-      Mailpit development implementation
+      MailpitEmailProvider (Phase 2C1 local implementation)
       TransactionalEmailProvider later
 
 Conceptual storage providers:

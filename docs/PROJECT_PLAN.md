@@ -424,7 +424,9 @@ Database and authentication foundation, delivered in reviewed steps:
   - Phase 2C0 — auth architecture/design lock (roles, signup/login,
     verification, reset, sessions, protected surfaces, first-admin
     rules; docs only)
-  - Phase 2C1 — local email/Mailpit infrastructure
+  - Phase 2C1 — local email/Mailpit infrastructure (owned Compose
+    Mailpit on 127.0.0.1:11025/18025, `src/email/` transport
+    abstraction, safe local env templates)
   - Phase 2C2 — email/password + verification/reset backend
   - Phase 2C3 — auth client + signup/login/logout/verify/reset UI
   - Phase 2C4 — guarded first-admin provisioning (DEV/TEST)
