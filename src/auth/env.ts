@@ -3,7 +3,21 @@
  * Local development only. Fail closed. Never log credential-bearing values.
  */
 
+/** Primary local app origin (pnpm dev). */
 export const PHASE2A_AUTH_ORIGIN = "http://127.0.0.1:3100";
+
+/** Playwright E2E app origin (pnpm dev:e2e). Same auth policy; distinct port. */
+export const PHASE2A_AUTH_E2E_ORIGIN = "http://127.0.0.1:3101";
+
+/**
+ * Allowed local Better Auth base URLs. Loopback only — never production hosts.
+ * Phase 2C6 accepts the E2E origin so live browser coverage can run on :3101
+ * without redesigning auth.
+ */
+export const LOCAL_AUTH_ORIGINS = [PHASE2A_AUTH_ORIGIN, PHASE2A_AUTH_E2E_ORIGIN] as const;
+
+export type LocalAuthOrigin = (typeof LOCAL_AUTH_ORIGINS)[number];
+
 export const PHASE2A_AUTH_BASE_PATH = "/api/auth";
 
 const PLACEHOLDER_SECRET_MARKERS = [
@@ -30,7 +44,7 @@ export type AuthRuntimeEnvInput = {
 
 export type AuthRuntimeConfig = {
   secret: string;
-  baseURL: typeof PHASE2A_AUTH_ORIGIN;
+  baseURL: LocalAuthOrigin;
   basePath: typeof PHASE2A_AUTH_BASE_PATH;
   databaseUrl: string;
   database: {
@@ -41,6 +55,10 @@ export type AuthRuntimeConfig = {
     username: "nomi_numi_dev";
   };
 };
+
+function isLocalAuthOrigin(value: string): value is LocalAuthOrigin {
+  return (LOCAL_AUTH_ORIGINS as readonly string[]).includes(value);
+}
 
 export class AuthEnvValidationError extends Error {
   constructor(message: string) {
@@ -94,8 +112,9 @@ export function parseAuthRuntimeEnv(input: AuthRuntimeEnvInput): AuthRuntimeConf
     reject("BETTER_AUTH_URL must be a valid absolute URL");
   }
 
-  if (baseURL.href.replace(/\/$/, "") !== PHASE2A_AUTH_ORIGIN) {
-    reject(`BETTER_AUTH_URL must be exactly ${PHASE2A_AUTH_ORIGIN}`);
+  const normalizedBaseURL = baseURL.href.replace(/\/$/, "");
+  if (!isLocalAuthOrigin(normalizedBaseURL)) {
+    reject(`BETTER_AUTH_URL must be exactly ${PHASE2A_AUTH_ORIGIN} or ${PHASE2A_AUTH_E2E_ORIGIN}`);
   }
 
   const databaseUrl = input.DATABASE_URL;
@@ -151,7 +170,7 @@ export function parseAuthRuntimeEnv(input: AuthRuntimeEnvInput): AuthRuntimeConf
 
   return {
     secret,
-    baseURL: PHASE2A_AUTH_ORIGIN,
+    baseURL: normalizedBaseURL,
     basePath: PHASE2A_AUTH_BASE_PATH,
     databaseUrl,
     database: {

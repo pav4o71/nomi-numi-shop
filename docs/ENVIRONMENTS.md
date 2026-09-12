@@ -172,7 +172,7 @@ Phase 2A application runtime (local development only):
 Required Phase 2A keys in `.env.local`:
 
 - `BETTER_AUTH_SECRET`
-- `BETTER_AUTH_URL=http://127.0.0.1:3100`
+- `BETTER_AUTH_URL=http://127.0.0.1:3100` (or `http://127.0.0.1:3101` for Playwright E2E)
 - `DATABASE_URL` targeting only DEV `127.0.0.1:55432` /
   `nomi_numi_shop_dev` / `nomi_numi_dev`
 

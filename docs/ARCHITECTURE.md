@@ -77,6 +77,7 @@ Current implemented source foundation:
       auth/
         client.ts   (Phase 2C3 browser createAuthClient)
         guards.ts / http.ts / safe-navigation.ts (Phase 2C5)
+        client resolves page origin among LOCAL_AUTH_ORIGINS (Phase 2C6)
         server.ts / lifecycle.ts / authorization.ts / …
       components/
         auth/

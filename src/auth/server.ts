@@ -9,7 +9,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 
-import { PHASE2A_AUTH_BASE_PATH, PHASE2A_AUTH_ORIGIN, parseAuthRuntimeEnv } from "@/auth/env";
+import {
+  LOCAL_AUTH_ORIGINS,
+  PHASE2A_AUTH_BASE_PATH,
+  PHASE2A_AUTH_ORIGIN,
+  parseAuthRuntimeEnv,
+} from "@/auth/env";
 import {
   AUTH_EMAIL_VERIFICATION_EXPIRES_IN_SECONDS,
   AUTH_PASSWORD_RESET_EXPIRES_IN_SECONDS,
@@ -74,7 +79,8 @@ function createAuthInstance() {
     baseURL: env.baseURL,
     basePath: env.basePath,
     secret: env.secret,
-    trustedOrigins: [PHASE2A_AUTH_ORIGIN],
+    // Dev (:3100) and Playwright E2E (:3101) share the same local auth policy.
+    trustedOrigins: [...LOCAL_AUTH_ORIGINS],
     logger: authLogger,
     database: drizzleAdapter(getRuntimeDb(), {
       provider: "pg",

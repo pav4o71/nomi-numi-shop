@@ -23,6 +23,9 @@ Phase 2A/2B foundation status:
   session/role visibility is never authorization; plugins and social
   providers remain deferred (see `docs/AUTH.md`)
 - Phase 2C1 provides project-owned Mailpit + `src/email/` transport
+- Phase 2C6 closes auth security with portable unit contracts and local
+  Playwright/Mailpit evidence (CI skips live auth E2E; portable smoke
+  remains)
 
 Phase 2C0 lifecycle rules implemented by Phase 2C2:
 

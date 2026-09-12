@@ -431,7 +431,9 @@ Database and authentication foundation, delivered in reviewed steps:
   - Phase 2C3 — auth client + signup/login/logout/verify/reset UI
   - Phase 2C4 — guarded first-admin provisioning (DEV/TEST)
   - Phase 2C5 — customer/admin protected surfaces
-  - Phase 2C6 — auth security + E2E closure
+  - Phase 2C6 — auth security + E2E closure (complete: portable
+    contracts + local Playwright/Mailpit evidence; CI skips live auth
+    E2E)
 
 ### Phase 3
 
