@@ -9,6 +9,8 @@ import {
   AUTH_UI_COPY,
   loginErrorMessage,
   resetPasswordErrorMessage,
+  resolveVerificationLandingState,
+  shouldContinueToCheckEmailAfterSignup,
   tokenQueryErrorMessage,
 } from "@/auth/ui-messages";
 
@@ -91,11 +93,28 @@ describe("Phase 2C3 auth client + lifecycle UI", () => {
   });
 
   it("uses non-enumerating copy for signup, check-email, and forgot-password", () => {
-    expect(AUTH_UI_COPY.signupSuccess).toMatch(/if that email can receive/i);
+    expect(AUTH_UI_COPY).not.toHaveProperty("signupSuccess");
     expect(AUTH_UI_COPY.forgotPasswordGeneric).toMatch(/if an account exists/i);
     expect(AUTH_UI_COPY.checkEmailBody).toMatch(/if an account needs verification/i);
-    expect(AUTH_UI_COPY.signupSuccess.toLowerCase()).not.toContain("already registered");
     expect(AUTH_UI_COPY.forgotPasswordGeneric.toLowerCase()).not.toContain("no account");
+
+    expect(shouldContinueToCheckEmailAfterSignup(null)).toBe(true);
+    expect(shouldContinueToCheckEmailAfterSignup(undefined)).toBe(true);
+    expect(shouldContinueToCheckEmailAfterSignup({ code: "USER_ALREADY_EXISTS" })).toBe(true);
+    expect(
+      shouldContinueToCheckEmailAfterSignup({
+        code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
+      }),
+    ).toBe(true);
+    expect(shouldContinueToCheckEmailAfterSignup({ message: "User already exists" })).toBe(true);
+    expect(shouldContinueToCheckEmailAfterSignup({ code: "INTERNAL_SERVER_ERROR" })).toBe(false);
+    expect(shouldContinueToCheckEmailAfterSignup({ code: "NETWORK_ERROR" })).toBe(false);
+
+    const signup = readSrc("src/components/auth/signup-form.tsx");
+    expect(signup).toMatch(/shouldContinueToCheckEmailAfterSignup/);
+    expect(signup).toMatch(/AUTH_UI_ROUTES\.checkEmail/);
+    expect(signup).toMatch(/AUTH_UI_COPY\.genericFailure/);
+    expect(signup).not.toMatch(/already registered|account exists|email is taken/i);
 
     const forgot = readSrc("src/components/auth/forgot-password-form.tsx");
     expect(forgot).toMatch(/requestPasswordReset/);
@@ -105,6 +124,38 @@ describe("Phase 2C3 auth client + lifecycle UI", () => {
     const checkEmail = readSrc("src/components/auth/check-email-panel.tsx");
     expect(checkEmail).toMatch(/sendVerificationEmail/);
     expect(checkEmail).toMatch(/AUTH_UI_COPY\.resendSuccess|AUTH_UI_COPY\.checkEmailBody/);
+  });
+
+  it("does not treat missing verification error query as success", () => {
+    expect(resolveVerificationLandingState({ errorParam: null, sessionUser: null })).toEqual({
+      state: "inconclusive",
+      errorMessage: null,
+    });
+    expect(
+      resolveVerificationLandingState({
+        errorParam: undefined,
+        sessionUser: { emailVerified: false },
+      }),
+    ).toEqual({ state: "inconclusive", errorMessage: null });
+    expect(
+      resolveVerificationLandingState({
+        errorParam: null,
+        sessionUser: { emailVerified: true },
+      }),
+    ).toEqual({ state: "verified", errorMessage: null });
+    expect(
+      resolveVerificationLandingState({
+        errorParam: "TOKEN_EXPIRED",
+        sessionUser: { emailVerified: true },
+      }).state,
+    ).toBe("error");
+
+    const page = readSrc("src/app/email-verified/page.tsx");
+    expect(page).toMatch(/resolveVerificationLandingState/);
+    expect(page).toMatch(/getAuth\(\)\.api\.getSession/);
+    expect(page).toMatch(/verificationInconclusive/);
+    expect(page).not.toMatch(/from\s+["']@\/auth\/authorization["']/);
+    expect(page).not.toMatch(/requireAdmin|requireCustomer/);
   });
 
   it("maps login, reset, and token errors safely", () => {

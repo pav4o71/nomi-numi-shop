@@ -39,7 +39,7 @@ const authPages = [
   },
   {
     path: "/email-verified",
-    heading: "Email verified",
+    heading: "Email verification",
     fields: [],
     submit: null,
   },
@@ -83,6 +83,16 @@ test("email-verified shows invalid-token UX", async ({ page }) => {
     page.getByRole("alert").filter({ hasText: /invalid or has expired/i }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: /request a new verification email/i })).toBeVisible();
+});
+
+test("email-verified without session does not claim success", async ({ page }) => {
+  await page.goto("/email-verified");
+  await expect(page.getByRole("heading", { level: 1, name: "Email verification" })).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: /does not confirm verification/i }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Email verified" })).toHaveCount(0);
+  await expect(page.getByText(/your email is verified/i)).toHaveCount(0);
 });
 
 test("header exposes sign-in and sign-up when signed out", async ({ page }) => {

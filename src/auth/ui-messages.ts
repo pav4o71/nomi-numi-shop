@@ -7,8 +7,6 @@
  */
 
 export const AUTH_UI_COPY = {
-  signupSuccess:
-    "If that email can receive messages from us, check your inbox for a verification link.",
   checkEmailHeading: "Check your email",
   checkEmailBody:
     "If an account needs verification, we sent a link. Open it to continue. The link expires in 24 hours.",
@@ -27,6 +25,8 @@ export const AUTH_UI_COPY = {
     "This verification link is invalid or has expired. Request a new verification email to continue.",
   verificationSuccess:
     "Your email is verified. You can continue shopping. If you are not signed in yet, use Sign in.",
+  verificationInconclusive:
+    "Open the verification link from your email to finish. This page does not confirm verification by itself.",
   logoutSuccess: "You are signed out.",
   genericFailure: "Something went wrong. Please try again.",
   passwordTooShort: "Password must be at least 8 characters.",
@@ -38,6 +38,48 @@ export type AuthClientErrorLike = {
   message?: string | null;
   status?: number | null;
 };
+
+export type VerificationLandingState = "error" | "verified" | "inconclusive";
+
+/**
+ * Resolve `/email-verified` UX.
+ *
+ * Absence of `?error=` is not proof of verification. Success is only shown
+ * when a server session reports `emailVerified: true` (Better Auth may
+ * auto-sign-in after a successful verification click). Query params are never
+ * authorization.
+ */
+export function resolveVerificationLandingState(input: {
+  errorParam?: string | null;
+  sessionUser?: { emailVerified?: boolean | null } | null;
+}): { state: VerificationLandingState; errorMessage: string | null } {
+  const errorMessage = tokenQueryErrorMessage(input.errorParam, "verification");
+  if (errorMessage) {
+    return { state: "error", errorMessage };
+  }
+  if (input.sessionUser?.emailVerified === true) {
+    return { state: "verified", errorMessage: null };
+  }
+  return { state: "inconclusive", errorMessage: null };
+}
+
+/**
+ * Signup outcomes that must share the public check-email path so duplicate
+ * emails stay non-enumerating. Genuine infrastructure failures stay false.
+ */
+export function shouldContinueToCheckEmailAfterSignup(
+  error: AuthClientErrorLike | null | undefined,
+): boolean {
+  if (!error) return true;
+  const code = error.code?.toUpperCase() ?? "";
+  if (code === "USER_ALREADY_EXISTS" || code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+    return true;
+  }
+  if (/already\s+(exists|registered)/i.test(error.message ?? "")) {
+    return true;
+  }
+  return false;
+}
 
 /**
  * Map Better Auth client errors to safe login copy.

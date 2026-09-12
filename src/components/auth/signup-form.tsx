@@ -7,7 +7,7 @@ import type { FormEvent } from "react";
 
 import { authClient } from "@/auth/client";
 import { AUTH_EMAIL_VERIFICATION_CALLBACK_PATH, AUTH_UI_ROUTES } from "@/auth/routes";
-import { AUTH_UI_COPY } from "@/auth/ui-messages";
+import { AUTH_UI_COPY, shouldContinueToCheckEmailAfterSignup } from "@/auth/ui-messages";
 import { AuthAlert, AuthFormField } from "@/components/auth/auth-form-field";
 import { Button } from "@/components/ui/button";
 
@@ -43,12 +43,14 @@ export function SignupForm() {
         callbackURL: AUTH_EMAIL_VERIFICATION_CALLBACK_PATH,
       });
 
-      if (signupError) {
+      // Duplicate / existing-email outcomes share the check-email path so the
+      // UI does not reveal whether the account already existed. Infrastructure
+      // failures keep a generic service-error state.
+      if (!shouldContinueToCheckEmailAfterSignup(signupError)) {
         setError(AUTH_UI_COPY.genericFailure);
         return;
       }
 
-      // Same destination for new and duplicate emails (non-enumerating UX).
       const params = new URLSearchParams({ email });
       router.push(`${AUTH_UI_ROUTES.checkEmail}?${params.toString()}`);
     });
