@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AuthHeaderActions } from "@/components/auth/auth-header-actions";
 import { Container } from "@/components/container";
 import { Button } from "@/components/ui/button";
 import { siteNavigation } from "@/lib/site-navigation";
@@ -28,9 +29,12 @@ export function SiteHeader() {
             ))}
           </nav>
 
-          <Button asChild className="w-fit self-start sm:self-auto">
-            <a href="#gifts">Explore Gifts</a>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <Button asChild variant="secondary" className="w-fit">
+              <a href="#gifts">Explore Gifts</a>
+            </Button>
+            <AuthHeaderActions />
+          </div>
         </div>
       </Container>
     </header>

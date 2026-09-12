@@ -18,8 +18,10 @@ Phase 2A/2B foundation status:
   `BETTER_AUTH_SECRET` (>= 32 chars), explicit `BETTER_AUTH_URL`
   (`http://127.0.0.1:3100`), and DEV-only `DATABASE_URL`
 - Phase 2C2 enables email/password with required verification and
-  password reset through local Mailpit (`src/email/`); auth UI,
-  plugins, and social providers remain deferred (see `docs/AUTH.md`)
+  password reset through local Mailpit (`src/email/`)
+- Phase 2C3 adds `createAuthClient` and customer auth UI; client
+  session/role visibility is never authorization; plugins and social
+  providers remain deferred (see `docs/AUTH.md`)
 - Phase 2C1 provides project-owned Mailpit + `src/email/` transport
 
 Phase 2C0 lifecycle rules implemented by Phase 2C2:

@@ -3,7 +3,8 @@
  *
  * Local development only. Phase 2C2 enables email/password with required
  * verification and password reset through the Phase 2C1 email abstraction.
- * Social providers, plugins, and client auth remain intentionally absent.
+ * Phase 2C3 adds the browser client and auth UI. Social providers and plugins
+ * remain intentionally absent.
  */
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";

@@ -236,7 +236,7 @@ describe("Phase 2A Better Auth foundation", () => {
     expect(serverSource).not.toMatch(/\badmin\s*\(/);
   });
 
-  it("keeps the auth route at /api/auth and omits a client auth instance", () => {
+  it("keeps the auth route at /api/auth and includes the Phase 2C3 client instance", () => {
     const routePath = path.join(process.cwd(), "src/app/api/auth/[...all]/route.ts");
     expect(existsSync(routePath)).toBe(true);
     const routeSource = readFileSync(routePath, "utf8");
@@ -245,7 +245,7 @@ describe("Phase 2A Better Auth foundation", () => {
     expect(routeSource).toContain('export const runtime = "nodejs"');
     expect(routeSource).toContain("getAuth()");
 
-    expect(existsSync(path.join(process.cwd(), "src/auth/client.ts"))).toBe(false);
+    expect(existsSync(path.join(process.cwd(), "src/auth/client.ts"))).toBe(true);
     expect(existsSync(path.join(process.cwd(), "src/lib/auth-client.ts"))).toBe(false);
   });
 
