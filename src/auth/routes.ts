@@ -1,8 +1,8 @@
 /**
- * Phase 2C3 public auth UI routes.
+ * Phase 2C3 public auth UI routes and Phase 2C5 protected surface paths.
  *
- * These are customer-facing pages only. They do not authorize access —
- * server authorization primitives remain the sole authority (Phase 2B/2C5).
+ * Public auth pages do not authorize access. Protected surfaces require the
+ * server authorization primitives (Phase 2B/2C5).
  */
 
 export const AUTH_UI_ROUTES = {
@@ -16,6 +16,22 @@ export const AUTH_UI_ROUTES = {
 } as const;
 
 export type AuthUiRoute = (typeof AUTH_UI_ROUTES)[keyof typeof AUTH_UI_ROUTES];
+
+/**
+ * Minimal Phase 2C5 protected surfaces + denial landing.
+ * Authorization is enforced by server guards / route handlers — not by these
+ * path constants alone.
+ */
+export const PROTECTED_SURFACE_ROUTES = {
+  account: "/account",
+  admin: "/admin",
+  forbidden: "/forbidden",
+  apiAccount: "/api/account",
+  apiAdmin: "/api/admin",
+} as const;
+
+export type ProtectedSurfaceRoute =
+  (typeof PROTECTED_SURFACE_ROUTES)[keyof typeof PROTECTED_SURFACE_ROUTES];
 
 /**
  * Verification email callback target.

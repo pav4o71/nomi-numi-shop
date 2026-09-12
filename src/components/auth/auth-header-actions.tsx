@@ -3,15 +3,16 @@
 import Link from "next/link";
 
 import { useSession } from "@/auth/client";
-import { AUTH_UI_ROUTES } from "@/auth/routes";
+import { AUTH_UI_ROUTES, PROTECTED_SURFACE_ROUTES } from "@/auth/routes";
 import { Button } from "@/components/ui/button";
 
 /**
  * Header auth affordances.
  *
  * IMPORTANT: `useSession` is client UX state only. It must never be used as
- * authorization. Protected surfaces (Phase 2C5) require server primitives.
- * Role is never displayed or selected here.
+ * authorization. Account/Admin links are navigational only — protected pages
+ * and APIs enforce exact roles on the server. Role is never read or selected
+ * here.
  */
 export function AuthHeaderActions() {
   const { data, isPending } = useSession();
@@ -27,9 +28,17 @@ export function AuthHeaderActions() {
 
   if (appearsSignedIn) {
     return (
-      <Button asChild variant="outline" className="w-fit self-start sm:self-auto">
-        <Link href={AUTH_UI_ROUTES.logout}>Sign out</Link>
-      </Button>
+      <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+        <Button asChild variant="outline" className="w-fit">
+          <Link href={PROTECTED_SURFACE_ROUTES.account}>Account</Link>
+        </Button>
+        <Button asChild variant="outline" className="w-fit">
+          <Link href={PROTECTED_SURFACE_ROUTES.admin}>Admin</Link>
+        </Button>
+        <Button asChild variant="outline" className="w-fit">
+          <Link href={AUTH_UI_ROUTES.logout}>Sign out</Link>
+        </Button>
+      </div>
     );
   }
 

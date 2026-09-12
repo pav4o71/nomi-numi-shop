@@ -100,3 +100,32 @@ test("header exposes sign-in and sign-up when signed out", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign up" })).toBeVisible();
 });
+
+test("anonymous account access redirects safely to login", async ({ page }) => {
+  await page.goto("/account");
+  await expect(page).toHaveURL(/\/login\?next=%2Faccount$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
+});
+
+test("anonymous admin access redirects safely to login", async ({ page }) => {
+  await page.goto("/admin");
+  await expect(page).toHaveURL(/\/login\?next=%2Fadmin$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
+});
+
+test("forbidden landing renders without role controls", async ({ page }) => {
+  await page.goto("/forbidden");
+  await expect(page.getByRole("heading", { level: 1, name: "Access denied" })).toBeVisible();
+  await expect(page.getByTestId("forbidden-surface")).toBeVisible();
+  await expect(page.locator('input[name="role"]')).toHaveCount(0);
+});
+
+test("anonymous protected APIs return 401 UNAUTHENTICATED", async ({ request }) => {
+  const account = await request.get("/api/account");
+  expect(account.status()).toBe(401);
+  await expect(account.json()).resolves.toEqual({ code: "UNAUTHENTICATED" });
+
+  const admin = await request.get("/api/admin");
+  expect(admin.status()).toBe(401);
+  await expect(admin.json()).resolves.toEqual({ code: "UNAUTHENTICATED" });
+});

@@ -87,8 +87,11 @@ Auth foundation unit coverage lives in:
 - `tests/unit/auth-first-admin-bootstrap-local.test.ts` (Phase 2C4
   path-locked DEV/TEST promotion, race-safety, wrapper smoke; local
   `pnpm test` only)
+- `tests/unit/auth-protected-surfaces.test.ts` (Phase 2C5 page guards,
+  API 401/403 mapping, safe next paths / open-redirect refusals,
+  client UX is not authorization)
 - `tests/e2e/auth-ui.spec.ts` (Phase 2C3 public auth page smoke +
-  invalid-token UX)
+  Phase 2C5 anonymous protected redirects / API 401)
 
 Local email / Mailpit coverage lives in:
 
