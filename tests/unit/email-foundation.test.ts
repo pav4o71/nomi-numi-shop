@@ -127,14 +127,15 @@ describe("Phase 2C1 local email foundation", () => {
     );
   });
 
-  it("creates a Mailpit provider without wiring Better Auth email/password", () => {
+  it("creates a Mailpit provider wired into Better Auth verification/reset", () => {
     const provider = createLocalEmailProvider(validEmailEnv());
     expect(provider).toBeInstanceOf(MailpitEmailProvider);
     expect(provider.providerId).toBe("mailpit");
-    expect(emailFoundationConstants.betterAuthEmailWired).toBe(false);
-    expect(authFoundationConstants.emailAndPasswordEnabled).toBe(false);
-    expect(authServerSource).not.toMatch(/emailAndPassword\s*:/);
-    expect(authServerSource).not.toMatch(/createLocalEmailProvider|MailpitEmailProvider/);
+    expect(emailFoundationConstants.betterAuthEmailWired).toBe(true);
+    expect(authFoundationConstants.emailAndPasswordEnabled).toBe(true);
+    expect(authServerSource).toMatch(/emailAndPassword\s*:\s*\{/);
+    expect(authServerSource).toMatch(/createLocalEmailProvider/);
+    expect(authServerSource).toMatch(/dispatchVerificationEmail|dispatchPasswordResetEmail/);
   });
 
   it("delivers a probe message to local Mailpit over SMTP when available", async () => {

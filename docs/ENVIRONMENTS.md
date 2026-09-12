@@ -146,8 +146,9 @@ Local email transport configuration (placeholders in `.env.example`):
 - `SMTP_PORT=11025`
 
 Application abstraction: `src/email/`. Production transactional providers
-remain out of scope for Phase 2C. Better Auth email/password wiring is
-Phase 2C2.
+remain out of scope for Phase 2C. Phase 2C2 wires Better Auth
+verification and password-reset mail through the local Mailpit
+provider.
 
 ## 6. Environment files
 
@@ -175,7 +176,7 @@ Required Phase 2A keys in `.env.local`:
 - `DATABASE_URL` targeting only DEV `127.0.0.1:55432` /
   `nomi_numi_shop_dev` / `nomi_numi_dev`
 
-Phase 2C1 local email keys (optional until Phase 2C2 wires auth email):
+Phase 2C1/2C2 local email keys (required for auth verification/reset mail):
 
 - `EMAIL_PROVIDER=mailpit`
 - `EMAIL_FROM=noreply@nomi-numi.local`

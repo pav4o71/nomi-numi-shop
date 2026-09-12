@@ -216,8 +216,9 @@ describe("Phase 2A Better Auth foundation", () => {
     ).toThrow(/production/);
   });
 
-  it("keeps email/password, social providers, and plugins disabled", () => {
-    expect(authFoundationConstants.emailAndPasswordEnabled).toBe(false);
+  it("enables email/password while keeping social providers and plugins disabled", () => {
+    expect(authFoundationConstants.emailAndPasswordEnabled).toBe(true);
+    expect(authFoundationConstants.requireEmailVerification).toBe(true);
     expect(authFoundationConstants.socialProvidersConfigured).toBe(false);
     expect(authFoundationConstants.pluginsConfigured).toBe(false);
     expect(authFoundationConstants.adminPluginConfigured).toBe(false);
@@ -227,7 +228,7 @@ describe("Phase 2A Better Auth foundation", () => {
     expect(authFoundationConstants.baseURL).toBe(PHASE2A_AUTH_ORIGIN);
 
     const serverSource = readFileSync(new URL("../../src/auth/server.ts", import.meta.url), "utf8");
-    expect(serverSource).not.toMatch(/emailAndPassword\s*:/);
+    expect(serverSource).toMatch(/emailAndPassword\s*:\s*\{/);
     expect(serverSource).not.toMatch(/socialProviders\s*:/);
     expect(serverSource).not.toMatch(/plugins\s*:/);
     expect(serverSource).not.toMatch(/nextCookies/);

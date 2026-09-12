@@ -5,24 +5,26 @@ store.
 
 ## Current phase
 
-Phase 2C1 — Local Mailpit / email infrastructure
+Phase 2C2 — Auth lifecycle backend (email/password + verification/reset)
 
-Phase 0 through Phase 2B, Phase 2C-P, and Phase 2C0 are complete. The
-repository includes isolated local PostgreSQL, Drizzle ORM, committed
-migrations, a guarded TEST-only rebuild workflow, Better Auth
-(`better-auth@1.7.3` + matching Drizzle adapter), server-owned
-`customer`/`admin` roles with exact-role authorization primitives, the
-portable PR quality gate, and the Phase 2C0 auth design lock.
+Phase 0 through Phase 2C1 are complete. The repository includes isolated
+local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
+rebuild workflow, Better Auth (`better-auth@1.7.3` + matching Drizzle
+adapter), server-owned `customer`/`admin` roles with exact-role
+authorization primitives, the portable PR quality gate, the Phase 2C0
+auth design lock, and project-owned Mailpit with a local email transport
+abstraction.
 
-Phase 2C1 provisions project-owned Mailpit for local development and the
-smallest local email transport abstraction for Phase 2C2. Email/password,
-auth UI, bootstrap tooling, protected surfaces, and E2E closure remain in
-Phases 2C2–2C6. See `docs/AUTH.md`.
+Phase 2C2 enables the Better Auth email/password backend lifecycle:
+required email verification, safe verification resend, forgot/reset
+password, session revocation after reset, and the locked 7-day /
+1-day session policy. Auth UI, first-admin bootstrap, protected
+surfaces, and E2E closure remain in Phases 2C3–2C6. See `docs/AUTH.md`.
 
-Local auth runtime still uses ignored `.env.local`
-(`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`) and
-`/api/auth/*`. Email/password, social login, client auth UI, admin
-bootstrap, and route protection are not enabled yet. The public
+Local auth runtime uses ignored `.env.local`
+(`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, plus Mailpit
+email transport keys) and `/api/auth/*`. Social login, client auth UI,
+admin bootstrap, and route protection are not enabled yet. The public
 storefront still renders without PostgreSQL; auth connects lazily only
 when `/api/auth` is invoked.
 
@@ -182,9 +184,9 @@ Lifecycle (only through project wrappers):
 Local email transport placeholders live in `.env.example`
 (`EMAIL_PROVIDER=mailpit`, `EMAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`).
 Runtime values belong in ignored `.env.local`. The Mailpit provider
-abstraction lives under `src/email/` and is **not** wired into Better
-Auth until Phase 2C2. Do not start Mailpit with raw `docker compose`
-outside `scripts/email-local.sh`.
+abstraction lives under `src/email/` and is wired into Better Auth
+verification and password-reset in Phase 2C2. Do not start Mailpit with
+raw `docker compose` outside `scripts/email-local.sh`.
 
 ## Preflight
 
