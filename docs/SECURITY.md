@@ -62,7 +62,7 @@ shop owner, not an auth role.
 Role is configured with Better Auth `input: false` so ordinary
 user/API/provider input cannot choose `admin`. No Admin plugin.
 
-Protected-surface rules (Phase 2C5):
+Protected-surface rules (Phase 2C5 — implemented):
 
 - customer surfaces: exact `customer`
 - admin surfaces: exact `admin`
@@ -72,7 +72,7 @@ Protected-surface rules (Phase 2C5):
 - wrong-role APIs: `403` / `FORBIDDEN`
 - prefer server-side guards; no client-only authorization
 
-Authorization must protect (in later phases that wire routes):
+Authorization must protect (in later phases that wire richer routes):
 
 - admin functions
 - customer profiles

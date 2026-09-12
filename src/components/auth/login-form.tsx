@@ -7,6 +7,7 @@ import type { FormEvent } from "react";
 
 import { authClient } from "@/auth/client";
 import { AUTH_UI_ROUTES } from "@/auth/routes";
+import { resolvePostLoginPath } from "@/auth/safe-navigation";
 import { AUTH_UI_COPY, loginErrorMessage } from "@/auth/ui-messages";
 import { AuthAlert, AuthFormField } from "@/components/auth/auth-form-field";
 import { Button } from "@/components/ui/button";
@@ -14,17 +15,25 @@ import { Button } from "@/components/ui/button";
 interface LoginFormProps {
   verified?: boolean;
   resetComplete?: boolean;
+  /** Server-sanitized safe next path, or null when absent/unsafe. */
+  nextPath?: string | null;
 }
 
 /**
  * Customer login form. Does not authorize routes — only requests a session.
  * Unverified accounts are directed to check-email without treating them as signed in.
+ * Post-login navigation uses only a server-sanitized relative path.
  */
-export function LoginForm({ verified = false, resetComplete = false }: LoginFormProps) {
+export function LoginForm({
+  verified = false,
+  resetComplete = false,
+  nextPath = null,
+}: LoginFormProps) {
   const router = useRouter();
   const formId = useId();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const destination = resolvePostLoginPath(nextPath);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,7 +60,7 @@ export function LoginForm({ verified = false, resetComplete = false }: LoginForm
         return;
       }
 
-      router.push("/");
+      router.push(destination);
       router.refresh();
     });
   }

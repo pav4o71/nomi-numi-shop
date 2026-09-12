@@ -74,7 +74,11 @@ describe("Phase 2C3 auth client + lifecycle UI", () => {
   });
 
   it("keeps signup/login/forgot/reset/logout forms free of role or admin inputs", () => {
-    for (const relativePath of authFormSources) {
+    const roleInputFormSources = authFormSources.filter(
+      (relativePath) => relativePath !== "src/components/auth/auth-header-actions.tsx",
+    );
+
+    for (const relativePath of roleInputFormSources) {
       const source = readSrc(relativePath);
       expect(source).not.toMatch(/\bname=["']role["']/);
       expect(source).not.toMatch(/\bid=["'][^"']*role[^"']*["']/);
@@ -82,6 +86,11 @@ describe("Phase 2C3 auth client + lifecycle UI", () => {
       expect(source).not.toMatch(/\badmin\b/i);
       expect(source).not.toMatch(/requireAdmin|requireCustomer|getAuthorizationPrincipal/);
     }
+
+    const header = readSrc("src/components/auth/auth-header-actions.tsx");
+    expect(header).not.toMatch(/\bname=["']role["']/);
+    expect(header).not.toMatch(/requireAdmin|requireCustomer|getAuthorizationPrincipal/);
+    expect(header).not.toMatch(/role\s*===|data\?\.user\?\.role/);
 
     const signup = readSrc("src/components/auth/signup-form.tsx");
     expect(signup).toMatch(/signUp\.email/);

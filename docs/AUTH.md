@@ -8,8 +8,9 @@ transport abstraction. Phase 2C2 enables email/password signup,
 required verification, and password-reset on the Better Auth backend
 through that email abstraction. Phase 2C3 adds the browser auth
 client and customer lifecycle UI. Phase 2C4 adds guarded DEV/TEST-only
-first-admin bootstrap tooling. Protected surfaces remain deferred to
-later 2C steps.
+first-admin bootstrap tooling. Phase 2C5 adds minimal customer/admin
+protected surfaces that prove exact-role server authorization
+end-to-end. Auth security + E2E closure remains deferred to Phase 2C6.
 
 ## Versions
 
@@ -161,17 +162,28 @@ Local Phase 2C session policy:
 
 Production secure-cookie / HTTPS session hardening remains deferred.
 
-## Protected surfaces (locked for Phase 2C5)
+## Protected surfaces (Phase 2C5)
 
 - Customer surfaces require exact `customer` (`requireCustomer`)
 - Admin surfaces require exact `admin` (`requireAdmin`)
 - Admin is **not** implicitly a customer
-- Unauthenticated pages redirect safely to login
+- Unauthenticated pages redirect safely to login (`?next=` only when the
+  path sanitizes to a relative in-app URL; open redirects are rejected)
+- Authenticated wrong-role / invalid-role pages land on `/forbidden`
 - Unauthenticated APIs return `401` / `UNAUTHENTICATED`
 - Wrong-role APIs return `403` / `FORBIDDEN`
-- Invalid/missing role fails closed (`INVALID_AUTHORIZATION_STATE`)
+- Invalid/missing role fails closed (`INVALID_AUTHORIZATION_STATE`, HTTP
+  403 on APIs)
 - Prefer server-side guards using existing authorization primitives
 - Do not introduce client-only authorization
+
+Minimal surfaces:
+
+- `/account` — customer page (`requireCustomerPage`)
+- `/admin` — admin page (`requireAdminPage`); no management UI
+- `/api/account` — customer API (`requireCustomer`)
+- `/api/admin` — admin API (`requireAdmin`)
+- `/forbidden` — shared denial landing
 
 Shared “any authenticated role” behavior uses `requireAuthenticated` only
 when a surface is intentionally shared.
@@ -272,7 +284,6 @@ Next.js App Router handler:
 
 Still **not implemented** (deferred to later 2C steps):
 
-- customer/admin protected surfaces (2C5)
 - auth security + E2E closure (2C6)
 - social providers
 - Better Auth plugins (including Admin / Organization)
@@ -315,6 +326,15 @@ Phase 2C4 **is** implemented:
 - promotes an existing verified `customer` only while zero admins exist
 - race-safe advisory lock + guarded update
 - no HTTP / self-promotion / env-email / seed-admin path
+
+Phase 2C5 **is** implemented:
+
+- `/account` and `/admin` pages with server guards
+  (`requireCustomerPage` / `requireAdminPage`)
+- `/api/account` and `/api/admin` route handlers with
+  `requireCustomer` / `requireAdmin` and 401/403 mapping
+- safe `next` navigation helpers (no open redirect)
+- header Account/Admin links are UX-only; server remains authoritative
 
 ## Storefront independence
 

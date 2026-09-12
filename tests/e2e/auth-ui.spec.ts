@@ -100,3 +100,15 @@ test("header exposes sign-in and sign-up when signed out", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign up" })).toBeVisible();
 });
+
+test("forbidden landing renders without role controls", async ({ page }) => {
+  await page.goto("/forbidden");
+  await expect(page.getByRole("heading", { level: 1, name: "Access denied" })).toBeVisible();
+  await expect(page.getByTestId("forbidden-surface")).toBeVisible();
+  await expect(page.locator('input[name="role"]')).toHaveCount(0);
+});
+
+// Live /account /admin redirect and API 401 behavior require local auth
+// runtime (.env.local + PostgreSQL). Portable CI covers those contracts in
+// tests/unit/auth-protected-surfaces.test.ts without translating
+// AuthEnvValidationError into auth denial.
