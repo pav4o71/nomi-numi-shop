@@ -5,25 +5,26 @@ store.
 
 ## Current phase
 
-Phase 2B — Customer/Admin Identity Roles and Server Authorization Foundation
+Phase 2C0 — Auth Architecture / Design Lock
 
-Phase 0 through Phase 1F are complete. The repository now includes
-isolated local PostgreSQL environments, Drizzle ORM, committed
-migrations, a guarded TEST-only database rebuild workflow, and the
-Phase 2A Better Auth server foundation (`better-auth@1.7.3` with the
-matching Drizzle adapter). Phase 2B adds the server-owned Better Auth
-role field with exactly `customer` (default) and `admin`, `input: false`
-protection, and server authorization primitives with exact-role checks.
-Missing or invalid roles fail closed.
+Phase 0 through Phase 2B and Phase 2C-P are complete. The repository
+includes isolated local PostgreSQL, Drizzle ORM, committed migrations, a
+guarded TEST-only rebuild workflow, Better Auth (`better-auth@1.7.3` +
+matching Drizzle adapter), server-owned `customer`/`admin` roles with
+exact-role authorization primitives, and the portable PR quality gate.
 
-Local auth runtime uses ignored `.env.local` (`BETTER_AUTH_SECRET`,
-`BETTER_AUTH_URL`, `DATABASE_URL`) and the `/api/auth/*` route.
-Login/signup UI, email/password lifecycle, social login, client auth UI,
-admin provisioning, role mutation, dashboards, and page/route protection
-are not enabled yet. No admin user is created by Phase 2B. Phase 2C is
-next.
-The public storefront still renders without PostgreSQL; auth connects
-lazily only when `/api/auth` is invoked. See `docs/AUTH.md`.
+Phase 2C0 locks the auth lifecycle design (no `OWNER` role, multiple
+admins allowed, verification/reset/session/protected-surface rules, and
+DEV/TEST first-admin bootstrap in 2C4). Implementation of Mailpit,
+email/password, auth UI, bootstrap tooling, protected surfaces, and E2E
+closure remains in Phases 2C1–2C6. See `docs/AUTH.md`.
+
+Local auth runtime still uses ignored `.env.local`
+(`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`) and
+`/api/auth/*`. Email/password, social login, client auth UI, admin
+bootstrap, and route protection are not enabled yet. The public
+storefront still renders without PostgreSQL; auth connects lazily only
+when `/api/auth` is invoked.
 
 ## Initial business scope
 

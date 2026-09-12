@@ -18,17 +18,19 @@ Phase 2A/2B foundation status:
   `BETTER_AUTH_SECRET` (>= 32 chars), explicit `BETTER_AUTH_URL`
   (`http://127.0.0.1:3100`), and DEV-only `DATABASE_URL`
 - email/password, social providers, plugins, and auth UI are
-  **not** enabled yet
+  **not** enabled yet (locked for Phases 2C1–2C6; see `docs/AUTH.md`)
 
-Later phases will add:
+Phase 2C0 locks the following lifecycle rules for later implementation:
 
-- registration
-- login
-- logout
-- email verification
-- password reset
-- first-admin provisioning
-- session policy hardening for production
+- open email/password customer signup; role always server `customer`
+- unverified users must not receive or use an authenticated session
+- public auth responses must avoid account enumeration
+- email verification required; token lifetime **24 hours**; safe resend
+- password-reset request is generic; reset token lifetime **1 hour**;
+  successful reset revokes all sessions and requires fresh auth
+- authenticated change-password is deferred past Phase 2C
+- no social providers in Phase 2C
+- production session/cookie hardening remains deferred
 
 See `docs/AUTH.md`.
 
@@ -48,11 +50,22 @@ Application roles are mutually exclusive exact values:
 - `customer` (default for new users)
 - `admin`
 
-There is no role hierarchy. Missing/unknown role fails closed.
+There is no role hierarchy and no `OWNER` application role. Missing or
+unknown role fails closed. "Owner" in product language means the human
+shop owner, not an auth role.
 
 Role is configured with Better Auth `input: false` so ordinary
-user/API/provider input cannot choose `admin`. No Admin plugin. No
-role-mutation endpoint in Phase 2B.
+user/API/provider input cannot choose `admin`. No Admin plugin.
+
+Protected-surface rules (Phase 2C5):
+
+- customer surfaces: exact `customer`
+- admin surfaces: exact `admin`
+- admin is not implicitly a customer
+- unauthenticated pages redirect safely to login
+- unauthenticated APIs: `401` / `UNAUTHENTICATED`
+- wrong-role APIs: `403` / `FORBIDDEN`
+- prefer server-side guards; no client-only authorization
 
 Authorization must protect (in later phases that wire routes):
 
@@ -70,14 +83,33 @@ Cross-customer access must fail closed.
 ## 3. Admin role
 
 Phase 2B defines the `admin` application role and server checks
-(`requireAdmin`). First-admin provisioning and role mutation remain
-out of scope. There must be no public/customer-accessible mechanism for
-self-promotion to `admin`.
+(`requireAdmin`). Multiple admins are allowed.
+
+Phase 2C4 first-admin provisioning (DEV/TEST only):
+
+- promote an existing verified `customer`
+- only while zero admins exist
+- zero-admin check + promotion as one race-safe guarded operation
+- no HTTP/self-promotion, env-email auto-promotion, or seed/migration
+  admin creation
+- no general promotion/demotion API in Phase 2C
+- production admin bootstrap remains separately authorized later
+
+There must be no public/customer-accessible mechanism for self-promotion
+to `admin`.
 
 ## 4. Sessions
 
+Local Phase 2C session policy (locked):
+
+- `expiresIn`: 7 days
+- `updateAge`: 1 day
+- logout invalidates the current server session and clears auth state
+- authorization path remains getSession → validated principal →
+  exact-role decision
+
 Production session configuration must use appropriate secure cookie and
-transport settings.
+transport settings when a production phase authorizes it.
 
 Do not expose session tokens to client-side code unnecessarily.
 
@@ -195,7 +227,7 @@ auditable events where useful.
 
 Examples:
 
-- owner actions
+- human shop-owner / admin actions
 - inventory adjustments
 - order-state changes
 - refund actions

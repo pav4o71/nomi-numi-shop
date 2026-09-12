@@ -7,7 +7,7 @@ Build a custom ecommerce platform containing:
 - public storefront
 - customer registration and login
 - customer account area
-- owner admin panel
+- admin panel (operated by the human shop owner; application role `admin`)
 - catalog management
 - variants
 - inventory management
@@ -261,18 +261,24 @@ Access requires authenticated authorization.
 
 ## 11. Admin panel
 
-Current Phase 2B application role model:
+Locked application role model (Phase 2B + Phase 2C0):
 
 - `customer` (default)
 - `admin`
 
 These roles are mutually exclusive and have no hierarchy. There is no
-`OWNER` role, one-admin cardinality constraint, admin provisioning, or
-role-mutation mechanism in the current implementation.
+`OWNER` application role. In product language, "owner" means the human
+shop owner, not an auth role. Multiple admins are allowed.
 
-Phase 2C must decide the first-admin provisioning design, including
-whether an `OWNER` role or any owner/admin cardinality constraint should
-be introduced.
+First-admin provisioning is locked for Phase 2C4:
+
+- DEV/TEST-only guarded tooling
+- promote an existing verified `customer`
+- only while zero admins exist (race-safe check + promote)
+- no HTTP/self-promotion, env-email auto-promotion, seed/migration
+  admin, or general promote/demote API in Phase 2C
+- production admin bootstrap deferred to a separately authorized
+  production phase
 
 The admin panel should control as much routine shop operation as
 practical without requiring source-code edits.
@@ -415,11 +421,13 @@ Database and authentication foundation, delivered in reviewed steps:
   steps:
   - Phase 2C-P — CI + PR review foundation (portable GitHub Actions
     quality gate and durable review workflow)
-  - Phase 2C0 — auth architecture/design lock
+  - Phase 2C0 — auth architecture/design lock (roles, signup/login,
+    verification, reset, sessions, protected surfaces, first-admin
+    rules; docs only)
   - Phase 2C1 — local email/Mailpit infrastructure
   - Phase 2C2 — email/password + verification/reset backend
-  - Phase 2C3 — auth client + signup/login/logout UI
-  - Phase 2C4 — first-admin provisioning
+  - Phase 2C3 — auth client + signup/login/logout/verify/reset UI
+  - Phase 2C4 — guarded first-admin provisioning (DEV/TEST)
   - Phase 2C5 — customer/admin protected surfaces
   - Phase 2C6 — auth security + E2E closure
 

@@ -120,7 +120,10 @@ Web UI:
 
 - 127.0.0.1:18025
 
-Mailpit is reserved but not provisioned yet.
+Mailpit ports are reserved now. Provisioning of the owned Compose
+Mailpit service and local email delivery wiring is Phase **2C1** (after
+the Phase 2C0 auth design lock). Do not introduce a real transactional
+email provider in Phase 2C.
 
 ## 6. Environment files
 
