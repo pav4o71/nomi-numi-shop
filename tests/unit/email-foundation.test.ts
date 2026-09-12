@@ -69,7 +69,8 @@ describe("Phase 2C1 local email foundation", () => {
     expect(mailpitCompose).toContain("axllent/mailpit:v1.31.1");
     expect(mailpitCompose).toContain('"127.0.0.1:11025:1025"');
     expect(mailpitCompose).toContain('"127.0.0.1:18025:8025"');
-    expect(mailpitCompose).toContain("network_mode: bridge");
+    expect(mailpitCompose).toContain("mailpit_net");
+    expect(mailpitCompose).not.toContain("network_mode:");
     expect(mailpitCompose).toContain('"0.0.0.0:1025"');
     expect(mailpitCompose).toContain('"0.0.0.0:8025"');
     // Host publishes must stay loopback-only (container listen may be 0.0.0.0).

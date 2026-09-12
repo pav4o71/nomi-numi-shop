@@ -168,8 +168,7 @@ TEST rebuild. Stopping containers preserves named volumes. Host port
 ## Local Mailpit (Phase 2C1)
 
 Compose project: `nomi-numi-shop-dev` (same owned DEV namespace as
-PostgreSQL; separate compose file; Docker built-in `bridge` network mode
-so loopback host publishes work)
+PostgreSQL; separate compose file and project-owned `mailpit_net`)
 
 - SMTP: `127.0.0.1:11025`
 - UI: `http://127.0.0.1:18025`

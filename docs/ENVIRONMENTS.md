@@ -128,11 +128,15 @@ Phase 2C1 provisions project-owned Mailpit inside the
 - wrappers: `pnpm email:up` / `pnpm email:status` / `pnpm email:stop`
 
 Mailpit shares the DEV Compose project with PostgreSQL but uses its own
-service (`mailpit`) on Docker's built-in `bridge` network mode so that
-loopback host publishes remain functional. Lifecycle commands must go
-through the project helper so ownership labels and loopback binds are
-enforced. Stopping Mailpit does not stop PostgreSQL, and stopping
-PostgreSQL does not stop Mailpit.
+service (`mailpit`) and project-owned network (`mailpit_net`). Lifecycle
+commands must go through the project helper so ownership labels and
+loopback binds are enforced. Stopping Mailpit does not stop PostgreSQL,
+and stopping PostgreSQL does not stop Mailpit.
+
+Host VPN note: some VPN clients (observed NordVPN/NORDLYNX) can interfere
+with Docker user-defined bridge port forwarding (TCP accept without
+payload). That is a host networking interaction. Do not attach Mailpit to
+Docker's global default `bridge` as a permanent workaround.
 
 Local email transport configuration (placeholders in `.env.example`):
 

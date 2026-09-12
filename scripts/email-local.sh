@@ -23,6 +23,7 @@ OWNED_PROJECT_LABEL="nomi-numi-shop"
 COMPOSE_PROJECT="nomi-numi-shop-dev"
 ENV_ID="dev"
 COMPOSE_SERVICE_NAME="mailpit"
+EXPECTED_COMPOSE_NETWORK="mailpit_net"
 SMTP_HOST_PORT="11025"
 UI_HOST_PORT="18025"
 PROTECTED_HOST_PORT="5433"
@@ -30,8 +31,8 @@ PROTECTED_HOST_PORT="5433"
 ACTION="${1:-}"
 
 # Deterministic Compose v2 resource names for -p <project>.
-# Mailpit uses network_mode: bridge (no project-owned Compose network).
 EXPECTED_CONTAINER="${COMPOSE_PROJECT}-${COMPOSE_SERVICE_NAME}-1"
+EXPECTED_NETWORK="${COMPOSE_PROJECT}_${EXPECTED_COMPOSE_NETWORK}"
 
 usage() {
   cat <<'EOF' >&2
@@ -109,9 +110,6 @@ is_allowed_compose_service() {
 is_allowed_compose_network() {
   local network_name="$1"
 
-  # Mailpit uses Docker built-in bridge (network_mode: bridge), so the only
-  # project Compose network expected under nomi-numi-shop-dev is postgres_net.
-  # mailpit_net is tolerated if a prior experiment left it labeled.
   case "$network_name" in
     postgres_net | mailpit_net) return 0 ;;
     *) return 1 ;;
@@ -202,8 +200,33 @@ assert_owned_container_name() {
   fi
 }
 
+assert_owned_network_name() {
+  local network_name="$1"
+  local project_label
+  local compose_network_label
+  local owned_project
+  local owned_environment
+
+  if ! docker network inspect "$network_name" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  project_label="$(network_label "$network_name" "com.docker.compose.project")"
+  compose_network_label="$(network_label "$network_name" "com.docker.compose.network")"
+  owned_project="$(network_label "$network_name" "com.nomimumi.project")"
+  owned_environment="$(network_label "$network_name" "com.nomimumi.environment")"
+
+  if [[ "$project_label" != "$COMPOSE_PROJECT" \
+    || "$compose_network_label" != "$EXPECTED_COMPOSE_NETWORK" \
+    || "$owned_project" != "$OWNED_PROJECT_LABEL" \
+    || "$owned_environment" != "$ENV_ID" ]]; then
+    fail "deterministic network name '${network_name}' exists with missing/foreign ownership; refusing to adopt"
+  fi
+}
+
 assert_deterministic_resources_safe() {
   assert_owned_container_name "$EXPECTED_CONTAINER"
+  assert_owned_network_name "$EXPECTED_NETWORK"
 }
 
 verify_resource_labels() {
@@ -364,6 +387,7 @@ verify_project_ownership_or_absent() {
 
 mailpit_resource_count() {
   local container_count
+  local network_count
 
   container_count="$(
     docker ps -a \
@@ -374,7 +398,16 @@ mailpit_resource_count() {
       | tr -d '[:space:]'
   )"
 
-  printf '%s\n' "$container_count"
+  network_count="$(
+    docker network ls \
+      --filter "label=com.docker.compose.project=${COMPOSE_PROJECT}" \
+      --filter "label=com.docker.compose.network=${EXPECTED_COMPOSE_NETWORK}" \
+      --format '{{.ID}}' \
+      | wc -l \
+      | tr -d '[:space:]'
+  )"
+
+  printf '%s\n' "$((container_count + network_count))"
 }
 
 port_is_listening() {

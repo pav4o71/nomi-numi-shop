@@ -60,9 +60,8 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      # Portable unit suite only. Path-locked database/drizzle/email-local
-      # safety tests require the workstation canonical root and stay local
-      # (`pnpm test`).
+      # Portable unit suite only. Path-locked database/drizzle safety tests
+      # require the workstation canonical root and stay local (`pnpm test`).
       - name: Unit tests
         run: pnpm test:ci
 

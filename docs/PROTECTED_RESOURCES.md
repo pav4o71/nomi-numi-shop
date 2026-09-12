@@ -108,13 +108,14 @@ Development:
 Services that may exist under this namespace:
 
 - `postgres` (Phase 1D; project network `postgres_net`)
-- `mailpit` (Phase 2C1; `network_mode: bridge` with host ports
+- `mailpit` (Phase 2C1; project network `mailpit_net` with host ports
   bound only to `127.0.0.1`)
 
-Explicit architecture decision: Mailpit attaches to Docker's built-in
-`bridge` only so `127.0.0.1` host publishes forward correctly on the
-development workstation Docker. Host binds remain loopback-only. Do not
-widen Mailpit to `0.0.0.0` on the host.
+Mailpit must remain on the project-owned `mailpit_net` Compose network.
+Do not attach it to Docker's built-in `bridge` / `host` / `none`. Host
+VPN clients can interfere with user-defined bridge forwarding; treat that
+as a host networking issue, not a reason to join the global default
+bridge.
 
 Test:
 

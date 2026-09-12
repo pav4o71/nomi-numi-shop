@@ -51,9 +51,9 @@ describe("Phase 2C1 Mailpit lifecycle safety", () => {
     expect(dbLocalHelper).toContain("postgres | mailpit");
     expect(dbLocalHelper).toContain("postgres_net | mailpit_net");
     expect(dbLocalHelper).toContain("postgres_data");
-    expect(emailLocalHelper).toContain("network_mode");
-    expect(mailpitCompose).toContain("network_mode: bridge");
-    expect(mailpitCompose).not.toContain("mailpit_net");
+    expect(emailLocalHelper).toContain('EXPECTED_COMPOSE_NETWORK="mailpit_net"');
+    expect(mailpitCompose).toContain("mailpit_net");
+    expect(mailpitCompose).not.toContain("network_mode:");
     // TEST must remain PostgreSQL-only in the allowlist branches.
     expect(dbLocalHelper).toContain('case "$ENV_ID" in');
     expect(dbLocalHelper).toMatch(/test\)[\s\S]*?postgres\) return 0 ;;[\s\S]*?\*\) return 1 ;;/);
