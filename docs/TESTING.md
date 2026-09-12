@@ -78,6 +78,8 @@ Auth foundation unit coverage lives in:
 
 - `tests/unit/auth-foundation.test.ts`
 - `tests/unit/auth-authorization.test.ts`
+- `tests/unit/auth-lifecycle.test.ts` (Phase 2C2 email/password,
+  verification/reset policy, and email-callback wiring)
 
 Local email / Mailpit coverage lives in:
 

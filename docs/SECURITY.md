@@ -17,12 +17,12 @@ Phase 2A/2B foundation status:
 - local runtime requires ignored `.env.local` with
   `BETTER_AUTH_SECRET` (>= 32 chars), explicit `BETTER_AUTH_URL`
   (`http://127.0.0.1:3100`), and DEV-only `DATABASE_URL`
-- email/password, social providers, plugins, and auth UI are
-  **not** enabled yet (locked for Phases 2C2–2C6; see `docs/AUTH.md`)
-- Phase 2C1 provides local Mailpit + `src/email/` transport only;
-  Better Auth is not wired to send mail yet
+- Phase 2C2 enables email/password with required verification and
+  password reset through local Mailpit (`src/email/`); auth UI,
+  plugins, and social providers remain deferred (see `docs/AUTH.md`)
+- Phase 2C1 provides project-owned Mailpit + `src/email/` transport
 
-Phase 2C0 locks the following lifecycle rules for later implementation:
+Phase 2C0 lifecycle rules implemented by Phase 2C2:
 
 - open email/password customer signup; role always server `customer`
 - unverified users must not receive or use an authenticated session
@@ -33,6 +33,7 @@ Phase 2C0 locks the following lifecycle rules for later implementation:
 - authenticated change-password is deferred past Phase 2C
 - no social providers in Phase 2C
 - production session/cookie hardening remains deferred
+- session policy: `expiresIn` 7 days, `updateAge` 1 day
 
 See `docs/AUTH.md`.
 

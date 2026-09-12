@@ -117,7 +117,7 @@ Conceptual shipping providers:
 Conceptual email providers:
 
     EmailProvider
-      MailpitEmailProvider (Phase 2C1 local implementation)
+      MailpitEmailProvider (Phase 2C1; wired by Phase 2C2 auth)
       TransactionalEmailProvider later
 
 Conceptual storage providers:

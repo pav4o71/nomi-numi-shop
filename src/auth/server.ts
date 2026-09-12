@@ -1,17 +1,27 @@
 /**
- * Phase 2A/2B Better Auth server foundation.
+ * Phase 2A/2B/2C2 Better Auth server.
  *
- * Local development only. Email/password, social providers, plugins,
- * and client auth remain intentionally absent. Phase 2B adds a
- * server-owned application role via user.additionalFields only.
+ * Local development only. Phase 2C2 enables email/password with required
+ * verification and password reset through the Phase 2C1 email abstraction.
+ * Social providers, plugins, and client auth remain intentionally absent.
  */
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 
 import { PHASE2A_AUTH_BASE_PATH, PHASE2A_AUTH_ORIGIN, parseAuthRuntimeEnv } from "@/auth/env";
+import {
+  AUTH_EMAIL_VERIFICATION_EXPIRES_IN_SECONDS,
+  AUTH_PASSWORD_RESET_EXPIRES_IN_SECONDS,
+  AUTH_SESSION_EXPIRES_IN_SECONDS,
+  AUTH_SESSION_UPDATE_AGE_SECONDS,
+  authLifecycleConstants,
+  dispatchPasswordResetEmail,
+  dispatchVerificationEmail,
+} from "@/auth/lifecycle";
 import { APP_ROLE_ADDITIONAL_FIELD } from "@/auth/roles";
 import * as schema from "@/db/schema";
 import { getRuntimeDb } from "@/db/runtime";
+import { createLocalEmailProvider } from "@/email/index";
 
 type AuthLogLevel = "debug" | "info" | "warn" | "error";
 
@@ -55,6 +65,10 @@ function createAuthInstance() {
     VERCEL_ENV: process.env.VERCEL_ENV,
   });
 
+  // Email transport is required for verification/reset. Misconfiguration
+  // fails closed as EmailEnvValidationError (infrastructure), not auth denial.
+  const emailProvider = createLocalEmailProvider(process.env);
+
   return betterAuth({
     baseURL: env.baseURL,
     basePath: env.basePath,
@@ -81,6 +95,28 @@ function createAuthInstance() {
         },
       },
     },
+    session: {
+      expiresIn: AUTH_SESSION_EXPIRES_IN_SECONDS,
+      updateAge: AUTH_SESSION_UPDATE_AGE_SECONDS,
+    },
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: true,
+      revokeSessionsOnPasswordReset: true,
+      resetPasswordTokenExpiresIn: AUTH_PASSWORD_RESET_EXPIRES_IN_SECONDS,
+      sendResetPassword: async ({ user, url }) => {
+        await dispatchPasswordResetEmail(emailProvider, { to: user.email, url });
+      },
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      sendOnSignIn: false,
+      autoSignInAfterVerification: true,
+      expiresIn: AUTH_EMAIL_VERIFICATION_EXPIRES_IN_SECONDS,
+      sendVerificationEmail: async ({ user, url }) => {
+        await dispatchVerificationEmail(emailProvider, { to: user.email, url });
+      },
+    },
   });
 }
 
@@ -94,7 +130,7 @@ export function getAuth(): AuthInstance {
   return globalForAuth.__nomiNumiShopAuth;
 }
 
-/** Phase 2A/2B constants for tests and documentation alignment. */
+/** Phase 2A/2B/2C2 constants for tests and documentation alignment. */
 export const authFoundationConstants = {
   packageName: "better-auth",
   packageVersion: "1.7.3",
@@ -102,7 +138,13 @@ export const authFoundationConstants = {
   adapterPackageVersion: "1.7.3",
   baseURL: PHASE2A_AUTH_ORIGIN,
   basePath: PHASE2A_AUTH_BASE_PATH,
-  emailAndPasswordEnabled: false,
+  emailAndPasswordEnabled: true,
+  requireEmailVerification: authLifecycleConstants.requireEmailVerification,
+  revokeSessionsOnPasswordReset: authLifecycleConstants.revokeSessionsOnPasswordReset,
+  sessionExpiresInSeconds: authLifecycleConstants.sessionExpiresInSeconds,
+  sessionUpdateAgeSeconds: authLifecycleConstants.sessionUpdateAgeSeconds,
+  emailVerificationExpiresInSeconds: authLifecycleConstants.emailVerificationExpiresInSeconds,
+  passwordResetExpiresInSeconds: authLifecycleConstants.passwordResetExpiresInSeconds,
   socialProvidersConfigured: false,
   pluginsConfigured: false,
   adminPluginConfigured: false,

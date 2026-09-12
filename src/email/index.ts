@@ -62,7 +62,7 @@ export class MailpitEmailProvider implements EmailProvider {
 
 /**
  * Create the local Mailpit email provider from validated env input.
- * Does not enable Better Auth email/password; Phase 2C2 wires that.
+ * Phase 2C2 wires this provider into Better Auth verification/reset.
  */
 export function createLocalEmailProvider(
   input: Parameters<typeof parseLocalEmailEnv>[0] = process.env,
@@ -79,5 +79,5 @@ export const emailFoundationConstants = {
   mailpitUiOrigin: LOCAL_MAILPIT_UI_ORIGIN,
   defaultFrom: LOCAL_EMAIL_FROM_DEFAULT,
   productionProviderConfigured: false,
-  betterAuthEmailWired: false,
+  betterAuthEmailWired: true,
 } as const;
