@@ -7,8 +7,9 @@ Phases 2C1–2C6. Phase 2C1 provisions local Mailpit and the local email
 transport abstraction. Phase 2C2 enables email/password signup,
 required verification, and password-reset on the Better Auth backend
 through that email abstraction. Phase 2C3 adds the browser auth
-client and customer lifecycle UI. Bootstrap tooling and protected
-surfaces remain deferred to later 2C steps.
+client and customer lifecycle UI. Phase 2C4 adds guarded DEV/TEST-only
+first-admin bootstrap tooling. Protected surfaces remain deferred to
+later 2C steps.
 
 ## Versions
 
