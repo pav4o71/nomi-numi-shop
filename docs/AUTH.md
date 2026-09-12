@@ -86,15 +86,25 @@ authorization state. It is never silently mapped to `customer` or
 The Better Auth Admin plugin is **not** used (no ban/impersonation/
 admin-management endpoints or schema).
 
-## First-admin provisioning (locked for Phase 2C4)
+## First-admin provisioning (Phase 2C4)
 
-Phase 2C4 will provide guarded **DEV/TEST-only** bootstrap tooling that:
+Phase 2C4 provides guarded **DEV/TEST-only** bootstrap tooling that:
 
 - promotes an existing **verified** `customer` to `admin`
 - is allowed **only while zero admins exist**
 - performs the zero-admin check and promotion as one race-safe guarded
-  operation
+  operation (transaction advisory lock + conditional update)
 - refuses production targets and production environments
+
+Operator entrypoint:
+
+    pnpm auth:bootstrap-first-admin -- \
+      --env <dev|test> --email <email> --confirm PROMOTE-FIRST-NOMI-ADMIN
+
+Implementation:
+
+- `scripts/auth-first-admin-bootstrap.sh` (ownership + confirmation wrapper)
+- `scripts/auth-first-admin-bootstrap.mjs` (credential allowlist + promotion)
 
 Explicitly forbidden in Phase 2C:
 
@@ -261,7 +271,6 @@ Next.js App Router handler:
 
 Still **not implemented** (deferred to later 2C steps):
 
-- first-admin bootstrap tooling (2C4)
 - customer/admin protected surfaces (2C5)
 - auth security + E2E closure (2C6)
 - social providers
@@ -298,6 +307,14 @@ Phase 2C3 **is** implemented:
   UX only — never authorization)
 - no client role selection; server-owned `customer` assignment preserved
 
+Phase 2C4 **is** implemented:
+
+- guarded DEV/TEST-only first-admin bootstrap CLI
+  (`pnpm auth:bootstrap-first-admin`)
+- promotes an existing verified `customer` only while zero admins exist
+- race-safe advisory lock + guarded update
+- no HTTP / self-promotion / env-email / seed-admin path
+
 ## Storefront independence
 
 The public homepage must start and render without PostgreSQL.
@@ -310,6 +327,6 @@ Auth modules initialize lazily when `/api/auth` is invoked.
 - **2C1** — Mailpit / local email infrastructure (complete)
 - **2C2** — email/password + verification/reset backend (complete)
 - **2C3** — auth client + signup/login/logout/verify/reset UI (complete)
-- **2C4** — guarded first-admin provisioning
+- **2C4** — guarded first-admin provisioning (complete)
 - **2C5** — customer/admin protected surfaces
 - **2C6** — auth security + E2E closure

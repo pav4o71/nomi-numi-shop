@@ -5,32 +5,36 @@ store.
 
 ## Current phase
 
-Phase 2C3 — Auth client + lifecycle UI
+Phase 2C4 — Guarded first-admin provisioning
 
-Phase 0 through Phase 2C2 are complete. The repository includes isolated
+Phase 0 through Phase 2C3 are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
 rebuild workflow, Better Auth (`better-auth@1.7.3` + matching Drizzle
 adapter), server-owned `customer`/`admin` roles with exact-role
 authorization primitives, the portable PR quality gate, the Phase 2C0
 auth design lock, project-owned Mailpit with a local email transport
-abstraction, and the email/password backend lifecycle (verification,
-reset, session policy).
+abstraction, the email/password backend lifecycle (verification, reset,
+session policy), and the Better Auth browser client with customer auth
+UI.
 
-Phase 2C3 adds the Better Auth browser client (`createAuthClient`) and
-customer auth UI: signup, login, logout, check-email / verification
-landing, forgot-password, and reset-password. Client session state is
-UX only; server authorization primitives remain authoritative. First-admin
-bootstrap, protected surfaces, and E2E security closure remain in
-Phases 2C4–2C6. See `docs/AUTH.md`.
+Phase 2C4 adds guarded DEV/TEST-only first-admin bootstrap tooling that
+promotes an existing verified `customer` to `admin` only while zero
+admins exist. Protected surfaces and E2E security closure remain in
+Phases 2C5–2C6. See `docs/AUTH.md`.
 
 Local auth runtime uses ignored `.env.local`
 (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, plus Mailpit
 email transport keys), `/api/auth/*`, and public UI routes under
 `/signup`, `/login`, `/logout`, `/check-email`, `/email-verified`,
-`/forgot-password`, and `/reset-password`. Social login, admin
-bootstrap, and route protection are not enabled yet. The public
-storefront still renders without PostgreSQL; auth connects lazily only
-when `/api/auth` is invoked.
+`/forgot-password`, and `/reset-password`. Social login and route
+protection are not enabled yet. The public storefront still renders
+without PostgreSQL; auth connects lazily only when `/api/auth` is
+invoked.
+
+First-admin bootstrap (DEV/TEST only; confirmation required):
+
+    pnpm auth:bootstrap-first-admin -- \
+      --env <dev|test> --email <email> --confirm PROMOTE-FIRST-NOMI-ADMIN
 
 ## Initial business scope
 

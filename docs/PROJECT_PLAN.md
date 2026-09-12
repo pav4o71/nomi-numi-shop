@@ -270,9 +270,9 @@ These roles are mutually exclusive and have no hierarchy. There is no
 `OWNER` application role. In product language, "owner" means the human
 shop owner, not an auth role. Multiple admins are allowed.
 
-First-admin provisioning is locked for Phase 2C4:
+First-admin provisioning is implemented in Phase 2C4:
 
-- DEV/TEST-only guarded tooling
+- DEV/TEST-only guarded tooling (`pnpm auth:bootstrap-first-admin`)
 - promote an existing verified `customer`
 - only while zero admins exist (race-safe check + promote)
 - no HTTP/self-promotion, env-email auto-promotion, seed/migration
