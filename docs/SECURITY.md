@@ -90,7 +90,8 @@ Cross-customer access must fail closed.
 Phase 2B defines the `admin` application role and server checks
 (`requireAdmin`). Multiple admins are allowed.
 
-Phase 2C4 first-admin provisioning (DEV/TEST only):
+Phase 2C4 first-admin provisioning (DEV/TEST only) is implemented via
+`pnpm auth:bootstrap-first-admin`:
 
 - promote an existing verified `customer`
 - only while zero admins exist

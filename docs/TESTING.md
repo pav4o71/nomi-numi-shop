@@ -82,6 +82,11 @@ Auth foundation unit coverage lives in:
   verification/reset policy, and email-callback wiring)
 - `tests/unit/auth-ui.test.ts` (Phase 2C3 auth client, safe copy,
   no role inputs, no client authorization assumptions)
+- `tests/unit/auth-first-admin-bootstrap.test.ts` (Phase 2C4 portable
+  CLI surface, confirmation/production refusals, no HTTP role mutation)
+- `tests/unit/auth-first-admin-bootstrap-local.test.ts` (Phase 2C4
+  path-locked DEV/TEST promotion, race-safety, wrapper smoke; local
+  `pnpm test` only)
 - `tests/e2e/auth-ui.spec.ts` (Phase 2C3 public auth page smoke +
   invalid-token UX)
 
