@@ -69,7 +69,9 @@ for (const pageConfig of authPages) {
 
 test("reset-password shows invalid-token UX", async ({ page }) => {
   await page.goto("/reset-password?error=INVALID_TOKEN");
-  await expect(page.getByRole("alert")).toContainText(/invalid or has expired/i);
+  await expect(
+    page.getByRole("alert").filter({ hasText: /invalid or has expired/i }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: /request a new reset link/i })).toBeVisible();
   await expect(page.getByLabel("New password")).toHaveCount(0);
 });
@@ -77,7 +79,9 @@ test("reset-password shows invalid-token UX", async ({ page }) => {
 test("email-verified shows invalid-token UX", async ({ page }) => {
   await page.goto("/email-verified?error=TOKEN_EXPIRED");
   await expect(page.getByRole("heading", { level: 1, name: "Verification needed" })).toBeVisible();
-  await expect(page.getByRole("alert")).toContainText(/invalid or has expired/i);
+  await expect(
+    page.getByRole("alert").filter({ hasText: /invalid or has expired/i }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: /request a new verification email/i })).toBeVisible();
 });
 
