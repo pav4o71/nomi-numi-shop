@@ -1,9 +1,10 @@
 # Nomi Numi Shop — Authentication and Authorization Foundation
 
 Phase 2A established the minimum secure Better Auth infrastructure.
-Phase 2B adds application roles and **server** authorization primitives.
-Neither phase delivers login/signup UI, email delivery, or production
-authentication.
+Phase 2B added application roles and **server** authorization primitives.
+Phase 2C0 locks the auth lifecycle architecture for implementation in
+Phases 2C1–2C6. Implementation of email/password, Mailpit, UI, bootstrap
+tooling, and protected surfaces remains deferred to those later steps.
 
 ## Versions
 
@@ -38,7 +39,11 @@ Better Auth's database migrate command.
 - `drizzle/0001_phase2a_better_auth.sql` — core auth tables
 - `drizzle/0002_phase2b_auth_role.sql` — `user.role` extension
 
-## Application roles (Phase 2B)
+`user.role` may be null at the database layer. Authorization treats
+missing/null/unknown role as fail-closed invalid state and never silently
+maps it to `customer` or `admin`.
+
+## Application roles (locked)
 
 Exactly two mutually exclusive roles:
 
@@ -47,6 +52,11 @@ Exactly two mutually exclusive roles:
 
 There is **no** role hierarchy. `customer` is not implicitly `admin`.
 `admin` is not implicitly `customer`. Exact-role checks only.
+
+There is **no** `OWNER` application role. In product and documentation
+language, "owner" means the human shop owner, not an auth role.
+
+Multiple admins are allowed. There is no one-admin cardinality constraint.
 
 Role source of truth:
 
@@ -72,8 +82,84 @@ authorization state. It is never silently mapped to `customer` or
 The Better Auth Admin plugin is **not** used (no ban/impersonation/
 admin-management endpoints or schema).
 
-Admin provisioning, role mutation APIs, hard-coded admin emails/IDs,
-and bootstrap scripts are intentionally out of scope for Phase 2B.
+## First-admin provisioning (locked for Phase 2C4)
+
+Phase 2C4 will provide guarded **DEV/TEST-only** bootstrap tooling that:
+
+- promotes an existing **verified** `customer` to `admin`
+- is allowed **only while zero admins exist**
+- performs the zero-admin check and promotion as one race-safe guarded
+  operation
+- refuses production targets and production environments
+
+Explicitly forbidden in Phase 2C:
+
+- HTTP or self-promotion paths
+- automatic env-email promotion
+- migration/seed-created admin users
+- general promotion/demotion APIs
+
+Production admin bootstrap remains deferred to a separately authorized
+production phase.
+
+## Signup and login policy (locked for Phase 2C2/2C3)
+
+- Open email/password customer signup
+- Role is always server-controlled `customer` (`input: false`)
+- Unverified users must not receive or use an authenticated session
+- Public signup/login behavior must not reveal whether an email is
+  already registered
+- No social providers in Phase 2C
+
+## Email verification (locked for Phase 2C2/2C3)
+
+- Email verification is required before an authenticated session
+- Send a verification email after signup
+- Safe resend is allowed
+- Verification token lifetime: **24 hours**
+- Invalid or expired verification fails safely and may lead to resend
+- Successful verification may auto-sign-in
+- Public responses must avoid account enumeration
+
+## Password reset (locked for Phase 2C2/2C3)
+
+- Forgot-password requests return a generic response regardless of
+  whether the account exists
+- Reset token lifetime: **1 hour**
+- Successful reset revokes all existing sessions
+- Fresh authentication is required afterward
+- Authenticated change-password is deferred to the later customer-account
+  phase (not Phase 2C)
+
+## Session and security policy (locked)
+
+Local Phase 2C session policy:
+
+- `expiresIn`: **7 days**
+- `updateAge`: **1 day**
+- Logout invalidates the current server session and clears auth state
+- Authorization remains:
+  1. `getAuth().api.getSession({ headers })`
+  2. validated principal `{ userId, role }`
+  3. exact-role decision
+- Never trust cookie existence or client-visible role data alone
+
+Production secure-cookie / HTTPS session hardening remains deferred.
+
+## Protected surfaces (locked for Phase 2C5)
+
+- Customer surfaces require exact `customer` (`requireCustomer`)
+- Admin surfaces require exact `admin` (`requireAdmin`)
+- Admin is **not** implicitly a customer
+- Unauthenticated pages redirect safely to login
+- Unauthenticated APIs return `401` / `UNAUTHENTICATED`
+- Wrong-role APIs return `403` / `FORBIDDEN`
+- Invalid/missing role fails closed (`INVALID_AUTHORIZATION_STATE`)
+- Prefer server-side guards using existing authorization primitives
+- Do not introduce client-only authorization
+
+Shared “any authenticated role” behavior uses `requireAuthenticated` only
+when a surface is intentionally shared.
 
 ## Server authorization primitives
 
@@ -145,17 +231,20 @@ Next.js App Router handler:
 - public path: `/api/auth/*`
 - uses `toNextJsHandler` from `better-auth/next-js`
 
-## Explicitly not enabled yet
+## Implementation status vs locked design
 
-- email/password authentication
+Still **not implemented** (deferred to later 2C steps):
+
+- email/password authentication (2C2)
+- email verification / password-reset backend wiring (2C2)
+- Mailpit / local email delivery (2C1)
+- client auth instance (`createAuthClient`) and auth UI (2C3)
+- first-admin bootstrap tooling (2C4)
+- customer/admin protected surfaces (2C5)
+- auth security + E2E closure (2C6)
 - social providers
 - Better Auth plugins (including Admin / Organization)
-- client auth instance (`createAuthClient`)
-- signup/login/logout UI
-- email verification / Mailpit auth emails
-- role mutation endpoints
-- admin bootstrap / first-admin provisioning
-- route protection / `proxy.ts` / `middleware.ts`
+- general role-mutation endpoints
 - production cookies / production database auth
 
 ## Storefront independence
@@ -163,10 +252,13 @@ Next.js App Router handler:
 The public homepage must start and render without PostgreSQL.
 Auth modules initialize lazily when `/api/auth` is invoked.
 `pnpm build` must not require a running database.
-Phase 2B does not add storefront UI for roles or login.
 
-## Next phase
+## Phase 2C boundaries
 
-- Phase 2C — auth lifecycle, UI, email verification, password reset,
-  session security, first-admin provisioning decision, protected
-  surfaces/E2E where appropriate
+- **2C0** — auth architecture/design lock (this document)
+- **2C1** — Mailpit / local email infrastructure
+- **2C2** — email/password + verification/reset backend
+- **2C3** — auth client + signup/login/logout/verify/reset UI
+- **2C4** — guarded first-admin provisioning
+- **2C5** — customer/admin protected surfaces
+- **2C6** — auth security + E2E closure
