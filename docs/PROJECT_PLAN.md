@@ -460,6 +460,9 @@ per `docs/STORE_CATALOG.md` §17 after Phase 2D merge.
 - Phase 3A — foundational catalog schema (complete: Drizzle tables +
   migration `0003_phase3a_catalog_schema`; no inventory runtime,
   repositories, seeds, or public/admin catalog APIs)
+- Phase 3B — catalog domain repository/service layer (complete:
+  `src/catalog/` with Zod 4 validation; no HTTP/UI, seeds, or schema
+  changes; Phase 3C not started)
 
 ### Phase 4
 

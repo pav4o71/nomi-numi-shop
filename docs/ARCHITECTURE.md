@@ -81,6 +81,7 @@ Current implemented source foundation:
         server.ts / lifecycle.ts / authorization.ts / …
       components/
         auth/
+      catalog/         (Phase 3B domain: repository, service, validators)
       db/
         runtime.ts
         schema/
@@ -169,8 +170,9 @@ sequence) are defined by:
 
 Phase 3A implements the foundational catalog schema subset in
 `src/db/schema/catalog.ts` (migration `0003_phase3a_catalog_schema`).
-Inventory runtime, catalog services, seeds, and public/admin catalog
-surfaces remain later phases.
+Phase 3B adds the server-side catalog domain under `src/catalog/`
+(repository + service + Zod validation). Inventory runtime, seeds, and
+public/admin catalog HTTP/UI surfaces remain later phases.
 
 If implementation requirements conflict with those invariants, stop and
 resolve the design instead of silently choosing different behavior.
