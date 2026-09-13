@@ -272,26 +272,27 @@ Authentication:
 - accounts
 - verification
 
-Catalog:
+Catalog (authoritative conceptual model: `docs/STORE_CATALOG.md`):
 
+- store_settings
 - products
 - product_variants
 - product_options
 - product_option_values
+- product_variant_option_values
 - product_media
 - categories
 - collections
 - product_categories
-- product_collections
+- collection_products
 
 Pricing:
 
 - variant_prices
-- currency
 
 Inventory:
 
-- inventory_state
+- inventory_balances
 - inventory_reservations
 - inventory_movements
 - suppliers
@@ -339,6 +340,8 @@ Custom video:
 
 These names are conceptual. Actual table design is reviewed during the
 corresponding schema phase. Phase 1E does not create product schema.
+Phase 2D locks the store/catalog conceptual model in
+`docs/STORE_CATALOG.md` without creating Drizzle tables or migrations.
 
 ## 11. Core database invariants
 

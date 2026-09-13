@@ -5,9 +5,9 @@ store.
 
 ## Current phase
 
-Phase 2C6 — Auth security + E2E closure
+Phase 2D — Store + Catalog blueprint (design / contract)
 
-Phase 0 through Phase 2C5 are complete. The repository includes isolated
+Phase 0 through Phase 2C6 are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
 rebuild workflow, Better Auth (`better-auth@1.7.3` + matching Drizzle
 adapter), server-owned `customer`/`admin` roles with exact-role
@@ -15,12 +15,14 @@ authorization primitives, the portable PR quality gate, the Phase 2C0
 auth design lock, project-owned Mailpit with a local email transport
 abstraction, the email/password backend lifecycle (verification, reset,
 session policy), the Better Auth browser client with customer auth UI,
-guarded DEV/TEST-only first-admin bootstrap, and minimal protected
-customer/admin surfaces.
+guarded DEV/TEST-only first-admin bootstrap, minimal protected
+customer/admin surfaces, and Phase 2C6 auth security + E2E closure
+evidence (portable unit contracts; local Playwright/Mailpit coverage
+skipped in portable CI). See `docs/AUTH.md`.
 
-Phase 2C6 closes authentication security evidence with portable unit
-contracts plus local Playwright/Mailpit lifecycle coverage (skipped in
-portable CI). See `docs/AUTH.md`.
+Phase 2D locks the Store + Catalog contract before any catalog schema
+work. Authoritative document: `docs/STORE_CATALOG.md`. No catalog
+tables, migrations, or storefront/admin catalog runtime in this phase.
 
 Local auth runtime uses ignored `.env.local`
 (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, plus Mailpit
@@ -100,6 +102,7 @@ Before implementation, read the documents relevant to the current task:
 - docs/PROJECT_PLAN.md
 - docs/ARCHITECTURE.md
 - docs/COMMERCE_RULES.md
+- docs/STORE_CATALOG.md
 - docs/DATABASE.md
 - docs/AUTH.md
 - docs/SECURITY.md

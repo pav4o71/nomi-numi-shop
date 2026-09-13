@@ -157,6 +157,13 @@ Commerce invariants are defined by:
 
 - docs/COMMERCE_RULES.md
 
+Store + catalog domain contracts (single-store model, categories vs
+collections, product/variant aggregate, catalog money, inventory
+architecture, media/CMS boundaries, conceptual schema, Phase 3+
+sequence) are defined by:
+
+- docs/STORE_CATALOG.md
+
 If implementation requirements conflict with those invariants, stop and
 resolve the design instead of silently choosing different behavior.
 
@@ -194,11 +201,18 @@ Private custom-video media:
 - not stored under public static paths
 - access requires server-side authorization
 
+Catalog media relationship, storage-key abstraction, and separation from
+private custom-video assets are locked in `docs/STORE_CATALOG.md`.
+
 ## 12. CMS
 
 Use controlled typed content blocks.
 
 Do not build a general-purpose website builder.
+
+Homepage/store content, policy pages, and merchandising sections are
+CMS concerns distinct from inventorial catalog rows; see
+`docs/STORE_CATALOG.md`.
 
 ## 13. Observability
 

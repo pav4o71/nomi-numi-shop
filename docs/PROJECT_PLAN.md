@@ -51,6 +51,16 @@ customer's authoritative checkout price.
 
 Catalog structure is database-managed rather than hard-coded.
 
+The authoritative Store + Catalog blueprint (Phase 2D) is:
+
+- `docs/STORE_CATALOG.md`
+
+That document locks single-store architecture, category vs collection
+separation, product/variant structure, money semantics, inventory
+boundaries, media/CMS/review/custom-video boundaries, deletion/archival
+rules, the conceptual relational model, and the Phase 3+ implementation
+sequence. Do not invent conflicting catalog schema during later phases.
+
 The application needs both:
 
 - categories
@@ -434,10 +444,18 @@ Database and authentication foundation, delivered in reviewed steps:
   - Phase 2C6 — auth security + E2E closure (complete: portable
     contracts + local Playwright/Mailpit evidence; CI skips live auth
     E2E)
+- Phase 2D — Store + Catalog blueprint (docs only): locks
+  single-store model, categories vs collections, product/variant
+  aggregate, money, inventory architecture, order/payment/fulfillment
+  boundary relative to catalog, media/CMS/reviews/custom-video
+  boundaries, slugs, archival rules, conceptual DB model, and Phase 3+
+  sequence. Authoritative doc: `docs/STORE_CATALOG.md`. No schema,
+  migrations, or catalog runtime in 2D.
 
 ### Phase 3
 
-Catalog model.
+Catalog model (schema + domain services + public reads), subdivided
+per `docs/STORE_CATALOG.md` §17 after Phase 2D merge.
 
 ### Phase 4
 
