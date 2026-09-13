@@ -73,10 +73,12 @@ Never claim:
 - build passed
 - lint passed
 - deployment succeeded
-- PR review PASS / approved for merge
+- Nomi PR Verifier PASS for the exact current SHA
 
 unless that action actually ran and produced the stated result for the
 exact current commit SHA. Stale SHA-bound review verdicts do not count.
+Nomi PASS permits human merge consideration only; it does not grant
+merge authority.
 
 ## Review after implementation
 

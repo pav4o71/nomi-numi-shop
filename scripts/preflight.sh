@@ -1019,8 +1019,7 @@ for required_file in \
   ".gitignore" \
   ".cursorignore" \
   "AGENTS.md" \
-  "docs/PROTECTED_RESOURCES.md" \
-  ".cursor/BUGBOT.md"
+  "docs/PROTECTED_RESOURCES.md"
 do
   if [[ -f "$required_file" ]]; then
     pass "required safety file exists: $required_file"

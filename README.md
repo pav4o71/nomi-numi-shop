@@ -117,10 +117,6 @@ Cursor project rules:
 
 - .cursor/rules/
 
-Bugbot review rules:
-
-- .cursor/BUGBOT.md
-
 ## Local PostgreSQL and Drizzle
 
 Development:

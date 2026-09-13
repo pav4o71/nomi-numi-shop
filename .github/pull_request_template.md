@@ -36,7 +36,9 @@ If applicable:
 
 ## Review findings
 
-Record Bugbot/Cursor/manual review findings and how they were resolved.
+Record Nomi PR Verifier / Cursor / manual review findings and how they
+were resolved. A Nomi PASS is SHA-bound evidence only; the human owner
+remains the sole merge authority.
 
 ## Remaining risks
 
