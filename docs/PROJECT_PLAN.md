@@ -457,6 +457,10 @@ Database and authentication foundation, delivered in reviewed steps:
 Catalog model (schema + domain services + public reads), subdivided
 per `docs/STORE_CATALOG.md` §17 after Phase 2D merge.
 
+- Phase 3A — foundational catalog schema (complete: Drizzle tables +
+  migration `0003_phase3a_catalog_schema`; no inventory runtime,
+  repositories, seeds, or public/admin catalog APIs)
+
 ### Phase 4
 
 Admin catalog management.

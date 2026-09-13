@@ -5,9 +5,9 @@ store.
 
 ## Current phase
 
-Phase 2D — Store + Catalog blueprint (design / contract)
+Phase 3A — Foundational catalog schema
 
-Phase 0 through Phase 2C6 are complete. The repository includes isolated
+Phase 0 through Phase 2D are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
 rebuild workflow, Better Auth (`better-auth@1.7.3` + matching Drizzle
 adapter), server-owned `customer`/`admin` roles with exact-role
@@ -16,13 +16,14 @@ auth design lock, project-owned Mailpit with a local email transport
 abstraction, the email/password backend lifecycle (verification, reset,
 session policy), the Better Auth browser client with customer auth UI,
 guarded DEV/TEST-only first-admin bootstrap, minimal protected
-customer/admin surfaces, and Phase 2C6 auth security + E2E closure
-evidence (portable unit contracts; local Playwright/Mailpit coverage
-skipped in portable CI). See `docs/AUTH.md`.
+customer/admin surfaces, Phase 2C6 auth security + E2E closure, and the
+Phase 2D Store + Catalog blueprint (`docs/STORE_CATALOG.md`).
 
-Phase 2D locks the Store + Catalog contract before any catalog schema
-work. Authoritative document: `docs/STORE_CATALOG.md`. No catalog
-tables, migrations, or storefront/admin catalog runtime in this phase.
+Phase 3A adds foundational catalog Drizzle tables and migration
+`0003_phase3a_catalog_schema` (`store_settings`, categories, collections,
+products, variants, options, prices, media metadata). Inventory ledger
+tables, catalog repositories/services, seeds, public catalog reads, and
+admin catalog UI remain out of scope until later Phase 3/4/5 steps.
 
 Local auth runtime uses ignored `.env.local`
 (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, plus Mailpit
@@ -151,10 +152,12 @@ Migrations (migration-first; no `drizzle-kit push`):
 Canonical schema path: `src/db/schema/`
 Committed migrations: `drizzle/`
 
+Catalog tables live in `src/db/schema/catalog.ts` (Phase 3A).
 Better Auth tables live in `src/db/schema/auth.ts`:
 
 - `drizzle/0001_phase2a_better_auth.sql` — core auth tables
 - `drizzle/0002_phase2b_auth_role.sql` — server-owned `user.role`
+- `drizzle/0003_phase3a_catalog_schema.sql` — foundational catalog schema
 
 Migrations remain Drizzle-managed (do not run Better Auth migrate).
 Application roles are `customer` (default) and `admin`. See `docs/AUTH.md`.

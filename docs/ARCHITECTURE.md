@@ -84,6 +84,9 @@ Current implemented source foundation:
       db/
         runtime.ts
         schema/
+          auth.ts      (Better Auth; isolated)
+          catalog.ts   (Phase 3A foundational catalog)
+          index.ts
       email/
       lib/
 
@@ -163,6 +166,11 @@ architecture, media/CMS boundaries, conceptual schema, Phase 3+
 sequence) are defined by:
 
 - docs/STORE_CATALOG.md
+
+Phase 3A implements the foundational catalog schema subset in
+`src/db/schema/catalog.ts` (migration `0003_phase3a_catalog_schema`).
+Inventory runtime, catalog services, seeds, and public/admin catalog
+surfaces remain later phases.
 
 If implementation requirements conflict with those invariants, stop and
 resolve the design instead of silently choosing different behavior.

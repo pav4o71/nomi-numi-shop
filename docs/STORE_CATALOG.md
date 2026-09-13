@@ -846,6 +846,10 @@ Derive small reviewed PRs. Do not start these in Phase 2D.
 
 ### Phase 3A — Foundational catalog schema
 
+- **Status:** implemented (schema + migration `0003_phase3a_catalog_schema`
+  - portable/local constraint tests). Category hierarchy (`parent_id`)
+    and active-variant option-combination uniqueness remain deferred to
+    later phases / service layer per contract.
 - **Scope:** Drizzle tables/migrations for store_settings, categories,
   collections, products, M:N joins, options, variants, variant_prices,
   product_media metadata (no full upload UX required)
