@@ -30,9 +30,10 @@ Run the available test commands:
 
 `pnpm test:ci` is the portable GitHub Actions unit suite. It excludes
 path-locked `database-safety`, `drizzle-foundation`,
-`email-local-safety`, `auth-first-admin-bootstrap-local`, and
-`catalog-schema-local` tests that require the workstation canonical root
-and/or owned local PostgreSQL. Local full coverage remains `pnpm test`.
+`email-local-safety`, `auth-first-admin-bootstrap-local`,
+`catalog-schema-local`, and `catalog-domain-local` tests that require the
+workstation canonical root and/or owned local PostgreSQL. Local full
+coverage remains `pnpm test`.
 
 Playwright browser binaries are stored under the ignored
 `var/playwright-browsers/` directory. Playwright temporary files use the

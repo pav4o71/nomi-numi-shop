@@ -5,9 +5,9 @@ store.
 
 ## Current phase
 
-Phase 3A — Foundational catalog schema
+Phase 3B — Catalog domain repository / service layer
 
-Phase 0 through Phase 2D are complete. The repository includes isolated
+Phase 0 through Phase 3A are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
 rebuild workflow, Better Auth (`better-auth@1.7.3` + matching Drizzle
 adapter), server-owned `customer`/`admin` roles with exact-role
@@ -16,14 +16,16 @@ auth design lock, project-owned Mailpit with a local email transport
 abstraction, the email/password backend lifecycle (verification, reset,
 session policy), the Better Auth browser client with customer auth UI,
 guarded DEV/TEST-only first-admin bootstrap, minimal protected
-customer/admin surfaces, Phase 2C6 auth security + E2E closure, and the
-Phase 2D Store + Catalog blueprint (`docs/STORE_CATALOG.md`).
+customer/admin surfaces, Phase 2C6 auth security + E2E closure, the
+Phase 2D Store + Catalog blueprint (`docs/STORE_CATALOG.md`), and the
+Phase 3A foundational catalog schema (migration
+`0003_phase3a_catalog_schema`).
 
-Phase 3A adds foundational catalog Drizzle tables and migration
-`0003_phase3a_catalog_schema` (`store_settings`, categories, collections,
-products, variants, options, prices, media metadata). Inventory ledger
-tables, catalog repositories/services, seeds, public catalog reads, and
-admin catalog UI remain out of scope until later Phase 3/4/5 steps.
+Phase 3B adds the server-side catalog domain under `src/catalog/`
+(repository, service, Zod 4 validation, slug/money helpers,
+option-combination and primary-category transactional rules). Phase 3C
+has not started. Seeds, public catalog reads/APIs, admin catalog
+HTTP/UI, and inventory runtime remain later phases.
 
 Local auth runtime uses ignored `.env.local`
 (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, plus Mailpit
@@ -153,6 +155,7 @@ Canonical schema path: `src/db/schema/`
 Committed migrations: `drizzle/`
 
 Catalog tables live in `src/db/schema/catalog.ts` (Phase 3A).
+Catalog domain services live in `src/catalog/` (Phase 3B).
 Better Auth tables live in `src/db/schema/auth.ts`:
 
 - `drizzle/0001_phase2a_better_auth.sql` — core auth tables
