@@ -32,7 +32,8 @@ Run the available test commands:
 path-locked `database-safety`, `drizzle-foundation`,
 `email-local-safety`, `auth-first-admin-bootstrap-local`,
 `catalog-schema-local`, `catalog-domain-local`,
-`catalog-fixtures-local`, and `catalog-factories-local` tests that
+`catalog-fixtures-local`, `catalog-factories-local`, and
+`catalog-public-local` tests that
 require the workstation canonical root and/or owned local PostgreSQL.
 Local full coverage remains `pnpm test`.
 
@@ -104,6 +105,10 @@ Auth foundation unit coverage lives in:
   DB preflight/install/conflict/idempotency; local `pnpm test` only)
 - `tests/unit/catalog-factories-local.test.ts` (Phase 3C path-locked TEST
   factories; local `pnpm test` only)
+- `tests/unit/catalog-public.test.ts` (Phase 3D portable eligibility,
+  listing From/exact, initial-variant tie-break)
+- `tests/unit/catalog-public-local.test.ts` (Phase 3D path-locked TEST DB
+  public reads; local `pnpm test` only)
 - `tests/support/catalog-builders.ts` / `catalog-factories.ts` (Phase 3C
   pure builders + persisted TEST factories using CatalogService)
 - `tests/unit/auth-protected-surfaces.test.ts` (Phase 2C5 page guards,
@@ -141,8 +146,9 @@ skip. Full local closure requires owned DEV Postgres, Mailpit, and
 (`database-safety`, `drizzle-foundation`, `email-local-safety`,
 `auth-first-admin-bootstrap-local`, `catalog-schema-local`,
 `catalog-domain-local`, `catalog-fixtures-local`,
-`catalog-factories-local`). Local full unit coverage remains `pnpm test`
-(includes first-admin, Phase 3A–3C catalog TEST DB regression).
+`catalog-factories-local`, `catalog-public-local`). Local full unit
+coverage remains `pnpm test` (includes first-admin, Phase 3A–3D catalog
+TEST DB regression).
 
 ## 4. Determinism
 
@@ -180,9 +186,9 @@ Exact portable commands (in order):
 5. `pnpm test:ci` (portable unit tests; excludes path-locked
    `database-safety`, `drizzle-foundation`, `email-local-safety`,
    `auth-first-admin-bootstrap-local`, `catalog-schema-local`,
-   `catalog-domain-local`, `catalog-fixtures-local`, and
-   `catalog-factories-local` suites that require the workstation
-   canonical root and/or owned local PostgreSQL)
+   `catalog-domain-local`, `catalog-fixtures-local`,
+   `catalog-factories-local`, and `catalog-public-local` suites that
+   require the workstation canonical root and/or owned local PostgreSQL)
 6. `pnpm build`
 7. Chromium install for Playwright (`playwright install --with-deps chromium`)
 8. `pnpm test:e2e`
