@@ -2,7 +2,6 @@
  * Portable Phase 3C fixture manifest + DEV seed CLI surface tests.
  */
 import { readFileSync } from "node:fs";
-import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -24,7 +23,16 @@ import {
   buildProductInput,
 } from "../support/catalog-builders";
 
-const ROOT = "/home/pav4o71/Projects/nomi-numi-shop";
+const packageJson = JSON.parse(
+  readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+) as {
+  scripts: Record<string, string>;
+};
+
+const seedHelper = readFileSync(
+  new URL("../../scripts/catalog-seed-dev.sh", import.meta.url),
+  "utf8",
+);
 
 describe("Phase 3C fixture manifest", () => {
   it("uses reserved slug and SKU namespaces with deterministic graph shape", () => {
@@ -136,25 +144,23 @@ describe("Phase 3C DEV seed CLI surface", () => {
   });
 
   it("public package script is DEV-only without TEST/prod selectors", () => {
-    const packageJson = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")) as {
-      scripts: Record<string, string>;
-    };
     expect(packageJson.scripts["catalog:seed:dev"]).toBe("./scripts/catalog-seed-dev.sh");
     expect(packageJson.scripts["catalog:seed:test"]).toBeUndefined();
     expect(packageJson.scripts["catalog:seed:prod"]).toBeUndefined();
     expect(packageJson.scripts["catalog:seed"]).toBeUndefined();
 
-    const helper = readFileSync(path.join(ROOT, "scripts/catalog-seed-dev.sh"), "utf8");
-    expect(helper).toContain("SEED-NOMI-DEV-CATALOG");
-    expect(helper).toContain("nomi_numi_shop_dev");
-    expect(helper).toContain("55432");
-    expect(helper).toContain(PROTECTED_HOST_PORT);
-    expect(helper).toContain("forbidden target-selection argument");
-    expect(helper).not.toContain("catalog:seed:test");
-    expect(helper).toContain("-u DATABASE_URL");
-    expect(helper).toContain("com.nomimumi.project");
-    expect(helper).toContain('EXPECTED_CONTAINER="${COMPOSE_PROJECT}-${COMPOSE_SERVICE_NAME}-1"');
-    expect(helper).toContain('COMPOSE_PROJECT="nomi-numi-shop-dev"');
+    expect(seedHelper).toContain("SEED-NOMI-DEV-CATALOG");
+    expect(seedHelper).toContain("nomi_numi_shop_dev");
+    expect(seedHelper).toContain("55432");
+    expect(seedHelper).toContain(PROTECTED_HOST_PORT);
+    expect(seedHelper).toContain("forbidden target-selection argument");
+    expect(seedHelper).not.toContain("catalog:seed:test");
+    expect(seedHelper).toContain("-u DATABASE_URL");
+    expect(seedHelper).toContain("com.nomimumi.project");
+    expect(seedHelper).toContain(
+      'EXPECTED_CONTAINER="${COMPOSE_PROJECT}-${COMPOSE_SERVICE_NAME}-1"',
+    );
+    expect(seedHelper).toContain('COMPOSE_PROJECT="nomi-numi-shop-dev"');
   });
 });
 
