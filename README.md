@@ -5,9 +5,9 @@ store.
 
 ## Current phase
 
-Phase 3B — Catalog domain repository / service layer
+Phase 3C — Deterministic DEV catalog fixtures + TEST factories
 
-Phase 0 through Phase 3A are complete. The repository includes isolated
+Phase 0 through Phase 3B are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
 rebuild workflow, Better Auth (`better-auth@1.7.3` + matching Drizzle
 adapter), server-owned `customer`/`admin` roles with exact-role
@@ -17,15 +17,15 @@ abstraction, the email/password backend lifecycle (verification, reset,
 session policy), the Better Auth browser client with customer auth UI,
 guarded DEV/TEST-only first-admin bootstrap, minimal protected
 customer/admin surfaces, Phase 2C6 auth security + E2E closure, the
-Phase 2D Store + Catalog blueprint (`docs/STORE_CATALOG.md`), and the
+Phase 2D Store + Catalog blueprint (`docs/STORE_CATALOG.md`), the
 Phase 3A foundational catalog schema (migration
-`0003_phase3a_catalog_schema`).
+`0003_phase3a_catalog_schema`), and the Phase 3B catalog domain under
+`src/catalog/`.
 
-Phase 3B adds the server-side catalog domain under `src/catalog/`
-(repository, service, Zod 4 validation, slug/money helpers,
-option-combination and primary-category transactional rules). Phase 3C
-has not started. Seeds, public catalog reads/APIs, admin catalog
-HTTP/UI, and inventory runtime remain later phases.
+Phase 3C adds deterministic DEV catalog fixtures (`dev-fixture-*` /
+`DEVFIX-*`), a guarded DEV-only seed command, and TEST builders/factories.
+Public catalog reads/APIs, admin catalog HTTP/UI, inventory runtime, and
+Phase 3D have not started. Production seed/import remains unsupported.
 
 Local auth runtime uses ignored `.env.local`
 (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, plus Mailpit
@@ -152,6 +152,7 @@ Committed migrations: `drizzle/`
 
 Catalog tables live in `src/db/schema/catalog.ts` (Phase 3A).
 Catalog domain services live in `src/catalog/` (Phase 3B).
+DEV catalog fixtures + seed live under `src/catalog/fixtures/` (Phase 3C).
 Better Auth tables live in `src/db/schema/auth.ts`:
 
 - `drizzle/0001_phase2a_better_auth.sql` — core auth tables
@@ -174,6 +175,17 @@ The command drops and recreates only `nomi_numi_shop_test`, then reapplies commi
 migrations. Unexpected active TEST sessions cause refusal; connections
 are not terminated. There is no `db:dev:reset`, generic drop tool, or
 raw SQL console. Production and host port `5433` cannot be selected.
+
+DEV catalog fixtures (Phase 3C; development data only):
+
+    pnpm catalog:seed:dev -- --confirm SEED-NOMI-DEV-CATALOG
+
+The command targets project-owned DEV only (`127.0.0.1:55432` /
+`nomi_numi_shop_dev`). It runs a complete read-only fixture preflight
+before writes, creates only missing fixture state, no-ops when already
+matching, and aborts on conflict without overwrite/delete/truncate.
+Production seed/import is unsupported. Phase 3D public catalog reads
+have not started.
 
 Local credentials remain under ignored `var/docker/` and must never be
 committed. Start the matching PostgreSQL environment before migrate or

@@ -31,9 +31,10 @@ Run the available test commands:
 `pnpm test:ci` is the portable GitHub Actions unit suite. It excludes
 path-locked `database-safety`, `drizzle-foundation`,
 `email-local-safety`, `auth-first-admin-bootstrap-local`,
-`catalog-schema-local`, and `catalog-domain-local` tests that require the
-workstation canonical root and/or owned local PostgreSQL. Local full
-coverage remains `pnpm test`.
+`catalog-schema-local`, `catalog-domain-local`,
+`catalog-fixtures-local`, and `catalog-factories-local` tests that
+require the workstation canonical root and/or owned local PostgreSQL.
+Local full coverage remains `pnpm test`.
 
 Playwright browser binaries are stored under the ignored
 `var/playwright-browsers/` directory. Playwright temporary files use the
@@ -97,6 +98,14 @@ Auth foundation unit coverage lives in:
   combination/error-boundary unit coverage)
 - `tests/unit/catalog-domain-local.test.ts` (Phase 3B path-locked TEST DB
   repository/service integration; local `pnpm test` only)
+- `tests/unit/catalog-fixtures.test.ts` (Phase 3C portable fixture
+  manifest + DEV seed CLI surface + pure builders)
+- `tests/unit/catalog-fixtures-local.test.ts` (Phase 3C path-locked TEST
+  DB preflight/install/conflict/idempotency; local `pnpm test` only)
+- `tests/unit/catalog-factories-local.test.ts` (Phase 3C path-locked TEST
+  factories; local `pnpm test` only)
+- `tests/support/catalog-builders.ts` / `catalog-factories.ts` (Phase 3C
+  pure builders + persisted TEST factories using CatalogService)
 - `tests/unit/auth-protected-surfaces.test.ts` (Phase 2C5 page guards,
   API 401/403 mapping, safe next paths / open-redirect refusals,
   client UX is not authorization; portable)
@@ -131,9 +140,9 @@ skip. Full local closure requires owned DEV Postgres, Mailpit, and
 `pnpm test:ci` still excludes path-locked suites
 (`database-safety`, `drizzle-foundation`, `email-local-safety`,
 `auth-first-admin-bootstrap-local`, `catalog-schema-local`,
-`catalog-domain-local`). Local full unit coverage remains `pnpm test`
-(includes first-admin, Phase 3A catalog constraint, and Phase 3B catalog
-domain TEST DB regression).
+`catalog-domain-local`, `catalog-fixtures-local`,
+`catalog-factories-local`). Local full unit coverage remains `pnpm test`
+(includes first-admin, Phase 3A–3C catalog TEST DB regression).
 
 ## 4. Determinism
 
@@ -145,7 +154,9 @@ Automated tests should avoid unnecessary reliance on:
 - another project
 - undocumented machine-local state
 
-Seed and test data should be deterministic where practical.
+`pnpm test` runs unit files sequentially (`fileParallelism: false`) so
+path-locked suites that share the owned TEST database do not race.
+Portable `pnpm test:ci` remains independent of workstation PostgreSQL.
 
 ## 5. Quality gate
 
@@ -168,9 +179,10 @@ Exact portable commands (in order):
 4. `pnpm typecheck`
 5. `pnpm test:ci` (portable unit tests; excludes path-locked
    `database-safety`, `drizzle-foundation`, `email-local-safety`,
-   `auth-first-admin-bootstrap-local`, `catalog-schema-local`, and
-   `catalog-domain-local` suites that require the workstation canonical
-   root and/or owned local PostgreSQL)
+   `auth-first-admin-bootstrap-local`, `catalog-schema-local`,
+   `catalog-domain-local`, `catalog-fixtures-local`, and
+   `catalog-factories-local` suites that require the workstation
+   canonical root and/or owned local PostgreSQL)
 6. `pnpm build`
 7. Chromium install for Playwright (`playwright install --with-deps chromium`)
 8. `pnpm test:e2e`

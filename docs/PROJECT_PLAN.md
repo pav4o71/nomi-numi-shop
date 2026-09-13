@@ -461,8 +461,12 @@ per `docs/STORE_CATALOG.md` §17 after Phase 2D merge.
   migration `0003_phase3a_catalog_schema`; no inventory runtime,
   repositories, seeds, or public/admin catalog APIs)
 - Phase 3B — catalog domain repository/service layer (complete:
-  `src/catalog/` with Zod 4 validation; no HTTP/UI, seeds, or schema
-  changes; Phase 3C not started)
+  `src/catalog/` with Zod 4 validation; no HTTP/UI or schema changes)
+- Phase 3C — deterministic DEV catalog fixtures + TEST factories
+  (complete: `src/catalog/fixtures/`, guarded
+  `pnpm catalog:seed:dev -- --confirm SEED-NOMI-DEV-CATALOG`, TEST
+  builders/factories under `tests/support/`; no store_settings seed,
+  no public/admin catalog HTTP/UI, no Phase 3D)
 
 ### Phase 4
 

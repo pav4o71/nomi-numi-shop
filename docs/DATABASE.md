@@ -26,10 +26,12 @@ Phase 3A adds foundational catalog tables (`store_settings`, categories,
 collections, products, variants, options, prices, media metadata) through
 migration `0003_phase3a_catalog_schema`. Phase 3B adds the catalog domain
 repository/service layer in `src/catalog/` without schema changes.
-Inventory ledger tables, seeds, and public/admin catalog HTTP runtime
-remain absent. The public storefront still does not require PostgreSQL
-for browsing; only the lazy `/api/auth` runtime connects to local DEV by
-default.
+Phase 3C adds deterministic DEV fixtures (`src/catalog/fixtures/`) and
+TEST factories; it does not add schema/migrations, store_settings seed,
+or public/admin catalog HTTP runtime. Inventory ledger tables and Phase
+3D public catalog reads remain absent. The public storefront still does
+not require PostgreSQL for browsing; only the lazy `/api/auth` runtime
+connects to local DEV by default.
 
 ## 2. Development database
 

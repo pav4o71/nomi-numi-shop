@@ -1,0 +1,235 @@
+/**
+ * Portable Phase 3C fixture manifest + DEV seed CLI surface tests.
+ */
+import { readFileSync } from "node:fs";
+
+import { describe, expect, it } from "vitest";
+
+import {
+  DEV_CATALOG_FIXTURE_MANIFEST,
+  DEV_CATALOG_SEED_CONFIRMATION,
+  DEV_FIXTURE_SKU_PREFIX,
+  DEV_FIXTURE_SLUG_PREFIX,
+  assertFixtureOwnershipKeys,
+  parseDevCatalogSeedArgs,
+} from "@/catalog/fixtures";
+import { PROTECTED_HOST_PORT } from "../../scripts/drizzle-credentials.mjs";
+import {
+  buildCategoryInput,
+  buildCompareAtPrices,
+  buildDefaultVariantInput,
+  buildInactiveVariantInput,
+  buildPrice,
+  buildProductInput,
+} from "../support/catalog-builders";
+
+const packageJson = JSON.parse(
+  readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+) as {
+  scripts: Record<string, string>;
+};
+
+const seedHelper = readFileSync(
+  new URL("../../scripts/catalog-seed-dev.sh", import.meta.url),
+  "utf8",
+);
+
+describe("Phase 3C fixture manifest", () => {
+  it("uses reserved slug and SKU namespaces with deterministic graph shape", () => {
+    expect(() => assertFixtureOwnershipKeys()).not.toThrow();
+
+    for (const category of DEV_CATALOG_FIXTURE_MANIFEST.categories) {
+      expect(category.slug.startsWith(DEV_FIXTURE_SLUG_PREFIX)).toBe(true);
+    }
+    for (const collection of DEV_CATALOG_FIXTURE_MANIFEST.collections) {
+      expect(collection.slug.startsWith(DEV_FIXTURE_SLUG_PREFIX)).toBe(true);
+    }
+
+    const productSlugs = DEV_CATALOG_FIXTURE_MANIFEST.products.map((product) => product.slug);
+    expect(productSlugs).toEqual([
+      "dev-fixture-hug-plush",
+      "dev-fixture-cozy-hoodie",
+      "dev-fixture-moonlight-tumbler",
+      "dev-fixture-heart-keychain",
+      "dev-fixture-everyday-tote",
+      "dev-fixture-cozy-cushion",
+    ]);
+
+    const hug = DEV_CATALOG_FIXTURE_MANIFEST.products.find(
+      (product) => product.slug === "dev-fixture-hug-plush",
+    );
+    expect(hug?.status).toBe("published");
+    expect(hug?.options).toHaveLength(1);
+    expect(hug?.variants).toHaveLength(3);
+
+    const hoodie = DEV_CATALOG_FIXTURE_MANIFEST.products.find(
+      (product) => product.slug === "dev-fixture-cozy-hoodie",
+    );
+    expect(hoodie?.options.map((option) => option.name)).toEqual(["Size", "Color"]);
+    expect(hoodie?.variants.some((variant) => variant.isActive === false)).toBe(true);
+    expect(
+      hoodie?.variants.some((variant) =>
+        variant.prices.some((price) => (price.compareAtAmountMinor ?? 0) > price.amountMinor),
+      ),
+    ).toBe(true);
+
+    const keychain = DEV_CATALOG_FIXTURE_MANIFEST.products.find(
+      (product) => product.slug === "dev-fixture-heart-keychain",
+    );
+    expect(keychain?.status).toBe("draft");
+
+    const tote = DEV_CATALOG_FIXTURE_MANIFEST.products.find(
+      (product) => product.slug === "dev-fixture-everyday-tote",
+    );
+    expect(tote?.status).toBe("archived");
+
+    for (const product of DEV_CATALOG_FIXTURE_MANIFEST.products) {
+      expect(product.categories.some((item) => item.isPrimary)).toBe(true);
+      for (const variant of product.variants) {
+        expect(variant.sku.startsWith(DEV_FIXTURE_SKU_PREFIX)).toBe(true);
+        expect(variant.prices.map((price) => price.currency).sort()).toEqual(["PHP", "USD"]);
+        for (const price of variant.prices) {
+          expect(Number.isInteger(price.amountMinor)).toBe(true);
+          expect(price.amountMinor).toBeGreaterThan(0);
+        }
+      }
+    }
+
+    const categorySlugs = new Set(
+      DEV_CATALOG_FIXTURE_MANIFEST.categories.map((category) => category.slug),
+    );
+    const collectionSlugs = new Set(
+      DEV_CATALOG_FIXTURE_MANIFEST.collections.map((collection) => collection.slug),
+    );
+    expect([...categorySlugs].some((slug) => collectionSlugs.has(slug))).toBe(false);
+
+    expect(DEV_CATALOG_FIXTURE_MANIFEST.collections).toHaveLength(2);
+    for (const collection of DEV_CATALOG_FIXTURE_MANIFEST.collections) {
+      const members = DEV_CATALOG_FIXTURE_MANIFEST.products.filter((product) =>
+        product.collections.some((item) => item.collectionSlug === collection.slug),
+      );
+      expect(members.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("Phase 3C DEV seed CLI surface", () => {
+  it("requires exact confirmation and rejects target selectors", () => {
+    expect(() => parseDevCatalogSeedArgs([])).toThrow(/usage: --confirm/);
+    expect(() => parseDevCatalogSeedArgs(["--confirm"])).toThrow(/confirmation token missing/);
+    expect(() => parseDevCatalogSeedArgs(["--confirm", "WRONG"])).toThrow(/token mismatch/);
+    expect(() =>
+      parseDevCatalogSeedArgs(["--confirm", DEV_CATALOG_SEED_CONFIRMATION, "--env", "test"]),
+    ).toThrow(/forbidden target-selection/);
+    expect(() =>
+      parseDevCatalogSeedArgs(["--confirm", DEV_CATALOG_SEED_CONFIRMATION, "--host", "127.0.0.1"]),
+    ).toThrow(/forbidden target-selection/);
+    expect(() =>
+      parseDevCatalogSeedArgs(["--confirm", DEV_CATALOG_SEED_CONFIRMATION, "--port", "55433"]),
+    ).toThrow(/forbidden target-selection/);
+    expect(() =>
+      parseDevCatalogSeedArgs([
+        "--confirm",
+        DEV_CATALOG_SEED_CONFIRMATION,
+        "--database",
+        "nomi_numi_shop_test",
+      ]),
+    ).toThrow(/forbidden target-selection/);
+    expect(parseDevCatalogSeedArgs(["--confirm", DEV_CATALOG_SEED_CONFIRMATION])).toEqual({
+      confirmation: DEV_CATALOG_SEED_CONFIRMATION,
+    });
+    expect(parseDevCatalogSeedArgs(["--", "--confirm", DEV_CATALOG_SEED_CONFIRMATION])).toEqual({
+      confirmation: DEV_CATALOG_SEED_CONFIRMATION,
+    });
+  });
+
+  it("public package script is DEV-only without TEST/prod selectors", () => {
+    expect(packageJson.scripts["catalog:seed:dev"]).toBe("./scripts/catalog-seed-dev.sh");
+    expect(packageJson.scripts["catalog:seed:test"]).toBeUndefined();
+    expect(packageJson.scripts["catalog:seed:prod"]).toBeUndefined();
+    expect(packageJson.scripts["catalog:seed"]).toBeUndefined();
+
+    expect(seedHelper).toContain("SEED-NOMI-DEV-CATALOG");
+    expect(seedHelper).toContain("nomi_numi_shop_dev");
+    expect(seedHelper).toContain("55432");
+    expect(seedHelper).toContain(PROTECTED_HOST_PORT);
+    expect(seedHelper).toContain("forbidden target-selection argument");
+    expect(seedHelper).not.toContain("catalog:seed:test");
+    expect(seedHelper).toContain("-u DATABASE_URL");
+    expect(seedHelper).toContain("com.nomimumi.project");
+    expect(seedHelper).toContain(
+      'EXPECTED_CONTAINER="${COMPOSE_PROJECT}-${COMPOSE_SERVICE_NAME}-1"',
+    );
+    expect(seedHelper).toContain('COMPOSE_PROJECT="nomi-numi-shop-dev"');
+  });
+});
+
+describe("Phase 3C shared compare policy", () => {
+  it("detects unexpected extra variants and membership drift", async () => {
+    const {
+      compareVariantSkuSets,
+      compareCategoryMemberships,
+      compareCollectionMemberships,
+      decideOptionsInstall,
+    } = await import("@/catalog/fixtures/compare");
+
+    expect(compareVariantSkuSets(["A", "B"], ["A", "B"])).toBe("exact");
+    expect(compareVariantSkuSets(["A"], ["A", "B"])).toBe("safe-subset");
+    expect(compareVariantSkuSets(["A", "EXTRA"], ["A", "B"])).toBe("conflict");
+    expect(compareVariantSkuSets(["A", "DEVFIX-EXTRA"], ["A"])).toBe("conflict");
+
+    expect(
+      compareCategoryMemberships(
+        [{ slug: "c1", position: 0, isPrimary: true }],
+        [{ slug: "c1", position: 0, isPrimary: true }],
+      ),
+    ).toBe("exact");
+    expect(
+      compareCategoryMemberships(
+        [{ slug: "c1", position: 99, isPrimary: true }],
+        [{ slug: "c1", position: 0, isPrimary: true }],
+      ),
+    ).toBe("conflict");
+    expect(
+      compareCategoryMemberships(
+        [{ slug: "c1", position: 0, isPrimary: false }],
+        [{ slug: "c1", position: 0, isPrimary: true }],
+      ),
+    ).toBe("conflict");
+
+    expect(
+      compareCollectionMemberships([{ slug: "col", position: 77 }], [{ slug: "col", position: 0 }]),
+    ).toBe("conflict");
+
+    expect(decideOptionsInstall([], 0, [{ name: "Size", position: 0, values: [] }])).toBe("define");
+    expect(decideOptionsInstall([], 1, [{ name: "Size", position: 0, values: [] }])).toBe(
+      "refuse-variants",
+    );
+  });
+});
+
+describe("Phase 3C pure TEST builders", () => {
+  it("builds valid defaults and overrides without DEV fixture keys", () => {
+    const category = buildCategoryInput({ slug: "custom-cat", name: "Custom" });
+    expect(category.slug).toBe("custom-cat");
+    expect(category.slug.startsWith(DEV_FIXTURE_SLUG_PREFIX)).toBe(false);
+
+    const product = buildProductInput({ status: "published" });
+    expect(product.status).toBe("published");
+    expect(product.slug.startsWith(DEV_FIXTURE_SLUG_PREFIX)).toBe(false);
+
+    const active = buildDefaultVariantInput();
+    expect(active.isActive).toBe(true);
+    expect(active.sku?.startsWith(DEV_FIXTURE_SKU_PREFIX)).toBe(false);
+
+    const inactive = buildInactiveVariantInput({ sku: "TEST-INACTIVE-1" });
+    expect(inactive.isActive).toBe(false);
+    expect(inactive.sku).toBe("TEST-INACTIVE-1");
+
+    expect(buildPrice("USD", 1000).amountMinor).toBe(1000);
+    const compareAt = buildCompareAtPrices();
+    expect(compareAt.every((price) => (price.compareAtAmountMinor ?? 0) > price.amountMinor)).toBe(
+      true,
+    );
+  });
+});
