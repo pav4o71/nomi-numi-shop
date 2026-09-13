@@ -861,12 +861,27 @@ Derive small reviewed PRs. Do not start these in Phase 2D.
 
 ### Phase 3B — Catalog domain repository / service layer
 
+- **Status:** implemented (`src/catalog/` — repository, service, Zod 4
+  validation, slug/money helpers, option-combination + primary-category
+  transactional enforcement). No HTTP/UI surfaces. Migration `0003`
+  unchanged. Active-combination uniqueness remains service-enforced
+  (no schema unique index in 3A/3B).
 - **Scope:** server-side product/category/collection/variant services,
   Zod validation, slug normalization, money helpers, status transitions
 - **Out of scope:** HTTP admin API surface beyond minimal if needed for
-  tests; storefront UI
-- **Validation:** unit/integration tests on TEST DB
+  tests; storefront UI; Phase 3C seeds/fixtures
+- **Validation:** portable unit tests + path-locked TEST DB integration
 - **Depends on:** 3A
+- **Phase 3B notes (not inventing new business contracts):**
+  - product status values remain `draft` | `published` | `archived` per
+    §4; no restrictive transition matrix is locked beyond those meanings;
+    `changeProductStatus` accepts any of the three and keeps
+    `published_at` / `archived_at` consistent
+  - `defineProductOptions` may define/replace the option axis only when
+    the product has **no** variants; if any variants exist, the service
+    refuses with `CONFLICT` (no partial changes). Variant rebinding /
+    option-axis migration workflows are deferred
+  - no historical slug redirects; no hard-delete APIs; no inventory
 
 ### Phase 3C — Seed / DEV fixtures
 

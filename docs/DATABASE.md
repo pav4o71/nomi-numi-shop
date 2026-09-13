@@ -24,10 +24,12 @@ a reviewed Drizzle migration. Phase 2B extends `user` with a
 server-owned `role` column (`customer` | `admin`, default `customer`).
 Phase 3A adds foundational catalog tables (`store_settings`, categories,
 collections, products, variants, options, prices, media metadata) through
-migration `0003_phase3a_catalog_schema`. Inventory ledger tables,
-repositories, seeds, and public/admin catalog runtime remain absent. The
-public storefront still does not require PostgreSQL for browsing; only
-the lazy `/api/auth` runtime connects to local DEV by default.
+migration `0003_phase3a_catalog_schema`. Phase 3B adds the catalog domain
+repository/service layer in `src/catalog/` without schema changes.
+Inventory ledger tables, seeds, and public/admin catalog HTTP runtime
+remain absent. The public storefront still does not require PostgreSQL
+for browsing; only the lazy `/api/auth` runtime connects to local DEV by
+default.
 
 ## 2. Development database
 
