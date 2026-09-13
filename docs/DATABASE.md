@@ -22,9 +22,12 @@ Phase 1E established the ORM/migration mechanism. Phase 2A adds Better
 Auth core tables (`user`, `session`, `account`, `verification`) through
 a reviewed Drizzle migration. Phase 2B extends `user` with a
 server-owned `role` column (`customer` | `admin`, default `customer`).
-Catalog/commerce domain tables remain absent. The public storefront
-still does not require PostgreSQL; only the lazy `/api/auth` runtime
-connects to local DEV.
+Phase 3A adds foundational catalog tables (`store_settings`, categories,
+collections, products, variants, options, prices, media metadata) through
+migration `0003_phase3a_catalog_schema`. Inventory ledger tables,
+repositories, seeds, and public/admin catalog runtime remain absent. The
+public storefront still does not require PostgreSQL for browsing; only
+the lazy `/api/auth` runtime connects to local DEV by default.
 
 ## 2. Development database
 
@@ -108,10 +111,12 @@ Committed migrations:
 - `drizzle/0000_phase1e_baseline.sql`
 - `drizzle/0001_phase2a_better_auth.sql` (Better Auth core tables)
 - `drizzle/0002_phase2b_auth_role.sql` (`user.role` authorization field)
+- `drizzle/0003_phase3a_catalog_schema.sql` (Phase 3A catalog foundation)
 
-Canonical auth schema module:
+Canonical schema modules:
 
-- `src/db/schema/auth.ts`
+- `src/db/schema/auth.ts` (Better Auth; isolated)
+- `src/db/schema/catalog.ts` (Phase 3A catalog tables)
 
 Guarded local helper:
 
@@ -338,10 +343,11 @@ Custom video:
 - custom_video_requests
 - private_media_metadata
 
-These names are conceptual. Actual table design is reviewed during the
-corresponding schema phase. Phase 1E does not create product schema.
-Phase 2D locks the store/catalog conceptual model in
-`docs/STORE_CATALOG.md` without creating Drizzle tables or migrations.
+Phase 3A implements the foundational catalog subset listed above
+(excluding inventory ledger tables) in `src/db/schema/catalog.ts` with
+migration `0003_phase3a_catalog_schema`. Inventory, commerce, CMS,
+reviews, and custom-video tables remain deferred to their phases.
+Authoritative catalog contract: `docs/STORE_CATALOG.md`.
 
 ## 11. Core database invariants
 
