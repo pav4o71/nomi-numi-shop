@@ -88,6 +88,10 @@ be archived/disabled instead of destructively removed.
 Storefront visibility and historical-order integrity are separate
 concerns.
 
+Authoritative store/catalog structure (categories vs collections,
+product/variant split, slugs, media, archival rules, conceptual schema)
+is locked in `docs/STORE_CATALOG.md`.
+
 ## 6. Inventory
 
 Inventory is variant-level.
