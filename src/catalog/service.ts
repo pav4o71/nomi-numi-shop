@@ -39,19 +39,12 @@ import {
 } from "@/catalog/validators";
 
 /**
- * Locked Phase 3B product lifecycle transitions (docs/STORE_CATALOG.md §4).
- *
- * - draft → published | archived
- * - published → draft | archived
- * - archived → draft (reopen for editing; publish again deliberately)
- *
- * Direct archived → published is rejected so restoration is intentional.
+ * Product status values remain draft | published | archived
+ * (docs/STORE_CATALOG.md §4). Phase 2D does not lock a restrictive
+ * transition matrix; changeProductStatus accepts any of the three values
+ * and keeps published_at / archived_at consistent with the target status.
+ * Storefront sellability eligibility remains a later public-read concern.
  */
-const ALLOWED_STATUS_TRANSITIONS: Record<ProductStatus, readonly ProductStatus[]> = {
-  draft: ["published", "archived"],
-  published: ["draft", "archived"],
-  archived: ["draft"],
-};
 
 export class CatalogService {
   constructor(private readonly repo: DrizzleCatalogRepository) {}
@@ -206,21 +199,9 @@ export class CatalogService {
         throw notFound(`Product not found: ${id}`);
       }
 
-      const current = existing.status as ProductStatus;
       const next = data.status;
-      if (current === next) {
+      if (existing.status === next) {
         return existing;
-      }
-
-      const allowed = ALLOWED_STATUS_TRANSITIONS[current] ?? [];
-      if (!allowed.includes(next)) {
-        throw conflict(`Product status transition ${current} → ${next} is not allowed`, [
-          {
-            path: ["status"],
-            message: `Cannot transition from ${current} to ${next}`,
-            code: "invalid_status_transition",
-          },
-        ]);
       }
 
       const patch: {
@@ -234,7 +215,8 @@ export class CatalogService {
         patch.publishedAt = existing.publishedAt ?? new Date();
       } else if (next === "archived") {
         patch.archivedAt = existing.archivedAt ?? new Date();
-      } else if (next === "draft") {
+      } else {
+        // draft — clear archival marker; preserve historical publishedAt
         patch.archivedAt = null;
       }
 
@@ -255,6 +237,19 @@ export class CatalogService {
       const product = await this.repo.lockProduct(tx, productId);
       if (!product) {
         throw notFound(`Product not found: ${productId}`);
+      }
+
+      // Structural option replacement would cascade-clear variant option
+      // links and leave variants incomplete. Refuse when any variants exist.
+      const variantCount = await this.repo.countVariantsForProduct(tx, productId);
+      if (variantCount > 0) {
+        throw conflict("Cannot redefine product options while variants exist for this product", [
+          {
+            path: ["options"],
+            message: "defineProductOptions is only allowed when the product has no variants",
+            code: "options_locked_by_variants",
+          },
+        ]);
       }
 
       const names = data.options.map((option) => option.name.toLowerCase());

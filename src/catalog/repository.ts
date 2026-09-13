@@ -373,6 +373,14 @@ export class DrizzleCatalogRepository {
     return rows[0] ?? null;
   }
 
+  async countVariantsForProduct(executor: CatalogExecutor, productId: string): Promise<number> {
+    const rows = await executor
+      .select({ id: productVariants.id })
+      .from(productVariants)
+      .where(eq(productVariants.productId, productId));
+    return rows.length;
+  }
+
   async updateVariant(
     executor: CatalogExecutor,
     id: string,

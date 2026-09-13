@@ -126,30 +126,128 @@ describe("Phase 3B catalog domain against TEST database", () => {
     });
   });
 
-  it("enforces product lifecycle transitions", async () => {
+  it("applies product status values without an invented transition matrix", async () => {
     const product = await service.createProduct({ slug: "lifecycle", title: "Lifecycle" });
     expect(product.status).toBe("draft");
 
     const published = await service.changeProductStatus(product.id, { status: "published" });
     expect(published.status).toBe("published");
     expect(published.publishedAt).toBeInstanceOf(Date);
+    expect(published.archivedAt).toBeNull();
 
     const draftAgain = await service.changeProductStatus(product.id, { status: "draft" });
     expect(draftAgain.status).toBe("draft");
+    expect(draftAgain.archivedAt).toBeNull();
+
+    // Direct published -> archived (missing coverage from initial 3B review).
+    await service.changeProductStatus(product.id, { status: "published" });
+    const archivedFromPublished = await service.changeProductStatus(product.id, {
+      status: "archived",
+    });
+    expect(archivedFromPublished.status).toBe("archived");
+    expect(archivedFromPublished.archivedAt).toBeInstanceOf(Date);
+
+    // archived -> published is allowed; Phase 2D did not lock a restrictive matrix.
+    const republished = await service.changeProductStatus(product.id, { status: "published" });
+    expect(republished.status).toBe("published");
+    expect(republished.archivedAt).toBeNull();
+    expect(republished.publishedAt).toBeInstanceOf(Date);
 
     const archived = await service.changeProductStatus(product.id, { status: "archived" });
     expect(archived.status).toBe("archived");
-    expect(archived.archivedAt).toBeInstanceOf(Date);
-
-    await expect(
-      service.changeProductStatus(product.id, { status: "published" }),
-    ).rejects.toMatchObject({ code: "CONFLICT" });
 
     const reopened = await service.changeProductStatus(product.id, { status: "draft" });
     expect(reopened.status).toBe("draft");
     expect(reopened.archivedAt).toBeNull();
   });
 
+  it("refuses defineProductOptions once variants exist and leaves definitions unchanged", async () => {
+    const product = await service.createProduct({ slug: "options-safe", title: "Options" });
+    const initial = await service.defineProductOptions(product.id, {
+      options: [{ name: "Size", values: [{ value: "M" }, { value: "L" }] }],
+    });
+    expect(initial).toHaveLength(1);
+    expect(initial[0].values).toHaveLength(2);
+
+    const created = await service.createVariant(product.id, {
+      sku: sku("opts"),
+      optionSelections: [{ optionId: initial[0].id, optionValueId: initial[0].values[0].id }],
+    });
+
+    await expect(
+      service.defineProductOptions(product.id, {
+        options: [{ name: "Color", values: [{ value: "Red" }] }],
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+
+    const optionsAfter = await repo.transaction(async (tx) =>
+      repo.listProductOptionsWithValues(tx, product.id),
+    );
+    expect(optionsAfter).toHaveLength(1);
+    expect(optionsAfter[0].id).toBe(initial[0].id);
+    expect(optionsAfter[0].name).toBe("Size");
+    expect(optionsAfter[0].values.map((value) => value.value).sort()).toEqual(["L", "M"]);
+
+    const selections = await repo.transaction(async (tx) =>
+      repo.listVariantSelections(tx, created.variant.id),
+    );
+    expect(selections).toEqual([
+      { optionId: initial[0].id, optionValueId: initial[0].values[0].id },
+    ]);
+  });
+
+  it("serializes concurrent defineProductOptions against variant creation", async () => {
+    const product = await service.createProduct({ slug: "options-race", title: "Race Options" });
+    await service.defineProductOptions(product.id, {
+      options: [{ name: "Size", values: [{ value: "M" }] }],
+    });
+    const options = await repo.transaction(async (tx) =>
+      repo.listProductOptionsWithValues(tx, product.id),
+    );
+
+    const results = await Promise.allSettled([
+      service.createVariant(product.id, {
+        sku: sku("race-opt"),
+        optionSelections: [{ optionId: options[0].id, optionValueId: options[0].values[0].id }],
+      }),
+      service.defineProductOptions(product.id, {
+        options: [{ name: "Color", values: [{ value: "Blue" }] }],
+      }),
+    ]);
+
+    expect(results).toHaveLength(2);
+
+    const variantCount = await repo.transaction(async (tx) =>
+      repo.countVariantsForProduct(tx, product.id),
+    );
+    const optionsAfter = await repo.transaction(async (tx) =>
+      repo.listProductOptionsWithValues(tx, product.id),
+    );
+
+    // Product-row locking serializes the two mutations. A successful option
+    // redefine can only leave the product with zero variants.
+    if (variantCount > 0) {
+      expect(optionsAfter.map((option) => option.name)).toEqual(["Size"]);
+      expect(
+        results.some(
+          (result) =>
+            result.status === "rejected" &&
+            (result.reason as { code?: string }).code === "CONFLICT",
+        ),
+      ).toBe(true);
+    } else {
+      expect(optionsAfter.map((option) => option.name)).toEqual(["Color"]);
+    }
+
+    for (const variantRow of await sql`
+      SELECT id FROM product_variants WHERE product_id = ${product.id}
+    `) {
+      const selections = await repo.transaction(async (tx) =>
+        repo.listVariantSelections(tx, String(variantRow.id)),
+      );
+      expect(selections).toHaveLength(optionsAfter.length);
+    }
+  });
   it("maps duplicate SKU to CONFLICT and does not mislabel unrelated DB errors", async () => {
     const productA = await service.createProduct({ slug: "sku-product-a", title: "SKU A" });
     const productB = await service.createProduct({ slug: "sku-product-b", title: "SKU B" });

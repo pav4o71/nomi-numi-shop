@@ -872,11 +872,15 @@ Derive small reviewed PRs. Do not start these in Phase 2D.
   tests; storefront UI; Phase 3C seeds/fixtures
 - **Validation:** portable unit tests + path-locked TEST DB integration
 - **Depends on:** 3A
-- **Intentionally deferred / locked in 3B:**
-  - product status transitions: `draft↔published`, either → `archived`,
-    `archived→draft` only (no direct `archived→published`)
-  - `defineProductOptions` replaces the product option axis set (cascade
-    clears prior variant option links; callers must re-bind variants)
+- **Phase 3B notes (not inventing new business contracts):**
+  - product status values remain `draft` | `published` | `archived` per
+    §4; no restrictive transition matrix is locked beyond those meanings;
+    `changeProductStatus` accepts any of the three and keeps
+    `published_at` / `archived_at` consistent
+  - `defineProductOptions` may define/replace the option axis only when
+    the product has **no** variants; if any variants exist, the service
+    refuses with `CONFLICT` (no partial changes). Variant rebinding /
+    option-axis migration workflows are deferred
   - no historical slug redirects; no hard-delete APIs; no inventory
 
 ### Phase 3C — Seed / DEV fixtures

@@ -167,9 +167,9 @@ Exact portable commands (in order):
 4. `pnpm typecheck`
 5. `pnpm test:ci` (portable unit tests; excludes path-locked
    `database-safety`, `drizzle-foundation`, `email-local-safety`,
-   `auth-first-admin-bootstrap-local`, and `catalog-schema-local`
-   suites that require the workstation canonical root and/or owned
-   local PostgreSQL)
+   `auth-first-admin-bootstrap-local`, `catalog-schema-local`, and
+   `catalog-domain-local` suites that require the workstation canonical
+   root and/or owned local PostgreSQL)
 6. `pnpm build`
 7. Chromium install for Playwright (`playwright install --with-deps chromium`)
 8. `pnpm test:e2e`
