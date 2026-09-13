@@ -3,9 +3,21 @@
  *
  * Requires a completed conflict-free preflight. Writes go through CatalogService.
  * Per-operation transactions only; no whole-seed transaction API.
+ *
+ * Replacement-style writes re-read live state immediately before mutation and
+ * refuse divergent post-preflight state using the shared compare policy.
  */
 
 import type { ProductOptionWithValues } from "@/catalog/repository";
+import {
+  decideOptionsInstall,
+  compareCategoryMemberships,
+  compareCollectionMemberships,
+  expectedCategoryViews,
+  expectedCollectionViews,
+  type CategoryMembershipView,
+  type CollectionMembershipView,
+} from "@/catalog/fixtures/compare";
 import {
   DEV_CATALOG_FIXTURE_MANIFEST,
   type DevCatalogFixtureManifest,
@@ -58,6 +70,46 @@ async function resolveOptionSelections(
   return selections;
 }
 
+async function resolveLiveCategoryMemberships(
+  ctx: FixtureSeedContext,
+  productId: string,
+): Promise<CategoryMembershipView[]> {
+  const live = await ctx.repo.listProductCategories(ctx.db, productId);
+  const resolved: CategoryMembershipView[] = [];
+  for (const row of live) {
+    const category = await ctx.repo.getCategoryById(ctx.db, row.categoryId);
+    if (!category) {
+      throw new Error(
+        `Refusing category membership install: unknown category id ${row.categoryId}`,
+      );
+    }
+    resolved.push({
+      slug: category.slug,
+      position: row.position,
+      isPrimary: row.isPrimary,
+    });
+  }
+  return resolved;
+}
+
+async function resolveLiveCollectionMemberships(
+  ctx: FixtureSeedContext,
+  productId: string,
+): Promise<CollectionMembershipView[]> {
+  const live = await ctx.repo.listProductCollections(ctx.db, productId);
+  const resolved: CollectionMembershipView[] = [];
+  for (const row of live) {
+    const collection = await ctx.repo.getCollectionById(ctx.db, row.collectionId);
+    if (!collection) {
+      throw new Error(
+        `Refusing collection membership install: unknown collection id ${row.collectionId}`,
+      );
+    }
+    resolved.push({ slug: collection.slug, position: row.position });
+  }
+  return resolved;
+}
+
 async function installProductGraph(
   ctx: FixtureSeedContext,
   product: FixtureProduct,
@@ -85,15 +137,25 @@ async function installProductGraph(
 
   const optionsKey = `product-options:${product.slug}`;
   if (classificationFor(components, optionsKey) === "MISSING" && product.options.length > 0) {
-    // Re-check variants immediately before defineProductOptions.
+    const liveOptions = await ctx.repo.listProductOptionsWithValues(ctx.db, productRow.id);
     const variantCount = await ctx.repo.countVariantsForProduct(ctx.db, productRow.id);
-    if (variantCount > 0) {
+    const decision = decideOptionsInstall(liveOptions, variantCount, product.options);
+
+    if (decision === "refuse-variants") {
       throw new Error(
         `Refusing to define options for ${product.slug}: variants appeared after preflight`,
       );
     }
-    await ctx.service.defineProductOptions(productRow.id, { options: product.options });
-    createdKeys.push(optionsKey);
+    if (decision === "refuse-divergent") {
+      throw new Error(
+        `Refusing to define options for ${product.slug}: option state diverged after preflight`,
+      );
+    }
+    if (decision === "define") {
+      await ctx.service.defineProductOptions(productRow.id, { options: product.options });
+      createdKeys.push(optionsKey);
+    }
+    // already-matching: options became exactly expected after preflight — skip replace.
   }
 
   const options = await ctx.repo.listProductOptionsWithValues(ctx.db, productRow.id);
@@ -139,73 +201,81 @@ async function installProductGraph(
 
   const categoriesKey = `product-categories:${product.slug}`;
   if (classificationFor(components, categoriesKey) === "MISSING") {
-    // Re-read memberships before replacement-style write.
-    const live = await ctx.repo.listProductCategories(ctx.db, productRow.id);
-    for (const row of live) {
-      const category = await ctx.repo.getCategoryById(ctx.db, row.categoryId);
-      const expected = product.categories.find((item) => item.categorySlug === category?.slug);
-      if (!expected) {
-        throw new Error(
-          `Refusing category membership install for ${product.slug}: unexpected membership appeared`,
-        );
-      }
+    const liveResolved = await resolveLiveCategoryMemberships(ctx, productRow.id);
+    const expectedExact = expectedCategoryViews(product.categories);
+    const comparison = compareCategoryMemberships(liveResolved, expectedExact);
+
+    if (comparison === "conflict") {
+      throw new Error(
+        `Refusing category membership install for ${product.slug}: live memberships diverged after preflight`,
+      );
     }
 
-    const categories = [];
-    for (const membership of product.categories) {
-      const category = await ctx.repo.getCategoryBySlug(ctx.db, membership.categorySlug);
-      if (!category) {
-        throw new Error(`Missing category ${membership.categorySlug} for ${product.slug}`);
+    if (comparison === "exact") {
+      // Exact expected set appeared after preflight — skip replacement.
+    } else {
+      // safe-subset (including empty live): may complete missing expected memberships.
+      const categories = [];
+      for (const membership of product.categories) {
+        const category = await ctx.repo.getCategoryBySlug(ctx.db, membership.categorySlug);
+        if (!category) {
+          throw new Error(`Missing category ${membership.categorySlug} for ${product.slug}`);
+        }
+        categories.push({
+          categoryId: category.id,
+          position: membership.position,
+          isPrimary: membership.isPrimary,
+        });
       }
-      categories.push({
-        categoryId: category.id,
-        position: membership.position,
-        isPrimary: membership.isPrimary,
-      });
+      await ctx.service.replaceProductCategories(productRow.id, { categories });
+      createdKeys.push(categoriesKey);
     }
-    await ctx.service.replaceProductCategories(productRow.id, { categories });
-    createdKeys.push(categoriesKey);
   }
 
   const collectionsKey = `product-collections:${product.slug}`;
   if (classificationFor(components, collectionsKey) === "MISSING") {
-    const live = await ctx.repo.listProductCollections(ctx.db, productRow.id);
-    for (const row of live) {
-      const collection = await ctx.repo.getCollectionById(ctx.db, row.collectionId);
-      const expected = product.collections.find((item) => item.collectionSlug === collection?.slug);
-      if (!expected) {
-        throw new Error(
-          `Refusing collection membership install for ${product.slug}: unexpected membership appeared`,
-        );
-      }
+    const liveResolved = await resolveLiveCollectionMemberships(ctx, productRow.id);
+    const expectedExact = expectedCollectionViews(product.collections);
+    const comparison = compareCollectionMemberships(liveResolved, expectedExact);
+
+    if (comparison === "conflict") {
+      throw new Error(
+        `Refusing collection membership install for ${product.slug}: live memberships diverged after preflight`,
+      );
     }
 
-    const collections = [];
-    for (const membership of product.collections) {
-      const collection = await ctx.repo.getCollectionBySlug(ctx.db, membership.collectionSlug);
-      if (!collection) {
-        throw new Error(`Missing collection ${membership.collectionSlug} for ${product.slug}`);
+    if (comparison === "exact") {
+      // Exact expected set appeared after preflight — skip replacement.
+    } else {
+      const collections = [];
+      for (const membership of product.collections) {
+        const collection = await ctx.repo.getCollectionBySlug(ctx.db, membership.collectionSlug);
+        if (!collection) {
+          throw new Error(`Missing collection ${membership.collectionSlug} for ${product.slug}`);
+        }
+        collections.push({
+          collectionId: collection.id,
+          position: membership.position,
+        });
       }
-      collections.push({
-        collectionId: collection.id,
-        position: membership.position,
-      });
+      await ctx.service.replaceProductCollections(productRow.id, { collections });
+      createdKeys.push(collectionsKey);
     }
-    await ctx.service.replaceProductCollections(productRow.id, { collections });
-    createdKeys.push(collectionsKey);
   }
 }
 
 /**
- * Complete read-only preflight, then create only MISSING fixture components.
- * Aborts with zero writes when any CONFLICTING component exists.
+ * Apply writes from a previously computed conflict-free preflight.
+ *
+ * Intended for production install path and for TEST coverage of post-preflight
+ * revalidation (TOCTOU). Callers must not mutate fixture state between
+ * classification and apply unless deliberately testing refusal.
  */
-export async function installDevCatalogFixtures(
+export async function applyDevCatalogFixturesFromPreflight(
   ctx: FixtureSeedContext,
+  preflight: FixturePreflightReport,
   manifest: DevCatalogFixtureManifest = DEV_CATALOG_FIXTURE_MANIFEST,
 ): Promise<FixtureInstallResult> {
-  const preflight = await classifyDevCatalogFixtures(ctx, manifest);
-
   if (preflight.hasConflict) {
     return {
       preflight,
@@ -264,6 +334,18 @@ export async function installDevCatalogFixtures(
     skippedMatching: preflight.matchingCount,
     mode: "partial-install",
   };
+}
+
+/**
+ * Complete read-only preflight, then create only MISSING fixture components.
+ * Aborts with zero writes when any CONFLICTING component exists.
+ */
+export async function installDevCatalogFixtures(
+  ctx: FixtureSeedContext,
+  manifest: DevCatalogFixtureManifest = DEV_CATALOG_FIXTURE_MANIFEST,
+): Promise<FixtureInstallResult> {
+  const preflight = await classifyDevCatalogFixtures(ctx, manifest);
+  return applyDevCatalogFixturesFromPreflight(ctx, preflight, manifest);
 }
 
 export { reportsByPrefix };

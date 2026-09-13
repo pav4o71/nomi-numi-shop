@@ -23,5 +23,9 @@ export {
   type FixturePreflightReport,
   type FixtureSeedContext,
 } from "@/catalog/fixtures/preflight";
-export { installDevCatalogFixtures, type FixtureInstallResult } from "@/catalog/fixtures/install";
+export {
+  applyDevCatalogFixturesFromPreflight,
+  installDevCatalogFixtures,
+  type FixtureInstallResult,
+} from "@/catalog/fixtures/install";
 export { parseDevCatalogSeedArgs } from "@/catalog/fixtures/seed-args";

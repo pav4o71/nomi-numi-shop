@@ -20,6 +20,20 @@ import {
   type FixtureProduct,
   type FixtureVariant,
 } from "@/catalog/fixtures/manifest";
+import {
+  compareCategoryMemberships,
+  compareCollectionMemberships,
+  compareVariantSkuSets,
+  expectedCategoryViews,
+  expectedCollectionViews,
+  expectedVariantSkus,
+  fixtureOptionSignature,
+  liveOptionSignature,
+  membershipViewsSignature,
+  optionsMatchExpected,
+  type CategoryMembershipView,
+  type CollectionMembershipView,
+} from "@/catalog/fixtures/compare";
 
 export type FixtureClassification = "MISSING" | "MATCHING" | "CONFLICTING";
 
@@ -74,23 +88,11 @@ function missing(key: string): FixtureComponentReport {
 }
 
 function optionSignature(options: FixtureOption[]): string {
-  return JSON.stringify(
-    options.map((option) => ({
-      name: option.name,
-      position: option.position,
-      values: option.values.map((value) => ({ value: value.value, position: value.position })),
-    })),
-  );
+  return fixtureOptionSignature(options);
 }
 
-function liveOptionSignature(options: ProductOptionWithValues[]): string {
-  return JSON.stringify(
-    options.map((option) => ({
-      name: option.name,
-      position: option.position,
-      values: option.values.map((value) => ({ value: value.value, position: value.position })),
-    })),
-  );
+function liveOptionsSignature(options: ProductOptionWithValues[]): string {
+  return liveOptionSignature(options);
 }
 
 function priceSignature(prices: FixturePrice[]): string {
@@ -251,7 +253,7 @@ async function classifyOptions(
 
   const liveOptions = await ctx.repo.listProductOptionsWithValues(ctx.db, productId);
   const expectedSig = optionSignature(product.options);
-  const liveSig = liveOptionSignature(liveOptions);
+  const liveSig = liveOptionsSignature(liveOptions);
 
   if (liveOptions.length === 0 && product.options.length > 0) {
     const variantCount = await ctx.repo.countVariantsForProduct(ctx.db, productId);
@@ -271,10 +273,11 @@ async function classifyOptions(
     return matching(key);
   }
 
-  if (liveSig !== expectedSig) {
-    return conflict(key, "options", expectedSig, liveSig);
+  if (optionsMatchExpected(liveOptions, product.options)) {
+    return matching(key);
   }
-  return matching(key);
+
+  return conflict(key, "options", expectedSig, liveSig);
 }
 
 async function classifyVariant(
@@ -388,6 +391,42 @@ async function classifyVariant(
   return reports;
 }
 
+async function classifyProductVariantSet(
+  ctx: FixtureSeedContext,
+  product: FixtureProduct,
+  productId: string | null,
+  productCore: FixtureClassification,
+): Promise<FixtureComponentReport> {
+  const key = `product-variants:${product.slug}`;
+  const expectedSkus = expectedVariantSkus(product);
+
+  if (productCore === "MISSING" || productId == null) {
+    return expectedSkus.length === 0 ? matching(key) : missing(key);
+  }
+
+  const liveVariants = await ctx.repo.listVariantsForProduct(ctx.db, productId);
+  const liveSkus = liveVariants.map((variant) => variant.sku);
+  const comparison = compareVariantSkuSets(liveSkus, expectedSkus);
+
+  if (comparison === "conflict") {
+    const unexpected = [...liveSkus].filter((sku) => !expectedSkus.includes(sku)).sort();
+    return conflict(
+      key,
+      "variantSet",
+      expectedSkus.join(","),
+      [...liveSkus].sort().join(","),
+      `Unexpected extra variant(s) on fixture product: ${unexpected.join(",")}`,
+    );
+  }
+
+  if (comparison === "exact") {
+    return matching(key);
+  }
+
+  // safe-subset — expected SKUs still missing
+  return missing(key);
+}
+
 async function classifyCategoryMemberships(
   ctx: FixtureSeedContext,
   product: FixtureProduct,
@@ -400,8 +439,7 @@ async function classifyCategoryMemberships(
   }
 
   const live = await ctx.repo.listProductCategories(ctx.db, productId);
-  const expectedSlugs = product.categories.map((item) => item.categorySlug).sort();
-  const liveResolved: Array<{ slug: string; position: number; isPrimary: boolean }> = [];
+  const liveResolved: CategoryMembershipView[] = [];
 
   for (const row of live) {
     const category = await ctx.repo.getCategoryById(ctx.db, row.categoryId);
@@ -415,50 +453,25 @@ async function classifyCategoryMemberships(
     });
   }
 
-  const liveSlugs = liveResolved.map((item) => item.slug).sort();
-  const unexpected = liveSlugs.filter((slug) => !expectedSlugs.includes(slug));
-  if (unexpected.length > 0) {
-    return conflict(
-      key,
-      "memberships",
-      expectedSlugs.join(","),
-      liveSlugs.join(","),
-      `Unexpected extra category memberships would be removed by replacement: ${unexpected.join(",")}`,
-    );
-  }
-
-  if (liveResolved.length === 0 && product.categories.length > 0) {
+  const expectedExact = expectedCategoryViews(product.categories);
+  if (liveResolved.length === 0 && expectedExact.length > 0) {
     return missing(key);
   }
 
-  const expectedExact = [...product.categories]
-    .map((item) => ({
-      slug: item.categorySlug,
-      position: item.position,
-      isPrimary: item.isPrimary,
-    }))
-    .sort((a, b) => a.slug.localeCompare(b.slug));
-  const liveExact = [...liveResolved].sort((a, b) => a.slug.localeCompare(b.slug));
-
-  if (JSON.stringify(liveExact) === JSON.stringify(expectedExact)) {
+  const comparison = compareCategoryMemberships(liveResolved, expectedExact);
+  if (comparison === "exact") {
     return matching(key);
   }
-
-  // Safe subset: every live membership matches an expected entry; missing expected remain.
-  const liveIsSafeSubset = liveExact.every((liveItem) =>
-    expectedExact.some(
-      (expected) =>
-        expected.slug === liveItem.slug &&
-        expected.position === liveItem.position &&
-        expected.isPrimary === liveItem.isPrimary,
-    ),
-  );
-
-  if (liveIsSafeSubset && liveExact.length < expectedExact.length) {
+  if (comparison === "safe-subset") {
     return missing(key);
   }
 
-  return conflict(key, "memberships", JSON.stringify(expectedExact), JSON.stringify(liveExact));
+  return conflict(
+    key,
+    "memberships",
+    membershipViewsSignature(expectedExact),
+    membershipViewsSignature(liveResolved),
+  );
 }
 
 async function classifyCollectionMemberships(
@@ -473,8 +486,7 @@ async function classifyCollectionMemberships(
   }
 
   const live = await ctx.repo.listProductCollections(ctx.db, productId);
-  const expectedSlugs = product.collections.map((item) => item.collectionSlug).sort();
-  const liveResolved: Array<{ slug: string; position: number }> = [];
+  const liveResolved: CollectionMembershipView[] = [];
 
   for (const row of live) {
     const collection = await ctx.repo.getCollectionById(ctx.db, row.collectionId);
@@ -484,55 +496,25 @@ async function classifyCollectionMemberships(
     liveResolved.push({ slug: collection.slug, position: row.position });
   }
 
-  const liveSlugs = liveResolved.map((item) => item.slug).sort();
-  const unexpected = liveSlugs.filter((slug) => !expectedSlugs.includes(slug));
-  if (unexpected.length > 0) {
-    return conflict(
-      key,
-      "memberships",
-      expectedSlugs.join(","),
-      liveSlugs.join(","),
-      `Unexpected extra collection memberships would be removed by replacement: ${unexpected.join(",")}`,
-    );
-  }
-
-  if (liveResolved.length === 0 && product.collections.length > 0) {
+  const expectedExact = expectedCollectionViews(product.collections);
+  if (liveResolved.length === 0 && expectedExact.length > 0) {
     return missing(key);
   }
 
-  if (product.collections.length === 0) {
-    if (liveResolved.length === 0) {
-      return matching(key);
-    }
-    return conflict(
-      key,
-      "memberships",
-      "",
-      liveSlugs.join(","),
-      "Fixture product expects no collections but memberships exist",
-    );
-  }
-
-  const expectedExact = [...product.collections]
-    .map((item) => ({ slug: item.collectionSlug, position: item.position }))
-    .sort((a, b) => a.slug.localeCompare(b.slug));
-  const liveExact = [...liveResolved].sort((a, b) => a.slug.localeCompare(b.slug));
-
-  if (JSON.stringify(liveExact) === JSON.stringify(expectedExact)) {
+  const comparison = compareCollectionMemberships(liveResolved, expectedExact);
+  if (comparison === "exact") {
     return matching(key);
   }
-
-  const liveIsSafeSubset = liveExact.every((liveItem) =>
-    expectedExact.some(
-      (expected) => expected.slug === liveItem.slug && expected.position === liveItem.position,
-    ),
-  );
-
-  if (liveIsSafeSubset && liveExact.length < expectedExact.length) {
+  if (comparison === "safe-subset") {
     return missing(key);
   }
 
-  return conflict(key, "memberships", JSON.stringify(expectedExact), JSON.stringify(liveExact));
+  return conflict(
+    key,
+    "memberships",
+    membershipViewsSignature(expectedExact),
+    membershipViewsSignature(liveResolved),
+  );
 }
 
 export async function classifyDevCatalogFixtures(
@@ -560,6 +542,14 @@ export async function classifyDevCatalogFixtures(
       productCore.classification,
     );
     components.push(optionsReport);
+
+    const variantSetReport = await classifyProductVariantSet(
+      ctx,
+      product,
+      productId,
+      productCore.classification,
+    );
+    components.push(variantSetReport);
 
     for (const variant of product.variants) {
       components.push(

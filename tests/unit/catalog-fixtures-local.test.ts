@@ -13,6 +13,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { CatalogService, DrizzleCatalogRepository } from "@/catalog";
 import {
   DEV_CATALOG_FIXTURE_MANIFEST,
+  applyDevCatalogFixturesFromPreflight,
   classifyDevCatalogFixtures,
   installDevCatalogFixtures,
 } from "@/catalog/fixtures";
@@ -336,5 +337,156 @@ describe("Phase 3C catalog fixtures against TEST database", () => {
     const memberships = await service.listProductCollections(product.id);
     expect(memberships).toHaveLength(1);
     expect(memberships[0]?.collectionId).toBe(collection.id);
+  });
+
+  it("classifies unexpected extra variants as CONFLICTING and aborts install without writes", async () => {
+    const installed = await installDevCatalogFixtures({ service, repo, db });
+    expect(installed.mode).toBe("partial-install");
+    expect(installed.preflight.allMatching).toBe(false);
+
+    const tumbler = await service.getProductBySlug("dev-fixture-moonlight-tumbler");
+    const extra = await service.createVariant(tumbler.id, {
+      sku: `EXTRA-${randomUUID()}`,
+      isActive: false,
+      prices: [
+        { currency: "PHP", amountMinor: 100 },
+        { currency: "USD", amountMinor: 100 },
+      ],
+    });
+
+    const classified = await classifyDevCatalogFixtures({ service, repo, db });
+    expect(
+      classified.components.some(
+        (item) =>
+          item.key === "product-variants:dev-fixture-moonlight-tumbler" &&
+          item.classification === "CONFLICTING",
+      ),
+    ).toBe(true);
+    expect(classified.hasConflict).toBe(true);
+    expect(classified.allMatching).toBe(false);
+
+    const beforeExtra = await service.getVariantBySku(extra.variant.sku);
+    expect(beforeExtra.id).toBe(extra.variant.id);
+    const beforeCount = (await service.listVariantsForProduct(tumbler.id)).length;
+    const beforeCreatedKeys = installed.createdKeys.length;
+
+    const result = await installDevCatalogFixtures({ service, repo, db });
+    expect(result.mode).toBe("aborted-conflict");
+    expect(result.createdKeys).toEqual([]);
+    expect(result.preflight.conflictingCount).toBeGreaterThan(0);
+
+    const afterExtra = await service.getVariantBySku(extra.variant.sku);
+    expect(afterExtra.id).toBe(extra.variant.id);
+    expect(afterExtra.sku).toBe(extra.variant.sku);
+    expect(afterExtra.isActive).toBe(extra.variant.isActive);
+    expect((await service.listVariantsForProduct(tumbler.id)).length).toBe(beforeCount);
+    expect(beforeCreatedKeys).toBeGreaterThan(0);
+  });
+
+  it("refuses post-preflight divergent options and leaves them unchanged", async () => {
+    await installDevCatalogFixtures({ service, repo, db });
+    const hug = await service.getProductBySlug("dev-fixture-hug-plush");
+
+    await sql`DELETE FROM product_variant_option_values WHERE product_id = ${hug.id}`;
+    await sql`DELETE FROM variant_prices WHERE variant_id IN (SELECT id FROM product_variants WHERE product_id = ${hug.id})`;
+    await sql`DELETE FROM product_variants WHERE product_id = ${hug.id}`;
+    await sql`DELETE FROM product_option_values WHERE option_id IN (SELECT id FROM product_options WHERE product_id = ${hug.id})`;
+    await sql`DELETE FROM product_options WHERE product_id = ${hug.id}`;
+
+    const stalePreflight = await classifyDevCatalogFixtures({ service, repo, db });
+    expect(
+      stalePreflight.components.find((item) => item.key === "product-options:dev-fixture-hug-plush")
+        ?.classification,
+    ).toBe("MISSING");
+
+    const divergentOptions = [
+      {
+        name: "Size",
+        position: 0,
+        values: [
+          { value: "10cm", position: 0 },
+          { value: "60cm", position: 1 },
+        ],
+      },
+    ];
+    await service.defineProductOptions(hug.id, { options: divergentOptions });
+
+    await expect(
+      applyDevCatalogFixturesFromPreflight({ service, repo, db }, stalePreflight),
+    ).rejects.toThrow(/option state diverged after preflight/);
+
+    const live = await repo.listProductOptionsWithValues(db, hug.id);
+    expect(live).toHaveLength(1);
+    expect(live[0]?.name).toBe("Size");
+    expect(live[0]?.values.map((value) => value.value)).toEqual(["10cm", "60cm"]);
+  });
+
+  it("refuses category membership position/isPrimary drift after preflight", async () => {
+    await installDevCatalogFixtures({ service, repo, db });
+    const tumbler = await service.getProductBySlug("dev-fixture-moonlight-tumbler");
+    const drinkware = await service.getCategoryBySlug("dev-fixture-drinkware");
+
+    await service.replaceProductCategories(tumbler.id, { categories: [] });
+    const stalePreflight = await classifyDevCatalogFixtures({ service, repo, db });
+    expect(
+      stalePreflight.components.find(
+        (item) => item.key === "product-categories:dev-fixture-moonlight-tumbler",
+      )?.classification,
+    ).toBe("MISSING");
+
+    await service.replaceProductCategories(tumbler.id, {
+      categories: [{ categoryId: drinkware.id, isPrimary: true, position: 99 }],
+    });
+
+    await expect(
+      applyDevCatalogFixturesFromPreflight({ service, repo, db }, stalePreflight),
+    ).rejects.toThrow(/live memberships diverged after preflight/);
+
+    const afterPosition = await repo.listProductCategories(db, tumbler.id);
+    expect(afterPosition).toHaveLength(1);
+    expect(afterPosition[0]?.position).toBe(99);
+    expect(afterPosition[0]?.isPrimary).toBe(true);
+
+    await service.replaceProductCategories(tumbler.id, { categories: [] });
+    const stalePrimary = await classifyDevCatalogFixtures({ service, repo, db });
+    await service.replaceProductCategories(tumbler.id, {
+      categories: [{ categoryId: drinkware.id, isPrimary: false, position: 0 }],
+    });
+
+    await expect(
+      applyDevCatalogFixturesFromPreflight({ service, repo, db }, stalePrimary),
+    ).rejects.toThrow(/live memberships diverged after preflight/);
+
+    const afterPrimary = await repo.listProductCategories(db, tumbler.id);
+    expect(afterPrimary).toHaveLength(1);
+    expect(afterPrimary[0]?.isPrimary).toBe(false);
+    expect(afterPrimary[0]?.position).toBe(0);
+  });
+
+  it("refuses collection membership position drift after preflight", async () => {
+    await installDevCatalogFixtures({ service, repo, db });
+    const tumbler = await service.getProductBySlug("dev-fixture-moonlight-tumbler");
+    const valentine = await service.getCollectionBySlug("dev-fixture-valentines-day");
+
+    await service.replaceProductCollections(tumbler.id, { collections: [] });
+    const stalePreflight = await classifyDevCatalogFixtures({ service, repo, db });
+    expect(
+      stalePreflight.components.find(
+        (item) => item.key === "product-collections:dev-fixture-moonlight-tumbler",
+      )?.classification,
+    ).toBe("MISSING");
+
+    await service.replaceProductCollections(tumbler.id, {
+      collections: [{ collectionId: valentine.id, position: 77 }],
+    });
+
+    await expect(
+      applyDevCatalogFixturesFromPreflight({ service, repo, db }, stalePreflight),
+    ).rejects.toThrow(/live memberships diverged after preflight/);
+
+    const after = await service.listProductCollections(tumbler.id);
+    expect(after).toHaveLength(1);
+    expect(after[0]?.collectionId).toBe(valentine.id);
+    expect(after[0]?.position).toBe(77);
   });
 });

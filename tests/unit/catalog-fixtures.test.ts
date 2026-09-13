@@ -164,6 +164,50 @@ describe("Phase 3C DEV seed CLI surface", () => {
   });
 });
 
+describe("Phase 3C shared compare policy", () => {
+  it("detects unexpected extra variants and membership drift", async () => {
+    const {
+      compareVariantSkuSets,
+      compareCategoryMemberships,
+      compareCollectionMemberships,
+      decideOptionsInstall,
+    } = await import("@/catalog/fixtures/compare");
+
+    expect(compareVariantSkuSets(["A", "B"], ["A", "B"])).toBe("exact");
+    expect(compareVariantSkuSets(["A"], ["A", "B"])).toBe("safe-subset");
+    expect(compareVariantSkuSets(["A", "EXTRA"], ["A", "B"])).toBe("conflict");
+    expect(compareVariantSkuSets(["A", "DEVFIX-EXTRA"], ["A"])).toBe("conflict");
+
+    expect(
+      compareCategoryMemberships(
+        [{ slug: "c1", position: 0, isPrimary: true }],
+        [{ slug: "c1", position: 0, isPrimary: true }],
+      ),
+    ).toBe("exact");
+    expect(
+      compareCategoryMemberships(
+        [{ slug: "c1", position: 99, isPrimary: true }],
+        [{ slug: "c1", position: 0, isPrimary: true }],
+      ),
+    ).toBe("conflict");
+    expect(
+      compareCategoryMemberships(
+        [{ slug: "c1", position: 0, isPrimary: false }],
+        [{ slug: "c1", position: 0, isPrimary: true }],
+      ),
+    ).toBe("conflict");
+
+    expect(
+      compareCollectionMemberships([{ slug: "col", position: 77 }], [{ slug: "col", position: 0 }]),
+    ).toBe("conflict");
+
+    expect(decideOptionsInstall([], 0, [{ name: "Size", position: 0, values: [] }])).toBe("define");
+    expect(decideOptionsInstall([], 1, [{ name: "Size", position: 0, values: [] }])).toBe(
+      "refuse-variants",
+    );
+  });
+});
+
 describe("Phase 3C pure TEST builders", () => {
   it("builds valid defaults and overrides without DEV fixture keys", () => {
     const category = buildCategoryInput({ slug: "custom-cat", name: "Custom" });
