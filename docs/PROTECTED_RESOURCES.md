@@ -7,8 +7,8 @@ These rules apply to:
 
 - humans
 - Cursor agents
-- Grok Bot
-- Bugbot
+- Nomi PR Verifier
+- automated review agents
 - scripts
 - CI/CD tooling
 - development utilities
