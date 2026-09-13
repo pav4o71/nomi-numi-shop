@@ -130,9 +130,7 @@ describe("Phase 3C DEV seed CLI surface", () => {
     expect(parseDevCatalogSeedArgs(["--confirm", DEV_CATALOG_SEED_CONFIRMATION])).toEqual({
       confirmation: DEV_CATALOG_SEED_CONFIRMATION,
     });
-    expect(
-      parseDevCatalogSeedArgs(["--", "--confirm", DEV_CATALOG_SEED_CONFIRMATION]),
-    ).toEqual({
+    expect(parseDevCatalogSeedArgs(["--", "--confirm", DEV_CATALOG_SEED_CONFIRMATION])).toEqual({
       confirmation: DEV_CATALOG_SEED_CONFIRMATION,
     });
   });
