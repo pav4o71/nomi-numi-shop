@@ -885,9 +885,17 @@ Derive small reviewed PRs. Do not start these in Phase 2D.
 
 ### Phase 3C — Seed / DEV fixtures
 
+- **Status:** implemented (`src/catalog/fixtures/` — deterministic
+  `dev-fixture-*` / `DEVFIX-*` manifest, complete read-only preflight
+  classification, non-destructive DEV-only seed via
+  `pnpm catalog:seed:dev -- --confirm SEED-NOMI-DEV-CATALOG`, TEST
+  builders/factories under `tests/support/`). Conflict aborts before
+  writes; matching+missing creates only missing state; all-matching is
+  a successful no-op. No store_settings seed. No production import.
 - **Scope:** deterministic DEV fixtures for merchandise families;
   TEST factories for automated tests
-- **Out of scope:** production data loads
+- **Out of scope:** production data loads; Phase 3D public reads;
+  inventory/media/custom-video runtime; admin/public HTTP/UI
 - **Validation:** seed against DEV only with ownership guards; TEST
   factories on TEST DB
 - **Depends on:** 3A–3B

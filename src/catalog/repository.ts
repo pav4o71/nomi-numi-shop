@@ -32,6 +32,7 @@ export type ProductOptionRow = typeof productOptions.$inferSelect;
 export type ProductOptionValueRow = typeof productOptionValues.$inferSelect;
 export type VariantPriceRow = typeof variantPrices.$inferSelect;
 export type ProductCategoryRow = typeof productCategories.$inferSelect;
+export type CollectionProductRow = typeof collectionProducts.$inferSelect;
 
 export type ProductOptionWithValues = ProductOptionRow & {
   values: ProductOptionValueRow[];
@@ -373,12 +374,43 @@ export class DrizzleCatalogRepository {
     return rows[0] ?? null;
   }
 
+  async getVariantBySku(executor: CatalogExecutor, sku: string): Promise<VariantRow | null> {
+    const rows = await executor
+      .select()
+      .from(productVariants)
+      .where(eq(productVariants.sku, sku))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  async listVariantsForProduct(
+    executor: CatalogExecutor,
+    productId: string,
+  ): Promise<VariantRow[]> {
+    return executor
+      .select()
+      .from(productVariants)
+      .where(eq(productVariants.productId, productId))
+      .orderBy(asc(productVariants.sku));
+  }
+
   async countVariantsForProduct(executor: CatalogExecutor, productId: string): Promise<number> {
     const rows = await executor
       .select({ id: productVariants.id })
       .from(productVariants)
       .where(eq(productVariants.productId, productId));
     return rows.length;
+  }
+
+  async listVariantPrices(
+    executor: CatalogExecutor,
+    variantId: string,
+  ): Promise<VariantPriceRow[]> {
+    return executor
+      .select()
+      .from(variantPrices)
+      .where(eq(variantPrices.variantId, variantId))
+      .orderBy(asc(variantPrices.currency));
   }
 
   async updateVariant(
@@ -568,6 +600,17 @@ export class DrizzleCatalogRepository {
       );
 
     return this.listProductCategories(executor, productId);
+  }
+
+  async listProductCollections(
+    executor: CatalogExecutor,
+    productId: string,
+  ): Promise<CollectionProductRow[]> {
+    return executor
+      .select()
+      .from(collectionProducts)
+      .where(eq(collectionProducts.productId, productId))
+      .orderBy(asc(collectionProducts.position));
   }
 
   async replaceProductCollections(

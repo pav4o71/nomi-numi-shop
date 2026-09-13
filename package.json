@@ -16,7 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest run",
-    "test:ci": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest run --exclude tests/unit/database-safety.test.ts --exclude tests/unit/drizzle-foundation.test.ts --exclude tests/unit/email-local-safety.test.ts --exclude tests/unit/auth-first-admin-bootstrap-local.test.ts --exclude tests/unit/catalog-schema-local.test.ts --exclude tests/unit/catalog-domain-local.test.ts",
+    "test:ci": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest run --exclude tests/unit/database-safety.test.ts --exclude tests/unit/drizzle-foundation.test.ts --exclude tests/unit/email-local-safety.test.ts --exclude tests/unit/auth-first-admin-bootstrap-local.test.ts --exclude tests/unit/catalog-schema-local.test.ts --exclude tests/unit/catalog-domain-local.test.ts --exclude tests/unit/catalog-fixtures-local.test.ts --exclude tests/unit/catalog-factories-local.test.ts",
     "test:watch": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest",
     "test:e2e": "mkdir -p var/playwright-browsers var/tmp && PLAYWRIGHT_BROWSERS_PATH=var/playwright-browsers TMPDIR=\"$PWD/var/tmp\" playwright test",
     "test:e2e:install": "mkdir -p var/playwright-browsers var/tmp && PLAYWRIGHT_BROWSERS_PATH=var/playwright-browsers TMPDIR=\"$PWD/var/tmp\" playwright install chromium",
@@ -35,7 +35,8 @@
     "email:up": "./scripts/email-local.sh up",
     "email:stop": "./scripts/email-local.sh stop",
     "email:status": "./scripts/email-local.sh status",
-    "auth:bootstrap-first-admin": "./scripts/auth-first-admin-bootstrap.sh"
+    "auth:bootstrap-first-admin": "./scripts/auth-first-admin-bootstrap.sh",
+    "catalog:seed:dev": "./scripts/catalog-seed-dev.sh"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.3",
@@ -63,6 +64,7 @@
     "postcss": "8.5.28",
     "prettier": "3.9.6",
     "tailwindcss": "4.3.3",
+    "tsx": "4.23.13",
     "typescript": "5.9.3",
     "vitest": "5.0.0"
   }

@@ -17,5 +17,7 @@ export default defineConfig({
     clearMocks: true,
     restoreMocks: true,
     passWithNoTests: false,
+    // Path-locked suites share one owned TEST database; parallel files race.
+    fileParallelism: false,
   },
 });

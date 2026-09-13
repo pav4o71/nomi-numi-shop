@@ -67,6 +67,13 @@ Drizzle migrate:
 
     pnpm db:dev:migrate
 
+DEV catalog fixtures (Phase 3C; not production data):
+
+    pnpm catalog:seed:dev -- --confirm SEED-NOMI-DEV-CATALOG
+
+Targets owned DEV only. Confirmation required. Conflict aborts before
+writes; matching rerun is a no-op. Production seed/import unsupported.
+
 ## 4. Test / E2E environment
 
 Application:

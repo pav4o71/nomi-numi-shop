@@ -12,6 +12,7 @@ import { optionCombinationKey, type OptionSelection } from "@/catalog/option-com
 import {
   DrizzleCatalogRepository,
   type CategoryRow,
+  type CollectionProductRow,
   type CollectionRow,
   type ProductCategoryRow,
   type ProductOptionWithValues,
@@ -388,6 +389,44 @@ export class CatalogService {
       }
       await this.repo.lockProduct(tx, variant.productId);
       return this.repo.replaceVariantPrices(tx, variantId, this.dedupePrices(data.prices));
+    });
+  }
+
+  async getVariantBySku(sku: string): Promise<VariantRow> {
+    const row = await this.repo.transaction(async (tx) => this.repo.getVariantBySku(tx, sku));
+    if (!row) {
+      throw notFound(`Variant not found for SKU: ${sku}`);
+    }
+    return row;
+  }
+
+  async listVariantsForProduct(productId: string): Promise<VariantRow[]> {
+    return this.repo.transaction(async (tx) => {
+      const product = await this.repo.getProductById(tx, productId);
+      if (!product) {
+        throw notFound(`Product not found: ${productId}`);
+      }
+      return this.repo.listVariantsForProduct(tx, productId);
+    });
+  }
+
+  async listVariantPrices(variantId: string): Promise<VariantPriceRow[]> {
+    return this.repo.transaction(async (tx) => {
+      const variant = await this.repo.getVariantById(tx, variantId);
+      if (!variant) {
+        throw notFound(`Variant not found: ${variantId}`);
+      }
+      return this.repo.listVariantPrices(tx, variantId);
+    });
+  }
+
+  async listProductCollections(productId: string): Promise<CollectionProductRow[]> {
+    return this.repo.transaction(async (tx) => {
+      const product = await this.repo.getProductById(tx, productId);
+      if (!product) {
+        throw notFound(`Product not found: ${productId}`);
+      }
+      return this.repo.listProductCollections(tx, productId);
     });
   }
 
