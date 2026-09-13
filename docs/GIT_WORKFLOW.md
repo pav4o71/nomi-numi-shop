@@ -96,30 +96,58 @@ Do not bypass the hook during normal development.
 
 All normal integration into `main` occurs through a Pull Request.
 
-### Standard review model (Phase 2C onward)
+### Standard review model
 
-| Role           | Responsibility                                    |
-| -------------- | ------------------------------------------------- |
-| Cursor         | Implementation and remediation                    |
-| GitHub Actions | Deterministic PR quality gate (`PR Quality Gate`) |
-| Cursor Bugbot  | Normal independent PR review                      |
-| Grok           | Extra review for security-sensitive phases only   |
-| Human owner    | Sole merge authority                              |
+| Role             | Responsibility                                           |
+| ---------------- | -------------------------------------------------------- |
+| Cursor Agent     | Implementation and remediation                           |
+| GitHub Actions   | Deterministic PR quality gate (`PR Quality Gate`)        |
+| Nomi PR Verifier | Automatic independent SHA-bound PR review for normal PRs |
+| Human owner      | Sole merge authority                                     |
 
-Any new commit on a Pull Request changes the reviewed state. Relevant
-CI and review must run again on the new HEAD before merge.
+Nomi PR Verifier runs for normal Pull Requests. It is not limited to
+security-sensitive phases.
 
-Do not invent unsupported Bugbot or Grok commands. Use the repository's
+### Exact-SHA merge evidence
+
+Every new PR HEAD invalidates prior review evidence.
+
+Merge evidence requires all three of the following to refer to the same
+commit:
+
+```
+current PR HEAD SHA
+=
+successful PR Quality Gate SHA
+=
+latest Nomi PR Verifier reviewed SHA
+```
+
+Rules:
+
+- the latest SHA-bound Nomi PR comment is the review source of truth
+- older SHA verdicts remain historical but are stale
+- `PASS` permits human merge consideration
+- `BLOCK` requires remediation
+- `HOLD` is not `PASS`
+- do not manually create dummy commits merely to retrigger review
+- do not treat a successful verifier routine execution by itself as
+  `PASS`; the SHA-bound PR verdict/comment must exist
+- the human owner remains the only merge authority
+
+Do not invent unsupported review commands. Use the repository's
 configured review mechanisms only.
 
 ### Before merge
 
 - inspect changed files
 - inspect the complete diff
-- confirm GitHub Actions `PR Quality Gate` is green on the PR HEAD
+- confirm GitHub Actions `PR Quality Gate` succeeded on the current PR
+  HEAD SHA
+- confirm the latest Nomi PR Verifier SHA-bound verdict is `PASS` for
+  that same HEAD SHA
 - run local quality checks when they cover workstation-only concerns
   that CI intentionally omits
-- review Bugbot findings when available
 - resolve discovered defects
 - verify no unrelated changes
 - verify the branch is based on current `main`
@@ -129,8 +157,8 @@ If validation finds a problem:
 1. fix it on the same feature branch
 2. commit the fix
 3. push the branch
-4. wait for CI and review to re-run on the new HEAD
-5. review again
+4. wait for CI and Nomi PR Verifier to re-run on the new HEAD
+5. review again against the new HEAD SHA only
 
 Do not merge known defects merely to continue to the next phase.
 

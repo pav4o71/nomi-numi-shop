@@ -73,9 +73,10 @@ Never claim:
 - build passed
 - lint passed
 - deployment succeeded
-- Bugbot approved
+- PR review PASS / approved for merge
 
-unless that action actually ran and produced the stated result.
+unless that action actually ran and produced the stated result for the
+exact current commit SHA. Stale SHA-bound review verdicts do not count.
 
 ## Review after implementation
 
