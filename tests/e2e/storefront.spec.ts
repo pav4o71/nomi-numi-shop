@@ -42,15 +42,24 @@ async function expectSectionScrolledIntoView(page: Page, sectionId: string) {
     .toBe(true);
 }
 
-test("primary navigation scrolls homepage sections into view", async ({ page }) => {
+test("primary navigation includes catalog links and homepage sections", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => window.scrollTo(0, 0));
 
   const primaryNav = page.getByRole("navigation", { name: "Primary" });
 
-  await primaryNav.getByRole("link", { name: "Gifts" }).click();
-  await expect(page).toHaveURL(/#gifts$/);
-  await expectSectionScrolledIntoView(page, "gifts");
+  await expect(primaryNav.getByRole("link", { name: "Products" })).toHaveAttribute(
+    "href",
+    "/products",
+  );
+  await expect(primaryNav.getByRole("link", { name: "Categories" })).toHaveAttribute(
+    "href",
+    "/categories",
+  );
+  await expect(primaryNav.getByRole("link", { name: "Collections" })).toHaveAttribute(
+    "href",
+    "/collections",
+  );
 
   await primaryNav.getByRole("link", { name: "Why Nomi Numi" }).click();
   await expect(page).toHaveURL(/#why-nomi-numi$/);

@@ -1,8 +1,8 @@
 /**
- * Lazy server-only Drizzle runtime client for Phase 2A auth.
+ * Lazy server-only Drizzle runtime client.
  *
- * Storefront modules must not import this file.
- * Connection is created only when auth infrastructure needs the database.
+ * Import only from server modules (Route Handlers, Server Components,
+ * server-only catalog accessors). Do not import from client components.
  */
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";

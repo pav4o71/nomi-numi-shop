@@ -14,6 +14,7 @@ export {
   selectInitialEligibleVariant,
   type EligibleVariantCandidate,
 } from "@/catalog/public/eligibility";
+export { formatListingPrice, formatPublicMoney } from "@/catalog/public/format-money";
 export { PublicCatalogReads } from "@/catalog/public/reads";
 export type {
   PriceDisplayMode,

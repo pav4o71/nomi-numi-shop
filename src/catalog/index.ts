@@ -57,6 +57,8 @@ export {
   buildListingPrice,
   collectEligibleVariants,
   compareEligibleVariants,
+  formatListingPrice,
+  formatPublicMoney,
   isCategoryPublic,
   isCollectionPublic,
   isProductEligibleForCurrency,

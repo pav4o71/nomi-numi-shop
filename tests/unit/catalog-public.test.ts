@@ -228,3 +228,27 @@ describe("listing price and initial variant selection", () => {
     expect(selectInitialEligibleVariant([medium, small], options)?.variant.id).toBe("v_s");
   });
 });
+
+describe("public money display formatting", () => {
+  it("formats USD and PHP minor units and From mode", async () => {
+    const { formatListingPrice, formatPublicMoney } = await import("@/catalog/public/format-money");
+    expect(
+      formatPublicMoney({ currency: "USD", amountMinor: 2499, compareAtAmountMinor: null }),
+    ).toBe("$24.99");
+    expect(
+      formatPublicMoney({ currency: "PHP", amountMinor: 89900, compareAtAmountMinor: null }),
+    ).toMatch(/899/);
+    expect(
+      formatListingPrice(
+        { currency: "USD", amountMinor: 1000, compareAtAmountMinor: null },
+        "from",
+      ),
+    ).toBe("From $10.00");
+    expect(
+      formatListingPrice(
+        { currency: "USD", amountMinor: 1000, compareAtAmountMinor: null },
+        "exact",
+      ),
+    ).toBe("$10.00");
+  });
+});

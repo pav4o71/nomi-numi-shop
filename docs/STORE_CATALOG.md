@@ -902,9 +902,14 @@ Derive small reviewed PRs. Do not start these in Phase 2D.
 
 ### Phase 3D — Public catalog reads
 
+- **Status:** implemented (`src/catalog/public/` — published-only queries and
+  listing/PDP read models; App Router pages under `/products`,
+  `/categories`, `/collections` temporarily pass `USD`; no cookies/geo;
+  no `/api/catalog/*`; no schema changes)
 - **Scope:** published product/category/collection queries and public
-  routes/APIs; storefront listing/PDP read models
-- **Out of scope:** cart, checkout, admin mutations
+  routes; storefront listing/PDP read models
+- **Out of scope:** cart, checkout, admin mutations; currency cookies /
+  country detection; JSON catalog APIs; media upload
 - **Validation:** unit + Playwright smoke for public reads
 - **Depends on:** 3B–3C
 

@@ -5,9 +5,9 @@ store.
 
 ## Current phase
 
-Phase 3C — Deterministic DEV catalog fixtures + TEST factories
+Phase 3D — Public catalog reads (implemented on branch; awaiting merge)
 
-Phase 0 through Phase 3B are complete. The repository includes isolated
+Phase 0 through Phase 3C are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
 rebuild workflow, Better Auth (`better-auth@1.7.3` + matching Drizzle
 adapter), server-owned `customer`/`admin` roles with exact-role
@@ -19,22 +19,24 @@ guarded DEV/TEST-only first-admin bootstrap, minimal protected
 customer/admin surfaces, Phase 2C6 auth security + E2E closure, the
 Phase 2D Store + Catalog blueprint (`docs/STORE_CATALOG.md`), the
 Phase 3A foundational catalog schema (migration
-`0003_phase3a_catalog_schema`), and the Phase 3B catalog domain under
-`src/catalog/`.
+`0003_phase3a_catalog_schema`), the Phase 3B catalog domain under
+`src/catalog/`, and Phase 3C deterministic DEV fixtures + TEST factories.
 
-Phase 3C adds deterministic DEV catalog fixtures (`dev-fixture-*` /
-`DEVFIX-*`), a guarded DEV-only seed command, and TEST builders/factories.
-Public catalog reads/APIs, admin catalog HTTP/UI, inventory runtime, and
-Phase 3D have not started. Production seed/import remains unsupported.
+Phase 3D adds published-only public catalog reads (`src/catalog/public/`)
+and App Router pages under `/products`, `/categories`, and
+`/collections` (temporary USD at the page boundary; no cookies/geo;
+no `/api/catalog/*`; no schema changes). Admin catalog HTTP/UI and
+inventory runtime remain later phases. Production seed/import remains
+unsupported.
 
 Local auth runtime uses ignored `.env.local`
 (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, plus Mailpit
 email transport keys), `/api/auth/*`, public UI routes under
 `/signup`, `/login`, `/logout`, `/check-email`, `/email-verified`,
 `/forgot-password`, and `/reset-password`, plus protected
-`/account` and `/admin`. Social login is not enabled yet. The public
-storefront still renders without PostgreSQL; auth connects lazily when
-auth routes are invoked.
+`/account` and `/admin`. Social login is not enabled yet. Public catalog
+pages use the lazy runtime DB client; auth connects lazily when auth
+routes are invoked.
 
 First-admin bootstrap (DEV/TEST only; confirmation required):
 
@@ -153,6 +155,7 @@ Committed migrations: `drizzle/`
 Catalog tables live in `src/db/schema/catalog.ts` (Phase 3A).
 Catalog domain services live in `src/catalog/` (Phase 3B).
 DEV catalog fixtures + seed live under `src/catalog/fixtures/` (Phase 3C).
+Public catalog reads live under `src/catalog/public/` (Phase 3D).
 Better Auth tables live in `src/db/schema/auth.ts`:
 
 - `drizzle/0001_phase2a_better_auth.sql` — core auth tables
@@ -184,8 +187,9 @@ The command targets project-owned DEV only (`127.0.0.1:55432` /
 `nomi_numi_shop_dev`). It runs a complete read-only fixture preflight
 before writes, creates only missing fixture state, no-ops when already
 matching, and aborts on conflict without overwrite/delete/truncate.
-Production seed/import is unsupported. Phase 3D public catalog reads
-have not started.
+Production seed/import is unsupported. Public catalog pages
+(`/products`, `/categories`, `/collections`) read published data via
+`PublicCatalogReads` with temporary USD.
 
 Local credentials remain under ignored `var/docker/` and must never be
 committed. Start the matching PostgreSQL environment before migrate or

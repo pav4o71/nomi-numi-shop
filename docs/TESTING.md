@@ -106,11 +106,13 @@ Auth foundation unit coverage lives in:
 - `tests/unit/catalog-factories-local.test.ts` (Phase 3C path-locked TEST
   factories; local `pnpm test` only)
 - `tests/unit/catalog-public.test.ts` (Phase 3D portable eligibility,
-  listing From/exact, initial-variant tie-break)
+  listing From/exact, initial-variant tie-break, money display)
 - `tests/unit/catalog-public-local.test.ts` (Phase 3D path-locked TEST DB
   public reads; local `pnpm test` only)
 - `tests/support/catalog-builders.ts` / `catalog-factories.ts` (Phase 3C
   pure builders + persisted TEST factories using CatalogService)
+- `tests/e2e/catalog-public.spec.ts` (Phase 3D public catalog smoke;
+  skipped when `CI=true`; requires DEV Postgres)
 - `tests/unit/auth-protected-surfaces.test.ts` (Phase 2C5 page guards,
   API 401/403 mapping, safe next paths / open-redirect refusals,
   client UX is not authorization; portable)
@@ -138,9 +140,9 @@ DEV Postgres (`55432` / `nomi_numi_shop_dev`) only.
 ### Live auth E2E vs portable CI
 
 `pnpm test:e2e` in GitHub Actions runs portable Chromium smoke
-(`auth-ui`, storefront). Live `auth-security` cases detect `CI` and
-skip. Full local closure requires owned DEV Postgres, Mailpit, and
-`.env.local`, then `pnpm test:e2e` without `CI`.
+(`auth-ui`, storefront). Live `auth-security` and `catalog-public` cases
+detect `CI` and skip. Full local closure requires owned DEV Postgres,
+Mailpit (for auth), and `.env.local`, then `pnpm test:e2e` without `CI`.
 
 `pnpm test:ci` still excludes path-locked suites
 (`database-safety`, `drizzle-foundation`, `email-local-safety`,
