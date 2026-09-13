@@ -130,6 +130,11 @@ describe("Phase 3C DEV seed CLI surface", () => {
     expect(parseDevCatalogSeedArgs(["--confirm", DEV_CATALOG_SEED_CONFIRMATION])).toEqual({
       confirmation: DEV_CATALOG_SEED_CONFIRMATION,
     });
+    expect(
+      parseDevCatalogSeedArgs(["--", "--confirm", DEV_CATALOG_SEED_CONFIRMATION]),
+    ).toEqual({
+      confirmation: DEV_CATALOG_SEED_CONFIRMATION,
+    });
   });
 
   it("public package script is DEV-only without TEST/prod selectors", () => {

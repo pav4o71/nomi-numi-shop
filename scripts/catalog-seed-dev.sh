@@ -84,6 +84,10 @@ refuse_production_like_environment() {
 parse_arguments() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --)
+        # pnpm may forward the argument separator; ignore it.
+        shift
+        ;;
       --confirm)
         [[ $# -ge 2 ]] || fail "confirmation token missing; refusing DEV catalog seed"
         CONFIRM="$2"

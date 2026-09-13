@@ -15,6 +15,11 @@ export function parseDevCatalogSeedArgs(argv: string[]): ParsedDevSeedArgs {
     const token = argv[index]!;
     const next = argv[index + 1];
 
+    if (token === "--") {
+      // pnpm / shell may forward the argument separator; ignore it.
+      continue;
+    }
+
     if (token === "--confirm") {
       if (next === undefined) {
         throw new Error("confirmation token missing; refusing DEV catalog seed");
