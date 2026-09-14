@@ -6,11 +6,17 @@
 
 Normal development must not occur directly on `main`.
 
-GitHub server-side branch protection is not currently available for
-this private repository under the active GitHub plan.
+GitHub server-side branch protection is enabled for `main`:
 
-The project therefore uses repository policy plus a local pre-push
-guard to prevent normal direct pushes to `main`.
+- Required status check: `PR Quality Gate` (strict / up-to-date with base)
+- Required pull request reviews: 0 (solo owner; human remains merge authority)
+- Dismiss stale reviews: true
+- Enforce for admins: true
+- Block force pushes: true
+- Block deletions: true
+- Require conversation resolution: true
+
+The local pre-push hook provides additional workstation-level protection.
 
 ## Local hook activation
 
@@ -182,19 +188,21 @@ required):
   `*-local.test.ts` suites that require the workstation canonical root
   and owned PostgreSQL on `127.0.0.1:55432` / `127.0.0.1:55433`
 
-### Branch protection (requires repository settings)
+### Branch protection (enabled)
 
-Recommended branch protection for `main` (note: cannot be set via
-in-repo files; requires GitHub UI or API):
+Branch protection is active for `main` with the following enforcement:
 
-- Require pull request before merge
-- Require status checks to pass before merge:
-  - `PR Quality Gate`
-- Require conversation resolution before merge
-- Do not allow bypassing the above settings
-- Restrict who can push to matching branches (owner/admins only)
-- Block force pushes
-- Block deletions
+- ✅ Require pull request before merge
+- ✅ Require status checks to pass before merge:
+  - `PR Quality Gate` (strict / must be up-to-date with base)
+- ✅ Require conversation resolution before merge
+- ✅ Enforce for administrators
+- ✅ Block force pushes
+- ✅ Block branch deletion
+
+Pull request reviews are not required (solo owner repository; human owner
+remains sole merge authority). The Nomi PR Verifier provides SHA-bound
+evidence but is not a required GitHub approval.
 
 These settings enforce the exact-SHA contract and prevent accidental
 direct commits to `main`.
