@@ -169,7 +169,7 @@ jobs:
 
       - name: Upload Playwright traces and screenshots
         if: failure()
-        uses: actions/upload-artifact@ea0602f6567e85bf7da0f0cab2dff2d46f3c7c9e
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: playwright-artifacts
           path: |
