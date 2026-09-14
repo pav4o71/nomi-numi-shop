@@ -32,8 +32,12 @@ export default defineConfig({
     env: {
       ...process.env,
       // Keep portable CI smoke green without requiring auth secrets.
+      // CI gets non-secret dummy stubs; local E2E overrides BETTER_AUTH_URL only.
       ...(isCi
-        ? {}
+        ? {
+            BETTER_AUTH_SECRET: "ci-stub-secret-not-for-production-0123456789abcdef",
+            BETTER_AUTH_URL: e2eAuthOrigin,
+          }
         : {
             BETTER_AUTH_URL: e2eAuthOrigin,
           }),
