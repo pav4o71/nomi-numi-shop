@@ -30,7 +30,7 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@faaca9a8f6edddba5725ffe5adefdab6669a2eca
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63
         with:
           languages: javascript-typescript
           queries: security-extended
@@ -56,7 +56,7 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL for Actions
-        uses: github/codeql-action/init@faaca9a8f6edddba5725ffe5adefdab6669a2eca
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63
         with:
           languages: actions
 
