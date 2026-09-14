@@ -22,20 +22,37 @@ Install the project-local Chromium browser once:
 
 Run the available test commands:
 
-    pnpm test
-    pnpm test:ci
-    pnpm test:watch
-    pnpm test:e2e
-    pnpm test:all
+    pnpm test           # Full suite (portable + local)
+    pnpm test:ci        # Portable only (for GitHub Actions)
+    pnpm test:local     # Local-only path-locked suites
+    pnpm test:watch     # Watch mode
+    pnpm test:e2e       # Playwright E2E tests
+    pnpm test:all       # Full unit + E2E
 
-`pnpm test:ci` is the portable GitHub Actions unit suite. It excludes
-path-locked `database-safety`, `drizzle-foundation`,
-`email-local-safety`, `auth-first-admin-bootstrap-local`,
-`catalog-schema-local`, `catalog-domain-local`,
-`catalog-fixtures-local`, `catalog-factories-local`, and
-`catalog-public-local` tests that
-require the workstation canonical root and/or owned local PostgreSQL.
-Local full coverage remains `pnpm test`.
+### Portable vs Local Test Split
+
+**Portable (`pnpm test:ci`)** — runs on GitHub-hosted runners:
+
+- Uses `import.meta.url` for repo-relative paths
+- No hardcoded workstation paths
+- No local Docker/PostgreSQL dependencies
+- Safe for CI without owned infrastructure
+
+**Local-only (`pnpm test:local`)** — requires workstation canonical root:
+
+- `database-safety.test.ts` — verifies `/home/pav4o71/Projects/nomi-numi-shop`
+- `drizzle-foundation.test.ts` — path-locked migration/schema checks
+- `email-local-safety.test.ts` — path-locked Mailpit helper checks
+- `auth-first-admin-bootstrap-local.test.ts` — DEV/TEST promotion via owned DB
+- `catalog-schema-local.test.ts` — TEST DB constraint enforcement
+- `catalog-domain-local.test.ts` — TEST DB repository/service integration
+- `catalog-fixtures-local.test.ts` — TEST DB fixture preflight/install
+- `catalog-factories-local.test.ts` — TEST DB factory persistence
+- `catalog-public-local.test.ts` — TEST DB public reads
+
+These path locks are **intentional safety guards** preventing accidental
+mutation of external projects or databases. Local full coverage remains
+`pnpm test` (portable + local).
 
 Playwright browser binaries are stored under the ignored
 `var/playwright-browsers/` directory. Playwright temporary files use the
@@ -191,26 +208,49 @@ Stable check name:
 
 `PR Quality Gate`
 
-Exact portable commands (in order):
+The workflow is split into parallel jobs for faster feedback:
 
-1. `pnpm install --frozen-lockfile`
-2. `pnpm format:check`
-3. `pnpm lint`
-4. `pnpm typecheck`
-5. `pnpm test:ci` (portable unit tests; excludes path-locked
-   `database-safety`, `drizzle-foundation`, `email-local-safety`,
-   `auth-first-admin-bootstrap-local`, `catalog-schema-local`,
-   `catalog-domain-local`, `catalog-fixtures-local`,
-   `catalog-factories-local`, and `catalog-public-local` suites that
-   require the workstation canonical root and/or owned local PostgreSQL)
-6. `pnpm build`
-7. Chromium install for Playwright (`playwright install --with-deps chromium`)
-8. `pnpm test:e2e`
+1. **static** — format check, lint, typecheck
+2. **unit-build** — `pnpm test:ci` (portable unit tests excluding
+   path-locked `database-safety`, `drizzle-foundation`,
+   `email-local-safety`, `auth-first-admin-bootstrap-local`,
+   `catalog-schema-local`, `catalog-domain-local`,
+   `catalog-fixtures-local`, `catalog-factories-local`, and
+   `catalog-public-local` suites) + `pnpm build`
+3. **e2e** — Chromium Playwright tests (`pnpm test:e2e`)
+4. **quality-gate** — aggregator job named exactly `PR Quality Gate`
+   that depends on all other jobs
 
-That workflow uses read-only repository permissions. It does not use
+The **quality-gate** job is the required status check for branch
+protection on `main`.
+
+The **e2e** job uses a positive `code` path filter and runs when changes
+affect `src/**`, `tests/**`, `package.json`, `pnpm-lock.yaml`,
+`playwright.config.ts`, `next.config.ts`, `tsconfig.json`,
+`.github/workflows/pr-quality.yml`, or `scripts/**`. E2E is skipped when
+only non-code paths change (e.g., docs, markdown files). The aggregator
+treats skipped e2e jobs as success.
+
+On E2E test failure, Playwright traces, screenshots, and failure reports
+are automatically uploaded as workflow artifacts (retained for 7 days).
+
+The workflow uses minimal permissions (workflow-level `permissions: {}`;
+job-level `contents: read` only). Third-party actions are pinned to full
+commit SHAs for supply-chain security. The workflow does not use
 production secrets, production resources, `pull_request_target`, write
 permissions, automatic merge, or protected workstation Docker resources
 such as `beautybook3-pg` / host port `5433`.
+
+### CodeQL security scanning
+
+`.github/workflows/codeql.yml` runs CodeQL analysis on:
+
+- JavaScript/TypeScript application code (`security-extended` query suite)
+- GitHub Actions workflows
+
+CodeQL runs on schedule (weekly), pull requests, pushes to `main`, and
+manual dispatch. It uses minimal permissions plus `security-events: write`
+for uploading results.
 
 Workstation-specific checks that require the local canonical root,
 protected Docker state, reserved host ports, or owned Compose PostgreSQL
@@ -238,7 +278,98 @@ Never report a validation as passing unless it actually ran.
 Any new commit on a Pull Request invalidates the previous reviewed HEAD.
 Re-run relevant CI and review on the new HEAD before merge.
 
-## 6. Critical commerce coverage
+## 6. Health check scripts
+
+### Portable health gate
+
+`pnpm health` mirrors the portable static and unit-build jobs from CI:
+
+1. `pnpm format:check`
+2. `pnpm lint`
+3. `pnpm typecheck`
+4. `pnpm test:ci` (portable unit tests)
+5. `pnpm build`
+
+This script is portable and does not require local Docker resources,
+workstation canonical root, or owned PostgreSQL. It matches the GitHub
+Actions static and unit-build jobs but does not include E2E tests (which
+require a separate `pnpm test:e2e:install` step and are run separately
+via `pnpm test:e2e`).
+
+### Local health with path-locked tests
+
+`pnpm health:local` runs the portable health gate plus local-only tests:
+
+    pnpm health:local
+
+Expands to:
+
+    pnpm health && pnpm test
+
+This includes path-locked tests requiring the workstation canonical root
+and/or owned local PostgreSQL (`database-safety`, `drizzle-foundation`,
+`email-local-safety`, `auth-first-admin-bootstrap-local`,
+`catalog-schema-local`, `catalog-domain-local`, `catalog-fixtures-local`,
+`catalog-factories-local`, `catalog-public-local`).
+
+Use `pnpm health:local` for comprehensive local validation before
+requesting review. Use `pnpm health` for quick portable checks.
+
+### Preflight validation
+
+Development branches should pass preflight before implementation:
+
+    pnpm preflight
+
+Expands to:
+
+    ./scripts/preflight.sh phase1
+
+This validates project identity, Git state, runtime versions, Docker
+ownership, reserved ports, and safety documentation. A failed preflight
+is evidence to investigate, not bypass.
+
+On synchronized `main`:
+
+    git fetch --prune origin
+    ./scripts/preflight.sh integration
+
+See `docs/ENVIRONMENTS.md` for historical Phase 0 preflight modes.
+
+### Wait for PR checks
+
+After pushing a PR, wait for required checks to complete:
+
+    ./scripts/wait-quality-and-nomi.sh <pr-number>
+
+This script:
+
+1. Captures the current PR HEAD SHA
+2. Fails closed if the HEAD SHA changes during the wait
+3. Waits for the `PR Quality Gate` check to succeed
+4. Verifies the latest `Nomi PR Verifier` issue comment is for the exact
+   SHA and shows `PASS` verdict
+5. Exits with success when both checks are ready
+
+Use this to confirm readiness before manual merge. The script never
+auto-merges. It requires the GitHub CLI (`gh`) to be installed and
+authenticated.
+
+**Expected Nomi PR Verifier comment format:**
+
+```
+## Nomi PR Verifier
+**HEAD reviewed:** `<40-hex-sha>`
+...
+### Verdict
+**PASS** at `<sha>` ...
+```
+
+The script parses `**HEAD reviewed:** \`<sha>\``(primary) or`**PASS/BLOCK/HOLD** at \`<sha>\`` (fallback) and validates the verdict
+matches the exact PR HEAD SHA. If Nomi posts multiple comments, only the
+latest one is considered.
+
+## 7. Critical commerce coverage
 
 High-risk behavior requiring strong coverage includes:
 
@@ -259,7 +390,7 @@ High-risk behavior requiring strong coverage includes:
 - payment-state transitions
 - fulfillment-state transitions
 
-## 7. Authorization coverage
+## 8. Authorization coverage
 
 Test:
 
@@ -272,7 +403,7 @@ Test:
 - review mutation
 - custom-video access
 
-## 8. Review coverage
+## 9. Review coverage
 
 Test:
 
@@ -283,7 +414,7 @@ Test:
 - image validation
 - moderation authorization
 
-## 9. Upload coverage
+## 10. Upload coverage
 
 Test:
 
@@ -294,14 +425,14 @@ Test:
 - unauthorized private-media access
 - cross-customer custom-video access
 
-## 10. E2E application identity
+## 11. E2E application identity
 
 Before stateful E2E execution, the test harness should eventually verify
 that port 3101 is actually serving nomi-numi-shop.
 
 Never silently fall back to port 3000 or another running project.
 
-## 11. Regression policy
+## 12. Regression policy
 
 Reproducible defects should receive regression coverage where practical.
 

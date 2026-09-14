@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import { CatalogEntityCard } from "@/components/catalog/catalog-entity-card";
+import { CatalogPageHeader } from "@/components/catalog/catalog-page-header";
 import { Container } from "@/components/container";
 import { getPublicCatalogReads } from "@/catalog/public/storefront";
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Collections · Nomi Numi",
-  description: "Browse published Nomi Numi collections.",
+  description: "Browse published Nomi Numi merchandising collections.",
 };
 
 export default async function CollectionsIndexPage() {
@@ -17,32 +18,27 @@ export default async function CollectionsIndexPage() {
   return (
     <main className="section-shell py-12 sm:py-16">
       <Container className="space-y-8">
-        <header className="space-y-2">
-          <p className="font-display text-2xl font-semibold tracking-tight text-primary">
-            Nomi Numi
-          </p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Collections
-          </h1>
-        </header>
+        <CatalogPageHeader
+          title="Collections"
+          description="Seasonal, campaign, editorial, or merchandising groupings — separate from category taxonomy."
+        />
         {collections.length === 0 ? (
-          <p data-testid="catalog-empty" className="text-sm text-muted-foreground">
+          <p
+            data-testid="catalog-empty"
+            className="surface-card px-6 py-8 text-sm text-muted-foreground sm:text-base"
+          >
             No collections are published yet.
           </p>
         ) : (
-          <ul data-testid="collection-listing" className="grid gap-4 sm:grid-cols-2">
+          <ul data-testid="collection-listing" className="grid gap-6 sm:grid-cols-2">
             {collections.map((collection) => (
               <li key={collection.slug}>
-                <Link
+                <CatalogEntityCard
                   href={`/collections/${collection.slug}`}
-                  className="block rounded-xl border border-border/80 bg-surface px-5 py-4 hover:border-primary/40"
+                  name={collection.name}
+                  description={collection.description}
                   data-testid={`collection-card-${collection.slug}`}
-                >
-                  <h2 className="font-display text-xl font-semibold">{collection.name}</h2>
-                  {collection.description ? (
-                    <p className="mt-1 text-sm text-muted-foreground">{collection.description}</p>
-                  ) : null}
-                </Link>
+                />
               </li>
             ))}
           </ul>

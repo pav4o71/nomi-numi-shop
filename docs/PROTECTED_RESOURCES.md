@@ -35,13 +35,17 @@ Expected Git branch for stable integration:
 
 `main`
 
-Planned GitHub repository:
+GitHub repository:
 
 `pav4o71/nomi-numi-shop`
 
-Planned GitHub visibility:
+Repository visibility:
 
-`PRIVATE`
+`PUBLIC`
+
+Branch protection:
+
+`main` requires passing `PR Quality Gate` check before merge.
 
 Agents must not operate from:
 

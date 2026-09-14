@@ -53,17 +53,20 @@ test.describe("Phase 3D public catalog reads", () => {
     expect(response?.status()).toBe(404);
   });
 
-  test("catalog nav story anchors return to homepage sections", async ({ page }) => {
+  test("catalog nav includes gifts and about links", async ({ page }) => {
     await page.goto("/products");
     const primaryNav = page.getByRole("navigation", { name: "Primary" });
 
-    await primaryNav.getByRole("link", { name: "Why Nomi Numi" }).click();
-    await expect(page).toHaveURL(/\/#why-nomi-numi$/);
-    await expect(page.getByRole("heading", { level: 2, name: "Why Nomi Numi" })).toBeVisible();
+    await expect(primaryNav.getByRole("link", { name: "Gifts" })).toHaveAttribute("href", "/gifts");
+    await expect(primaryNav.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about");
+
+    await primaryNav.getByRole("link", { name: "Gifts" }).click();
+    await expect(page).toHaveURL(/\/gifts$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Gift Guide" })).toBeVisible();
 
     await page.goto("/categories");
-    await primaryNav.getByRole("link", { name: "How It Works" }).click();
-    await expect(page).toHaveURL(/\/#how-it-works$/);
-    await expect(page.getByRole("heading", { level: 2, name: "How It Works" })).toBeVisible();
+    await primaryNav.getByRole("link", { name: "About" }).click();
+    await expect(page).toHaveURL(/\/about$/);
+    await expect(page.getByRole("heading", { level: 1, name: "About Nomi Numi" })).toBeVisible();
   });
 });

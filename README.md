@@ -5,29 +5,43 @@ store.
 
 ## Current phase
 
-Phase 3D — Public catalog reads + App Router pages
+Post-Phase-3D storefront presentation + hardening
 
-Phase 0 through Phase 3C are complete. The repository includes isolated
+Phase 0 through Phase 3D are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
 rebuild workflow, Better Auth (`better-auth@1.7.3` + matching Drizzle
 adapter), server-owned `customer`/`admin` roles with exact-role
-authorization primitives, the portable PR quality gate, the Phase 2C0
-auth design lock, project-owned Mailpit with a local email transport
-abstraction, the email/password backend lifecycle (verification, reset,
-session policy), the Better Auth browser client with customer auth UI,
-guarded DEV/TEST-only first-admin bootstrap, minimal protected
-customer/admin surfaces, Phase 2C6 auth security + E2E closure, the
-Phase 2D Store + Catalog blueprint (`docs/STORE_CATALOG.md`), the
-Phase 3A foundational catalog schema (migration
-`0003_phase3a_catalog_schema`), the Phase 3B catalog domain under
-`src/catalog/`, and Phase 3C deterministic DEV fixtures + TEST factories.
+authorization primitives, the portable PR quality gate with SHA-pinned
+actions and minimal permissions, CodeQL security analysis, Dependabot
+configuration, the Phase 2C0 auth design lock, project-owned Mailpit with
+a local email transport abstraction, the email/password backend lifecycle
+(verification, reset, session policy), the Better Auth browser client
+with customer auth UI, guarded DEV/TEST-only first-admin bootstrap,
+minimal protected customer/admin surfaces, Phase 2C6 auth security + E2E
+closure, the Phase 2D Store + Catalog blueprint
+(`docs/STORE_CATALOG.md`), the Phase 3A foundational catalog schema
+(migration `0003_phase3a_catalog_schema`), the Phase 3B catalog domain
+under `src/catalog/`, Phase 3C deterministic DEV catalog fixtures
+(`dev-fixture-*` / `DEVFIX-*`) and TEST builders/factories, and Phase 3D
+public catalog reads with App Router pages.
 
-Phase 3D adds published-only public catalog reads (`src/catalog/public/`)
-and App Router pages under `/products`, `/categories`, and
-`/collections` (temporary USD at the page boundary; no cookies/geo;
-no `/api/catalog/*`; no schema changes). Admin catalog HTTP/UI and
-inventory runtime remain later phases. Production seed/import remains
-unsupported.
+Storefront presentation adds polished public catalog pages (`/products`,
+`/categories`, `/collections` with detail routes), cozy homepage sections,
+and static content pages (`/about`, `/faq`, `/shipping`, `/returns`,
+`/contact`, `/legal/privacy`, `/legal/terms`, `/legal/imprint`, `/gifts`,
+`/lookbook`, `/size-guide`) with placeholder/template content. Admin
+catalog HTTP/UI, cart, checkout, and inventory runtime remain later phases.
+
+Hardening progress includes SHA-pinned GitHub Actions (all third-party
+actions pinned to full commit SHAs), minimal workflow permissions
+(`permissions: {}` at workflow level; granular job permissions), CodeQL
+security analysis for JavaScript/TypeScript and GitHub Actions workflows,
+and Dependabot configuration for npm and github-actions dependencies.
+Branch protection is live on `main` and requires the `PR Quality Gate`
+check to pass before merge (strict, enforced for admins, no force push).
+See `docs/GIT_WORKFLOW.md` for complete protection rules. Dependabot may
+open major GitHub Actions version bumps; review SHA pins carefully before
+merging major action updates.
 
 Local auth runtime uses ignored `.env.local`
 (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, plus Mailpit

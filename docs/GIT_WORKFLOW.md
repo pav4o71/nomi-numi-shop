@@ -6,11 +6,17 @@
 
 Normal development must not occur directly on `main`.
 
-GitHub server-side branch protection is not currently available for
-this private repository under the active GitHub plan.
+GitHub server-side branch protection is enabled for `main`:
 
-The project therefore uses repository policy plus a local pre-push
-guard to prevent normal direct pushes to `main`.
+- Required status check: `PR Quality Gate` (strict / up-to-date with base)
+- Required pull request reviews: 0 (solo owner; human remains merge authority)
+- Dismiss stale reviews: true
+- Enforce for admins: true
+- Block force pushes: true
+- Block deletions: true
+- Require conversation resolution: true
+
+The local pre-push hook provides additional workstation-level protection.
 
 ## Local hook activation
 
@@ -149,6 +155,7 @@ configured review mechanisms only.
 - inspect the complete diff
 - confirm GitHub Actions `PR Quality Gate` succeeded on the current PR
   HEAD SHA
+- confirm CodeQL scans (if triggered) passed for the current HEAD SHA
 - confirm the latest Nomi PR Verifier SHA-bound verdict is `PASS` for
   that same HEAD SHA
 - run local quality checks when they cover workstation-only concerns
@@ -166,6 +173,51 @@ If validation finds a problem:
 5. review again against the new HEAD SHA only
 
 Do not merge known defects merely to continue to the next phase.
+
+### Required status checks
+
+The following GitHub Actions checks must pass on the exact PR HEAD SHA
+before merge consideration:
+
+- `PR Quality Gate` — aggregator job that depends on:
+  - **static**: portable format, lint, typecheck
+  - **unit-build**: `pnpm test:ci` + `pnpm build`
+  - **e2e**: Chromium Playwright smoke tests (skipped for docs-only
+    changes; uploaded artifacts on failure)
+- CodeQL security analysis (when triggered by schedule or PR changes
+  affecting code/workflows)
+
+The aggregator job is the required status check for branch protection.
+Individual jobs run in parallel for faster feedback. E2E tests are
+path-filtered and skipped when only docs/markdown/config-doc paths change.
+
+Local-only validation (workstation canonical root, owned Docker/Postgres
+required):
+
+- `./scripts/preflight.sh phase1` — verifies repository ownership,
+  Docker resource isolation, database safety guards
+- `pnpm test` — full unit coverage including path-locked
+  `*-local.test.ts` suites that require the workstation canonical root
+  and owned PostgreSQL on `127.0.0.1:55432` / `127.0.0.1:55433`
+
+### Branch protection (enabled)
+
+Branch protection is active for `main` with the following enforcement:
+
+- ✅ Require pull request before merge
+- ✅ Require status checks to pass before merge:
+  - `PR Quality Gate` (strict / must be up-to-date with base)
+- ✅ Require conversation resolution before merge
+- ✅ Enforce for administrators
+- ✅ Block force pushes
+- ✅ Block branch deletion
+
+Pull request reviews are not required (solo owner repository; human owner
+remains sole merge authority). The Nomi PR Verifier provides SHA-bound
+evidence but is not a required GitHub approval.
+
+These settings enforce the exact-SHA contract and prevent accidental
+direct commits to `main`.
 
 ## Merge method
 
