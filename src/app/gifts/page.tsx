@@ -35,8 +35,8 @@ export default function GiftsPage() {
 
         <h3>Accessories</h3>
         <p>
-          Practical and charming accessories including keychains, bags, tumblers, bottles, umbrellas,
-          and ornaments that add personality to everyday items.
+          Practical and charming accessories including keychains, bags, tumblers, bottles,
+          umbrellas, and ornaments that add personality to everyday items.
         </p>
 
         <h3>Home Décor</h3>

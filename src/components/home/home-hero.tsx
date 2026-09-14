@@ -33,8 +33,8 @@ export function HomeHero() {
             Gifts for soft hearts
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-            Plush toys, cozy apparel, and thoughtful accessories that bring comfort and joy.
-            Perfect for staying close, even from far away.
+            Plush toys, cozy apparel, and thoughtful accessories that bring comfort and joy. Perfect
+            for staying close, even from far away.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button asChild size="lg">

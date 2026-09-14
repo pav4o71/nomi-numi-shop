@@ -32,12 +32,14 @@ Run the available test commands:
 ### Portable vs Local Test Split
 
 **Portable (`pnpm test:ci`)** — runs on GitHub-hosted runners:
+
 - Uses `import.meta.url` for repo-relative paths
 - No hardcoded workstation paths
 - No local Docker/PostgreSQL dependencies
 - Safe for CI without owned infrastructure
 
 **Local-only (`pnpm test:local`)** — requires workstation canonical root:
+
 - `database-safety.test.ts` — verifies `/home/pav4o71/Projects/nomi-numi-shop`
 - `drizzle-foundation.test.ts` — path-locked migration/schema checks
 - `email-local-safety.test.ts` — path-locked Mailpit helper checks

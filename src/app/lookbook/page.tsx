@@ -27,13 +27,14 @@ export default function LookbookPage() {
         <h2>Gift Inspiration</h2>
         <p>
           See how our products make thoughtful gifts for friends, family, and loved ones. From plush
-          companions to practical accessories, every item is chosen for its ability to bring a smile.
+          companions to practical accessories, every item is chosen for its ability to bring a
+          smile.
         </p>
 
         <h2>Seasonal Styling</h2>
         <p>
-          Explore our seasonal collections to see how products fit different occasions throughout the
-          year, from festive holiday décor to springtime celebrations.
+          Explore our seasonal collections to see how products fit different occasions throughout
+          the year, from festive holiday décor to springtime celebrations.
         </p>
 
         <h2>Product Collections</h2>

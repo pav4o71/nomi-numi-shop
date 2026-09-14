@@ -20,7 +20,8 @@ export default function SizeGuidePage() {
         <h2>How to Measure</h2>
         <p>
           For the most accurate fit, please measure according to the guidelines below and compare to
-          our size charts. If you&apos;re between sizes, we generally recommend sizing up for comfort.
+          our size charts. If you&apos;re between sizes, we generally recommend sizing up for
+          comfort.
         </p>
 
         <h2>Apparel Sizing</h2>
