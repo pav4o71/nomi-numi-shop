@@ -475,7 +475,13 @@ per `docs/STORE_CATALOG.md` §17 after Phase 2D merge.
 Post-Phase-3D storefront visual polish restyles the public catalog pages
 (`/products`, `/categories`, `/collections` and detail routes) on the
 closed Phase 3D read layer. Presentation-only: no PublicCatalogReads,
-schema, auth, media runtime, or commerce changes.
+schema, auth, media runtime, or commerce changes. Complete.
+
+Static content pages: `/about`, `/faq`, `/shipping`, `/returns`,
+`/contact`, `/legal/privacy`, `/legal/terms`, `/legal/imprint`, `/gifts`,
+`/lookbook`, `/size-guide` are implemented as read-only informational
+pages using placeholder/template content. These pages do not integrate
+with CMS, checkout, or commerce systems.
 
 ### Phase 4
 
@@ -512,6 +518,17 @@ CMS and admin completeness.
 ### Phase 12
 
 Security, reliability and production-readiness hardening.
+
+Hardening progress:
+
+- GitHub Actions workflows use SHA-pinned third-party actions and
+  minimal permissions (`permissions: {}` at workflow level; granular
+  job permissions)
+- CodeQL security analysis for JavaScript/TypeScript and GitHub Actions
+- Dependabot configuration for npm and github-actions dependencies
+- `test:ci` remains portable (GitHub-hosted runners; no local Docker/DB)
+- Branch protection recommendations documented in `docs/GIT_WORKFLOW.md`
+  (requires repository settings; not enforceable via in-repo files)
 
 ### Phase 13
 

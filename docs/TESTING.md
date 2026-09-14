@@ -202,10 +202,23 @@ Exact portable commands (in order):
 7. Chromium install for Playwright (`playwright install --with-deps chromium`)
 8. `pnpm test:e2e`
 
-That workflow uses read-only repository permissions. It does not use
+That workflow uses minimal permissions (workflow-level `permissions: {}`;
+job-level `contents: read` only). Third-party actions are pinned to full
+commit SHAs for supply-chain security. The workflow does not use
 production secrets, production resources, `pull_request_target`, write
 permissions, automatic merge, or protected workstation Docker resources
 such as `beautybook3-pg` / host port `5433`.
+
+### CodeQL security scanning
+
+`.github/workflows/codeql.yml` runs CodeQL analysis on:
+
+- JavaScript/TypeScript application code (`security-extended` query suite)
+- GitHub Actions workflows
+
+CodeQL runs on schedule (weekly), pull requests, pushes to `main`, and
+manual dispatch. It uses minimal permissions plus `security-events: write`
+for uploading results.
 
 Workstation-specific checks that require the local canonical root,
 protected Docker state, reserved host ports, or owned Compose PostgreSQL
