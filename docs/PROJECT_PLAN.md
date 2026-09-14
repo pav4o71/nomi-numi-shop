@@ -527,8 +527,9 @@ Hardening progress:
 - CodeQL security analysis for JavaScript/TypeScript and GitHub Actions
 - Dependabot configuration for npm and github-actions dependencies
 - `test:ci` remains portable (GitHub-hosted runners; no local Docker/DB)
-- Branch protection recommendations documented in `docs/GIT_WORKFLOW.md`
-  (requires repository settings; not enforceable via in-repo files)
+- Branch protection is live on `main` and requires the `PR Quality Gate`
+  check to pass before merge (strict, enforced for admins, no force push).
+  Complete rules are documented in `docs/GIT_WORKFLOW.md`
 
 ### Phase 13
 
