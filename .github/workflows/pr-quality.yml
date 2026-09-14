@@ -1,4 +1,4 @@
-# Portable PR quality gate for Phase 2C onward.
+# Portable PR quality gate with split jobs and aggregation.
 # Read-only CI only: no production secrets, no deployment, no local Docker resources.
 name: PR Quality Gate
 
@@ -16,27 +16,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality:
-    name: PR Quality Gate
+  path-filter:
+    name: Path filter
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     permissions:
       contents: read
-    env:
-      CI: "true"
-      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/var/playwright-browsers
-      TMPDIR: ${{ github.workspace }}/var/tmp
-
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
 
-      # Job-level TMPDIR / PLAYWRIGHT_BROWSERS_PATH live under var/; create
-      # them before any step that resolves temporary directories.
-      - name: Prepare project temp directories
-        run: mkdir -p var/playwright-browsers var/tmp
+      - name: Detect code changes
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'tests/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'playwright.config.ts'
+              - 'next.config.*'
+              - 'tsconfig*.json'
+              - '.github/workflows/pr-quality.yml'
+              - 'scripts/**'
+
+  static:
+    name: Static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      CI: "true"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda
@@ -61,6 +84,39 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+  unit-build:
+    name: Unit tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      CI: "true"
+      TMPDIR: ${{ github.workspace }}/var/tmp
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Prepare project temp directories
+        run: mkdir -p var/tmp
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda
+        with:
+          version: 11.26.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       # Portable unit suite only. Path-locked database/drizzle safety tests
       # require the workstation canonical root and stay local (`pnpm test`).
       - name: Unit tests
@@ -69,8 +125,85 @@ jobs:
       - name: Production build
         run: pnpm build
 
+  e2e:
+    name: E2E tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: path-filter
+    if: needs.path-filter.outputs.code == 'true'
+    permissions:
+      contents: read
+    env:
+      CI: "true"
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/var/playwright-browsers
+      TMPDIR: ${{ github.workspace }}/var/tmp
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Prepare project temp directories
+        run: mkdir -p var/playwright-browsers var/tmp
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda
+        with:
+          version: 11.26.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Install Chromium for Playwright
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Chromium Playwright E2E
         run: pnpm test:e2e
+
+      - name: Upload Playwright traces and screenshots
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: playwright-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  quality-gate:
+    name: PR Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [static, unit-build, e2e]
+    if: always()
+    steps:
+      - name: Aggregate status
+        run: |
+          echo "Static checks: ${{ needs.static.result }}"
+          echo "Unit tests and build: ${{ needs.unit-build.result }}"
+          echo "E2E tests: ${{ needs.e2e.result }}"
+
+          if [ "${{ needs.static.result }}" != "success" ]; then
+            echo "Static checks failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.unit-build.result }}" != "success" ]; then
+            echo "Unit tests or build failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.e2e.result }}" != "success" ] && [ "${{ needs.e2e.result }}" != "skipped" ]; then
+            echo "E2E tests failed"
+            exit 1
+          fi
+
+          echo "All checks passed"

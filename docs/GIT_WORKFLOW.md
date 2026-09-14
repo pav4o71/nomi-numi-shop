@@ -174,10 +174,17 @@ Do not merge known defects merely to continue to the next phase.
 The following GitHub Actions checks must pass on the exact PR HEAD SHA
 before merge consideration:
 
-- `PR Quality Gate` — portable format, lint, typecheck, test:ci, build,
-  and E2E smoke tests
+- `PR Quality Gate` — aggregator job that depends on:
+  - **static**: portable format, lint, typecheck
+  - **unit-build**: `pnpm test:ci` + `pnpm build`
+  - **e2e**: Chromium Playwright smoke tests (skipped for docs-only
+    changes; uploaded artifacts on failure)
 - CodeQL security analysis (when triggered by schedule or PR changes
   affecting code/workflows)
+
+The aggregator job is the required status check for branch protection.
+Individual jobs run in parallel for faster feedback. E2E tests are
+path-filtered and skipped when only docs/markdown/config-doc paths change.
 
 Local-only validation (workstation canonical root, owned Docker/Postgres
 required):
