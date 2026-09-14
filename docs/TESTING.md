@@ -219,9 +219,12 @@ The workflow is split into parallel jobs for faster feedback:
 The **quality-gate** job is the required status check for branch
 protection on `main`.
 
-The **e2e** job is skipped for docs-only changes (when only `docs/**`,
-`*.md`, and `.github/workflows/codeql.yml` are modified) to reduce
-unnecessary CI time. The aggregator treats skipped e2e jobs as success.
+The **e2e** job uses a positive `code` path filter and runs when changes
+affect `src/**`, `tests/**`, `package.json`, `pnpm-lock.yaml`,
+`playwright.config.ts`, `next.config.ts`, `tsconfig.json`,
+`.github/workflows/pr-quality.yml`, or `scripts/**`. E2E is skipped when
+only non-code paths change (e.g., docs, markdown files). The aggregator
+treats skipped e2e jobs as success.
 
 On E2E test failure, Playwright traces, screenshots, and failure reports
 are automatically uploaded as workflow artifacts (retained for 7 days).
