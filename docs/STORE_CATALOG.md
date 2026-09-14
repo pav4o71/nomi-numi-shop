@@ -910,7 +910,8 @@ Derive small reviewed PRs. Do not start these in Phase 2D.
   routes; storefront listing/PDP read models
 - **Out of scope:** cart, checkout, admin mutations; currency cookies /
   country detection; JSON catalog APIs; media upload
-- **Validation:** unit + Playwright smoke for public reads
+- **Validation:** unit + local Playwright smoke (read-only Phase 3C DEV
+  fixtures; CI skips catalog-public; portable storefront stays DB-free)
 - **Depends on:** 3B–3C
 
 ### Phase 4 — Admin catalog management

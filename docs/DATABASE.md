@@ -30,8 +30,11 @@ Phase 3C adds deterministic DEV fixtures (`src/catalog/fixtures/`) and
 TEST factories; it does not add schema/migrations or store_settings seed.
 Phase 3D adds public catalog reads (`src/catalog/public/`) and App Router
 storefront catalog pages; no new migrations. Inventory ledger tables
-remain absent. Public catalog pages use the lazy runtime DB client
-(temporary USD); auth remains on `/api/auth`.
+remain absent. Public catalog pages use the lazy runtime DB client in
+`src/db/runtime.ts`, which validates `DATABASE_URL` only via
+`src/db/env.ts` (temporary USD; no Better Auth secrets). Auth continues
+to validate Better Auth env in `src/auth/env.ts` and reuses the shared
+DATABASE_URL rules; `/api/auth` remains auth-only.
 
 ## 2. Development database
 

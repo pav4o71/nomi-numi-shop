@@ -176,8 +176,10 @@ DEV fixtures and TEST factories under `src/catalog/fixtures/` and
 `tests/support/`. Phase 3D adds public catalog reads
 (`src/catalog/public/`) and App Router storefront catalog pages
 (`/products`, `/categories`, `/collections`) with temporary USD at the
-page boundary. Inventory runtime and admin catalog HTTP/UI remain later
-phases.
+page boundary. Catalog pages use `src/db/runtime.ts` with
+`DATABASE_URL`-only validation (`src/db/env.ts`); Better Auth secrets
+remain auth-path only. Inventory runtime and admin catalog HTTP/UI remain
+later phases.
 
 If implementation requirements conflict with those invariants, stop and
 resolve the design instead of silently choosing different behavior.

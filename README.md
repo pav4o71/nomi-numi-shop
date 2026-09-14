@@ -5,7 +5,7 @@ store.
 
 ## Current phase
 
-Phase 3D — Public catalog reads (implemented on branch; awaiting merge)
+Phase 3D — Public catalog reads + App Router pages
 
 Phase 0 through Phase 3C are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
@@ -35,8 +35,9 @@ email transport keys), `/api/auth/*`, public UI routes under
 `/signup`, `/login`, `/logout`, `/check-email`, `/email-verified`,
 `/forgot-password`, and `/reset-password`, plus protected
 `/account` and `/admin`. Social login is not enabled yet. Public catalog
-pages use the lazy runtime DB client; auth connects lazily when auth
-routes are invoked.
+pages use the lazy runtime DB client (`DATABASE_URL` only; no Better Auth
+secrets required for browsing); auth connects lazily when auth routes
+are invoked and still validates Better Auth secrets separately.
 
 First-admin bootstrap (DEV/TEST only; confirmation required):
 

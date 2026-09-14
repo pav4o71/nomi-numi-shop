@@ -1,126 +1,90 @@
 /**
- * Playwright helpers for Phase 3D public catalog smoke against DEV Postgres.
+ * Read-only Playwright helpers for Phase 3D public catalog smoke.
+ *
+ * Uses deterministic Phase 3C DEV fixtures only.
+ * Never seeds, deletes, truncates, or cleans DEV data.
+ * Readiness is checked via HTTP against the E2E app (no test-process DB writes).
  */
-import { randomUUID } from "node:crypto";
-
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-
-import { CatalogService, DrizzleCatalogRepository } from "@/catalog";
-import * as schema from "@/db/schema";
-import { loadValidatedCredentials } from "../../../scripts/drizzle-credentials.mjs";
 
 export function shouldRunCatalogPublicE2E(): boolean {
   return !process.env.CI;
 }
 
-export type CatalogPublicSmokeIds = {
-  productSlug: string;
-  categorySlug: string;
-  collectionSlug: string;
-  draftSlug: string;
-};
+/** Stable Phase 3C fixture slugs required for local catalog E2E. */
+export const CATALOG_PUBLIC_E2E_FIXTURES = {
+  productSlug: "dev-fixture-hug-plush",
+  categorySlug: "dev-fixture-plushies",
+  collectionSlug: "dev-fixture-christmas",
+  draftSlug: "dev-fixture-heart-keychain",
+  /** Listing/PDP USD amount for the min-price hug-plush variant. */
+  productUsdDisplay: "$24.99",
+  productListingPriceDisplay: "From $24.99",
+} as const;
 
-function openDevSql() {
-  const credentials = loadValidatedCredentials("dev");
-  if (credentials.database !== "nomi_numi_shop_dev" || credentials.port !== 55432) {
-    throw new Error("Catalog public E2E refused non-DEV database target");
-  }
-  return postgres({
-    host: credentials.host,
-    port: credentials.port,
-    database: credentials.database,
-    username: credentials.user,
-    password: credentials.password,
-    max: 1,
-    idle_timeout: 5,
-    connect_timeout: 10,
-    prepare: false,
+const E2E_ORIGIN = "http://127.0.0.1:3101";
+
+const FIXTURE_SETUP_HINT =
+  "Phase 3C DEV catalog fixtures are required for local catalog E2E. " +
+  "Run manually: pnpm catalog:seed:dev -- --confirm SEED-NOMI-DEV-CATALOG " +
+  "(do not auto-seed from tests).";
+
+async function fetchStatus(pathname: string): Promise<number> {
+  const response = await fetch(`${E2E_ORIGIN}${pathname}`, {
+    redirect: "manual",
   });
+  return response.status;
 }
 
-export async function seedCatalogPublicSmoke(): Promise<CatalogPublicSmokeIds> {
-  const suffix = randomUUID().slice(0, 8);
-  const productSlug = `e2e-pub-product-${suffix}`;
-  const categorySlug = `e2e-pub-category-${suffix}`;
-  const collectionSlug = `e2e-pub-collection-${suffix}`;
-  const draftSlug = `e2e-pub-draft-${suffix}`;
+async function fetchText(pathname: string): Promise<{ status: number; body: string }> {
+  const response = await fetch(`${E2E_ORIGIN}${pathname}`, {
+    redirect: "manual",
+  });
+  const body = await response.text();
+  return { status: response.status, body };
+}
 
-  const sql = openDevSql();
-  try {
-    const db = drizzle(sql, { schema });
-    const service = new CatalogService(new DrizzleCatalogRepository(db));
+/**
+ * Read-only readiness check against the running E2E app.
+ * Throws with an explicit setup requirement when fixtures are missing.
+ */
+export async function assertDevCatalogFixturesReady(): Promise<void> {
+  const { productSlug, categorySlug, collectionSlug, draftSlug } = CATALOG_PUBLIC_E2E_FIXTURES;
 
-    const category = await service.createCategory({
-      slug: categorySlug,
-      name: `E2E Category ${suffix}`,
-      published: true,
-      position: 0,
-    });
-    const collection = await service.createCollection({
-      slug: collectionSlug,
-      name: `E2E Collection ${suffix}`,
-      published: true,
-      position: 0,
-    });
-    const product = await service.createProduct({
-      slug: productSlug,
-      title: `E2E Product ${suffix}`,
-      description: "Phase 3D public catalog smoke product",
-      status: "published",
-      position: 0,
-    });
-    await service.createVariant(product.id, {
-      sku: `E2E-SKU-${suffix}`,
-      isActive: true,
-      prices: [
-        { currency: "USD", amountMinor: 2499 },
-        { currency: "PHP", amountMinor: 99900 },
-      ],
-    });
-    await service.replaceProductCategories(product.id, {
-      categories: [{ categoryId: category.id, isPrimary: true, position: 0 }],
-    });
-    await service.replaceProductCollections(product.id, {
-      collections: [{ collectionId: collection.id, position: 0 }],
-    });
-
-    await service.createProduct({
-      slug: draftSlug,
-      title: `E2E Draft ${suffix}`,
-      status: "draft",
-    });
-
-    return { productSlug, categorySlug, collectionSlug, draftSlug };
-  } finally {
-    await sql.end({ timeout: 5 });
+  const product = await fetchText(`/products/${productSlug}`);
+  if (product.status !== 200) {
+    throw new Error(
+      `Missing published DEV fixture product "${productSlug}" (HTTP ${product.status}). ${FIXTURE_SETUP_HINT}`,
+    );
   }
-}
 
-export async function cleanupCatalogPublicSmoke(ids: CatalogPublicSmokeIds): Promise<void> {
-  const sql = openDevSql();
-  try {
-    const products = await sql<{ id: string }[]>`
-      SELECT id FROM products WHERE slug IN (${ids.productSlug}, ${ids.draftSlug})
-    `;
-    const productIds = products.map((row) => row.id);
-    if (productIds.length > 0) {
-      await sql`DELETE FROM product_categories WHERE product_id IN ${sql(productIds)}`;
-      await sql`DELETE FROM collection_products WHERE product_id IN ${sql(productIds)}`;
-      await sql`DELETE FROM variant_prices WHERE variant_id IN (
-        SELECT id FROM product_variants WHERE product_id IN ${sql(productIds)}
-      )`;
-      await sql`DELETE FROM product_variant_option_values WHERE product_id IN ${sql(productIds)}`;
-      await sql`DELETE FROM product_option_values WHERE option_id IN (
-        SELECT id FROM product_options WHERE product_id IN ${sql(productIds)}
-      )`;
-      await sql`DELETE FROM product_options WHERE product_id IN ${sql(productIds)}`;
-      await sql`DELETE FROM product_variants WHERE product_id IN ${sql(productIds)}`;
-      await sql`DELETE FROM products WHERE id IN ${sql(productIds)}`;
-    }
-    await sql`DELETE FROM categories WHERE slug = ${ids.categorySlug}`;
-    await sql`DELETE FROM collections WHERE slug = ${ids.collectionSlug}`;
-  } finally {
-    await sql.end({ timeout: 5 });
+  const category = await fetchText(`/categories/${categorySlug}`);
+  if (category.status !== 200) {
+    throw new Error(
+      `Missing published DEV fixture category "${categorySlug}" (HTTP ${category.status}). ${FIXTURE_SETUP_HINT}`,
+    );
+  }
+  if (!category.body.includes(`product-card-${productSlug}`)) {
+    throw new Error(
+      `DEV fixture product "${productSlug}" is not listed under category "${categorySlug}". ${FIXTURE_SETUP_HINT}`,
+    );
+  }
+
+  const collection = await fetchText(`/collections/${collectionSlug}`);
+  if (collection.status !== 200) {
+    throw new Error(
+      `Missing published DEV fixture collection "${collectionSlug}" (HTTP ${collection.status}). ${FIXTURE_SETUP_HINT}`,
+    );
+  }
+  if (!collection.body.includes(`product-card-${productSlug}`)) {
+    throw new Error(
+      `DEV fixture product "${productSlug}" is not listed under collection "${collectionSlug}". ${FIXTURE_SETUP_HINT}`,
+    );
+  }
+
+  const draftStatus = await fetchStatus(`/products/${draftSlug}`);
+  if (draftStatus !== 404) {
+    throw new Error(
+      `Expected draft DEV fixture "${draftSlug}" to be unpublished (HTTP 404), got ${draftStatus}. ${FIXTURE_SETUP_HINT}`,
+    );
   }
 }
