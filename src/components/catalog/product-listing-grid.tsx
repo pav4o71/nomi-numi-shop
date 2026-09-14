@@ -2,13 +2,15 @@ import Link from "next/link";
 
 import type { PublicProductListingCard } from "@/catalog/public/types";
 import { formatListingPrice } from "@/catalog/public/format-money";
-import { DecorativeMotif } from "@/components/brand/decorative-motif";
 import { MediaPlaceholder } from "@/components/catalog/media-placeholder";
 
 export function ProductListingGrid({ products }: { products: PublicProductListingCard[] }) {
   if (products.length === 0) {
     return (
-      <p data-testid="catalog-empty" className="text-sm text-muted-foreground sm:text-base">
+      <p
+        data-testid="catalog-empty"
+        className="surface-card px-6 py-8 text-sm text-muted-foreground sm:text-base"
+      >
         No products are available here yet.
       </p>
     );
@@ -26,9 +28,7 @@ export function ProductListingGrid({ products }: { products: PublicProductListin
             <MediaPlaceholder
               className="rounded-none rounded-t-[inherit] shadow-none"
               label="Image coming soon"
-            >
-              <DecorativeMotif variant="paw" className="relative h-8 w-8 text-blush/45" />
-            </MediaPlaceholder>
+            />
             <div className="space-y-2 px-5 py-4 sm:px-6">
               <h2 className="font-display text-xl font-semibold tracking-tight text-foreground">
                 {product.title}

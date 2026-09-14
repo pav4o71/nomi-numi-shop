@@ -40,11 +40,11 @@ export default async function CategoryDetailPage({ params }: CategoryPageProps) 
   return (
     <main className="section-shell py-12 sm:py-16">
       <Container className="space-y-8">
-        <CatalogPageHeader title={page.category.name} description={page.category.description}>
-          <p className="text-xs font-semibold tracking-[0.14em] text-brown uppercase">
-            Merchandise family
-          </p>
-        </CatalogPageHeader>
+        <CatalogPageHeader
+          eyebrow="Merchandise family"
+          title={page.category.name}
+          description={page.category.description}
+        />
         <ProductListingGrid products={page.products} />
       </Container>
     </main>

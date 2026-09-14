@@ -40,9 +40,11 @@ export default async function CollectionDetailPage({ params }: CollectionPagePro
   return (
     <main className="section-shell py-12 sm:py-16">
       <Container className="space-y-8">
-        <CatalogPageHeader title={page.collection.name} description={page.collection.description}>
-          <p className="text-xs font-semibold tracking-[0.14em] text-brown uppercase">Collection</p>
-        </CatalogPageHeader>
+        <CatalogPageHeader
+          eyebrow="Collection"
+          title={page.collection.name}
+          description={page.collection.description}
+        />
         <ProductListingGrid products={page.products} />
       </Container>
     </main>

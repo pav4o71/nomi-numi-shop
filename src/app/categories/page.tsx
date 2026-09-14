@@ -23,7 +23,10 @@ export default async function CategoriesIndexPage() {
           description="Stable merchandise families — the structural taxonomy of Nomi Numi gifts, not seasonal campaigns."
         />
         {categories.length === 0 ? (
-          <p data-testid="catalog-empty" className="text-sm text-muted-foreground sm:text-base">
+          <p
+            data-testid="catalog-empty"
+            className="surface-card px-6 py-8 text-sm text-muted-foreground sm:text-base"
+          >
             No categories are published yet.
           </p>
         ) : (

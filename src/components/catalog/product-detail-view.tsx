@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import type { PublicProductDetail } from "@/catalog/public/types";
 import { formatPublicMoney } from "@/catalog/public/format-money";
-import { DecorativeMotif } from "@/components/brand/decorative-motif";
 import { MediaPlaceholder } from "@/components/catalog/media-placeholder";
 
 export function ProductDetailView({ product }: { product: PublicProductDetail }) {
@@ -17,9 +16,7 @@ export function ProductDetailView({ product }: { product: PublicProductDetail })
         <MediaPlaceholder
           className="aspect-[4/3] w-full shadow-soft sm:aspect-[5/4]"
           label="Image coming soon"
-        >
-          <DecorativeMotif variant="heart" className="relative h-12 w-12 text-blush/50" />
-        </MediaPlaceholder>
+        />
 
         <header className="space-y-4">
           <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">

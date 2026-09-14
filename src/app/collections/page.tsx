@@ -23,7 +23,10 @@ export default async function CollectionsIndexPage() {
           description="Seasonal, campaign, editorial, or merchandising groupings — separate from category taxonomy."
         />
         {collections.length === 0 ? (
-          <p data-testid="catalog-empty" className="text-sm text-muted-foreground sm:text-base">
+          <p
+            data-testid="catalog-empty"
+            className="surface-card px-6 py-8 text-sm text-muted-foreground sm:text-base"
+          >
             No collections are published yet.
           </p>
         ) : (
