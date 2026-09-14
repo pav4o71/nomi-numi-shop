@@ -22,20 +22,37 @@ Install the project-local Chromium browser once:
 
 Run the available test commands:
 
-    pnpm test
-    pnpm test:ci
-    pnpm test:watch
-    pnpm test:e2e
-    pnpm test:all
+    pnpm test           # Full suite (portable + local)
+    pnpm test:ci        # Portable only (for GitHub Actions)
+    pnpm test:local     # Local-only path-locked suites
+    pnpm test:watch     # Watch mode
+    pnpm test:e2e       # Playwright E2E tests
+    pnpm test:all       # Full unit + E2E
 
-`pnpm test:ci` is the portable GitHub Actions unit suite. It excludes
-path-locked `database-safety`, `drizzle-foundation`,
-`email-local-safety`, `auth-first-admin-bootstrap-local`,
-`catalog-schema-local`, `catalog-domain-local`,
-`catalog-fixtures-local`, `catalog-factories-local`, and
-`catalog-public-local` tests that
-require the workstation canonical root and/or owned local PostgreSQL.
-Local full coverage remains `pnpm test`.
+### Portable vs Local Test Split
+
+**Portable (`pnpm test:ci`)** — runs on GitHub-hosted runners:
+
+- Uses `import.meta.url` for repo-relative paths
+- No hardcoded workstation paths
+- No local Docker/PostgreSQL dependencies
+- Safe for CI without owned infrastructure
+
+**Local-only (`pnpm test:local`)** — requires workstation canonical root:
+
+- `database-safety.test.ts` — verifies `/home/pav4o71/Projects/nomi-numi-shop`
+- `drizzle-foundation.test.ts` — path-locked migration/schema checks
+- `email-local-safety.test.ts` — path-locked Mailpit helper checks
+- `auth-first-admin-bootstrap-local.test.ts` — DEV/TEST promotion via owned DB
+- `catalog-schema-local.test.ts` — TEST DB constraint enforcement
+- `catalog-domain-local.test.ts` — TEST DB repository/service integration
+- `catalog-fixtures-local.test.ts` — TEST DB fixture preflight/install
+- `catalog-factories-local.test.ts` — TEST DB factory persistence
+- `catalog-public-local.test.ts` — TEST DB public reads
+
+These path locks are **intentional safety guards** preventing accidental
+mutation of external projects or databases. Local full coverage remains
+`pnpm test` (portable + local).
 
 Playwright browser binaries are stored under the ignored
 `var/playwright-browsers/` directory. Playwright temporary files use the
@@ -202,10 +219,23 @@ Exact portable commands (in order):
 7. Chromium install for Playwright (`playwright install --with-deps chromium`)
 8. `pnpm test:e2e`
 
-That workflow uses read-only repository permissions. It does not use
+That workflow uses minimal permissions (workflow-level `permissions: {}`;
+job-level `contents: read` only). Third-party actions are pinned to full
+commit SHAs for supply-chain security. The workflow does not use
 production secrets, production resources, `pull_request_target`, write
 permissions, automatic merge, or protected workstation Docker resources
 such as `beautybook3-pg` / host port `5433`.
+
+### CodeQL security scanning
+
+`.github/workflows/codeql.yml` runs CodeQL analysis on:
+
+- JavaScript/TypeScript application code (`security-extended` query suite)
+- GitHub Actions workflows
+
+CodeQL runs on schedule (weekly), pull requests, pushes to `main`, and
+manual dispatch. It uses minimal permissions plus `security-events: write`
+for uploading results.
 
 Workstation-specific checks that require the local canonical root,
 protected Docker state, reserved host ports, or owned Compose PostgreSQL

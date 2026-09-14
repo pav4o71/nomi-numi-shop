@@ -67,21 +67,29 @@ Current implemented source foundation:
       app/
         api/
           auth/
-          account/ admin/
         account/ admin/ forbidden/
         signup/ login/ logout/ check-email/
         email-verified/ forgot-password/ reset-password/
+        products/ products/[slug]/
+        categories/ categories/[slug]/
+        collections/ collections/[slug]/
+        about/ faq/ shipping/ returns/ contact/
+        gifts/ lookbook/ size-guide/
+        legal/privacy/ legal/terms/ legal/imprint/
         layout.tsx
-        page.tsx
+        page.tsx (homepage with hero/sections)
 
       auth/
         client.ts   (Phase 2C3 browser createAuthClient)
         guards.ts / http.ts / safe-navigation.ts (Phase 2C5)
         client resolves page origin among LOCAL_AUTH_ORIGINS (Phase 2C6)
         server.ts / lifecycle.ts / authorization.ts / …
+      catalog/         (Phase 3B domain + Phase 3C fixtures + Phase 3D public)
+        public/        (Phase 3D published-only read models)
       components/
         auth/
-      catalog/         (Phase 3B domain + Phase 3C fixtures)
+        catalog/       (Phase 3D presentation components)
+        home/          (homepage sections)
       db/
         runtime.ts
         schema/

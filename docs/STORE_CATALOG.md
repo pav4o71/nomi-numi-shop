@@ -914,6 +914,11 @@ Derive small reviewed PRs. Do not start these in Phase 2D.
   fixtures; CI skips catalog-public; portable storefront stays DB-free)
 - **Depends on:** 3B–3C
 
+Post-Phase-3D storefront visual polish: presentation-only restyle of the
+public catalog App Router pages and shared catalog UI components on the
+closed Phase 3D read layer. Does not change `src/catalog/public/*`,
+schema/migrations, fixtures, auth, media runtime, or commerce flows.
+
 ### Phase 4 — Admin catalog management
 
 - **Scope:** admin-only create/update/archive for products, variants,

@@ -9,8 +9,7 @@ on:
       - main
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: pr-quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -21,6 +20,8 @@ jobs:
     name: PR Quality Gate
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     env:
       CI: "true"
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/var/playwright-browsers
@@ -28,7 +29,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
 
@@ -38,12 +39,12 @@ jobs:
         run: mkdir -p var/playwright-browsers var/tmp
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda
         with:
           version: 11.26.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version-file: .nvmrc
           cache: pnpm

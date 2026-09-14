@@ -30,18 +30,18 @@ export function HomeHero() {
             id="hero-heading"
             className="mt-5 max-w-3xl font-display text-4xl leading-tight font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
           >
-            Gifts that help hearts stay close
+            Gifts for soft hearts
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-            A cozy home for long-distance gifting — soft, thoughtful presents that help someone far
-            away feel remembered.
+            Plush toys, cozy apparel, and thoughtful accessories that bring comfort and joy. Perfect
+            for staying close, even from far away.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button asChild size="lg">
-              <Link href="/products">Browse products</Link>
+              <Link href="/collections">Shop Plush</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/#how-it-works">See how it works</Link>
+              <Link href="/gifts">Shop Gifts</Link>
             </Button>
           </div>
         </div>
