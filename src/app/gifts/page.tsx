@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { Container } from "@/components/container";
 
@@ -75,20 +76,21 @@ export default function GiftsPage() {
         <p>Browse our collections to find the perfect gift:</p>
         <ul>
           <li>
-            <a href="/products">All Products</a>
+            <Link href="/products">All Products</Link>
           </li>
           <li>
-            <a href="/categories">Browse by Category</a>
+            <Link href="/categories">Browse by Category</Link>
           </li>
           <li>
-            <a href="/collections">Seasonal Collections</a>
+            <Link href="/collections">Seasonal Collections</Link>
           </li>
         </ul>
 
         <h2>Need Help Choosing?</h2>
         <p>
-          If you need assistance finding the perfect gift, check our <a href="/faq">FAQ page</a> or{" "}
-          <a href="/contact">contact us</a> for personalized recommendations.
+          If you need assistance finding the perfect gift, check our{" "}
+          <Link href="/faq">FAQ page</Link> or <Link href="/contact">contact us</Link> for
+          personalized recommendations.
         </p>
       </Container>
     </main>

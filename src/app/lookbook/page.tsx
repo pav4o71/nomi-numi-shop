@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { Container } from "@/components/container";
 
@@ -43,13 +44,13 @@ export default function LookbookPage() {
         </p>
         <ul>
           <li>
-            <a href="/collections">View Collections</a>
+            <Link href="/collections">View Collections</Link>
           </li>
           <li>
-            <a href="/categories">Browse by Category</a>
+            <Link href="/categories">Browse by Category</Link>
           </li>
           <li>
-            <a href="/products">All Products</a>
+            <Link href="/products">All Products</Link>
           </li>
         </ul>
 

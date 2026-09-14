@@ -1,6 +1,7 @@
+import Link from "next/link";
+
 import { DecorativeMotif } from "@/components/brand/decorative-motif";
 import { Container } from "@/components/container";
-import { siteNavigation } from "@/lib/site-navigation";
 
 const footerSections = [
   {
@@ -62,12 +63,12 @@ export function SiteFooter() {
               <ul className="space-y-2">
                 {section.links.map((link) => (
                   <li key={link.href}>
-                    <a
+                    <Link
                       href={link.href}
                       className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                       {link.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
