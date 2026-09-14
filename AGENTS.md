@@ -10,9 +10,9 @@ Canonical local repository root:
 
 `/home/pav4o71/Projects/nomi-numi-shop`
 
-Planned GitHub repository:
+GitHub repository:
 
-`pav4o71/nomi-numi-shop`
+`pav4o71/nomi-numi-shop` (public)
 
 Stable integration branch:
 
