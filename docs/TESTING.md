@@ -203,23 +203,27 @@ Stable check name:
 
 `PR Quality Gate`
 
-Exact portable commands (in order):
+The workflow is split into parallel jobs for faster feedback:
 
-1. `pnpm install --frozen-lockfile`
-2. `pnpm format:check`
-3. `pnpm lint`
-4. `pnpm typecheck`
-5. `pnpm test:ci` (portable unit tests; excludes path-locked
-   `database-safety`, `drizzle-foundation`, `email-local-safety`,
-   `auth-first-admin-bootstrap-local`, `catalog-schema-local`,
-   `catalog-domain-local`, `catalog-fixtures-local`,
-   `catalog-factories-local`, and `catalog-public-local` suites that
-   require the workstation canonical root and/or owned local PostgreSQL)
-6. `pnpm build`
-7. Chromium install for Playwright (`playwright install --with-deps chromium`)
-8. `pnpm test:e2e`
+1. **static** — format check, lint, typecheck
+2. **unit-build** — `pnpm test:ci` (portable unit tests excluding
+   path-locked `database-safety`, `drizzle-foundation`,
+   `email-local-safety`, `auth-first-admin-bootstrap-local`,
+   `catalog-schema-local`, `catalog-domain-local`,
+   `catalog-fixtures-local`, `catalog-factories-local`, and
+   `catalog-public-local` suites) + `pnpm build`
+3. **e2e** — Chromium Playwright tests (`pnpm test:e2e`)
+4. **quality-gate** — aggregator job named exactly `PR Quality Gate`
+   that depends on all other jobs; required for branch protection
 
-That workflow uses minimal permissions (workflow-level `permissions: {}`;
+The **e2e** job is skipped for docs-only changes (when only `docs/**`,
+`*.md`, and `.github/workflows/codeql.yml` are modified) to reduce
+unnecessary CI time. The aggregator treats skipped e2e jobs as success.
+
+On E2E test failure, Playwright traces, screenshots, and failure reports
+are automatically uploaded as workflow artifacts (retained for 7 days).
+
+The workflow uses minimal permissions (workflow-level `permissions: {}`;
 job-level `contents: read` only). Third-party actions are pinned to full
 commit SHAs for supply-chain security. The workflow does not use
 production secrets, production resources, `pull_request_target`, write
