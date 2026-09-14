@@ -12,7 +12,7 @@ export function DecorativeMotif({ variant = "heart", className }: DecorativeMoti
   if (variant === "paw") {
     return (
       <svg
-        className={cn("h-5 w-5 text-primary/35", className)}
+        className={cn("h-5 w-5 text-blush/55", className)}
         viewBox="0 0 24 24"
         fill="currentColor"
         aria-hidden="true"
@@ -28,7 +28,7 @@ export function DecorativeMotif({ variant = "heart", className }: DecorativeMoti
 
   return (
     <svg
-      className={cn("h-5 w-5 text-primary/40", className)}
+      className={cn("h-5 w-5 text-blush/60", className)}
       viewBox="0 0 24 24"
       fill="currentColor"
       aria-hidden="true"

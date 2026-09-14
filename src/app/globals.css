@@ -13,6 +13,7 @@
   --color-input: var(--input);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
@@ -22,6 +23,7 @@
   --color-ring: var(--ring);
   --color-brown: var(--brown);
   --color-brown-foreground: var(--brown-foreground);
+  --color-blush: var(--blush);
   --radius-sm: calc(var(--radius) - 0.35rem);
   --radius-md: calc(var(--radius) - 0.2rem);
   --radius-lg: var(--radius);
@@ -45,8 +47,12 @@
   --muted-foreground: #65564e;
   --border: #e4d6cc;
   --input: #e4d6cc;
-  --primary: #c4788a;
+  /* Semantic primary is darker blush for WCAG AA text/button contrast.
+     Soft blush is retained for decorative gradients/motifs only. */
+  --primary: #8a4557;
   --primary-foreground: #fff8f6;
+  --primary-hover: #733849;
+  --blush: #c4788a;
   --secondary: #d8e4de;
   --secondary-foreground: #2c3832;
   --accent: #f3e7de;
@@ -55,7 +61,7 @@
   --brown-foreground: #fffaf7;
   --destructive: #b42318;
   --destructive-foreground: #fff7f6;
-  --ring: #c4788a;
+  --ring: #8a4557;
   --radius: 1.25rem;
   --content-max: 72rem;
   --shadow-soft: 0 10px 30px rgb(44 36 31 / 0.06);
