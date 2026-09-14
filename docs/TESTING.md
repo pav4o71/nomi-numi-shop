@@ -192,6 +192,11 @@ Portable `pnpm test:ci` remains independent of workstation PostgreSQL.
 
 ## 5. Quality gate
 
+For a beginner-friendly overview of the CI workflows and review process,
+see:
+
+`docs/WORKFLOWS.md`
+
 ### Portable GitHub Actions gate
 
 From Phase 2C onward, every Pull Request and every push to `main` runs

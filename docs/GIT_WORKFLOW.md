@@ -102,6 +102,11 @@ Do not bypass the hook during normal development.
 
 All normal integration into `main` occurs through a Pull Request.
 
+For a beginner overview of GitHub Actions workflows and Nomi PR Verifier,
+see:
+
+`docs/WORKFLOWS.md`
+
 ### Standard review model
 
 | Role             | Responsibility                                           |
