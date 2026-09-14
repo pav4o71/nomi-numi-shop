@@ -358,8 +358,7 @@ authenticated.
 **PASS** at `<sha>` ...
 ```
 
-The script parses `**HEAD reviewed:** \`<sha>\`` (primary) or
-`**PASS/BLOCK/HOLD** at \`<sha>\`` (fallback) and validates the verdict
+The script parses `**HEAD reviewed:** \`<sha>\``(primary) or`**PASS/BLOCK/HOLD** at \`<sha>\`` (fallback) and validates the verdict
 matches the exact PR HEAD SHA.
 
 ## 7. Critical commerce coverage
