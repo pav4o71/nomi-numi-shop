@@ -11,13 +11,13 @@ const destinations = [
   },
   {
     title: "Categories",
-    description: "Browse gift styles grouped by mood and occasion.",
+    description: "Browse the shop through stable product categories.",
     href: "/categories",
     cta: "Browse categories",
   },
   {
     title: "Collections",
-    description: "Explore curated sets brought together with care.",
+    description: "Explore seasonal and themed collections.",
     href: "/collections",
     cta: "Explore collections",
   },
@@ -38,8 +38,7 @@ export function HomeShopDestinations() {
             Shop destinations
           </h2>
           <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Simple paths into the public catalog — the same destinations you will find in the
-            header.
+            Browse the catalog by product, category, or collection.
           </p>
         </div>
 
