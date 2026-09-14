@@ -161,6 +161,11 @@ Feature work should use narrowly scoped branches such as:
 - `chore/...`
 - `docs/...`
 
+For an overview of CI workflows and code review (GitHub Actions and
+Nomi PR Verifier), see:
+
+`docs/WORKFLOWS.md`
+
 Before implementation:
 
 1. verify repository root;

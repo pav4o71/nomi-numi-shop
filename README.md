@@ -218,6 +218,15 @@ abstraction lives under `src/email/` and is wired into Better Auth
 verification and password-reset in Phase 2C2. Do not start Mailpit with
 raw `docker compose` outside `scripts/email-local.sh`.
 
+## CI and review workflow
+
+Every Pull Request runs automated quality checks and receives an automated
+code review.
+
+For a beginner-friendly overview, see:
+
+`docs/WORKFLOWS.md`
+
 ## Preflight
 
 On approved `feature/*`, `fix/*`, `chore/*`, or `docs/*` development
