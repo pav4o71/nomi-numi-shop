@@ -247,6 +247,11 @@ remain local-only (`./scripts/preflight.sh`, `pnpm test`, `pnpm db:*`).
 Do not duplicate those in GitHub Actions. Full local unit coverage is
 still `pnpm test`.
 
+**Planned upgrade:** A follow-up PR will split the Quality Gate workflow
+into separate static-check, unit-build, and E2E jobs with an aggregator
+job still named `PR Quality Gate` for branch-protection compatibility.
+The stable check name and required-pass policy remain unchanged.
+
 ### Local validation
 
 As implementation develops, the standard local validation pipeline
