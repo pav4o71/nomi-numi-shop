@@ -37,8 +37,11 @@ actions pinned to full commit SHAs), minimal workflow permissions
 (`permissions: {}` at workflow level; granular job permissions), CodeQL
 security analysis for JavaScript/TypeScript and GitHub Actions workflows,
 and Dependabot configuration for npm and github-actions dependencies.
-Branch protection recommendations are documented in `docs/GIT_WORKFLOW.md`
-(requires repository settings; not enforceable via in-repo files).
+Branch protection is live on `main` and requires the `PR Quality Gate`
+check to pass before merge (strict, enforced for admins, no force push).
+See `docs/GIT_WORKFLOW.md` for complete protection rules. Dependabot may
+open major GitHub Actions version bumps; review SHA pins carefully before
+merging major action updates.
 
 Local auth runtime uses ignored `.env.local`
 (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, plus Mailpit

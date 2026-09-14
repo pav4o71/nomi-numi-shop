@@ -214,11 +214,17 @@ The workflow is split into parallel jobs for faster feedback:
    `catalog-public-local` suites) + `pnpm build`
 3. **e2e** — Chromium Playwright tests (`pnpm test:e2e`)
 4. **quality-gate** — aggregator job named exactly `PR Quality Gate`
-   that depends on all other jobs; required for branch protection
+   that depends on all other jobs
 
-The **e2e** job is skipped for docs-only changes (when only `docs/**`,
-`*.md`, and `.github/workflows/codeql.yml` are modified) to reduce
-unnecessary CI time. The aggregator treats skipped e2e jobs as success.
+The **quality-gate** job is the required status check for branch
+protection on `main`.
+
+The **e2e** job uses a positive `code` path filter and runs when changes
+affect `src/**`, `tests/**`, `package.json`, `pnpm-lock.yaml`,
+`playwright.config.ts`, `next.config.ts`, `tsconfig.json`,
+`.github/workflows/pr-quality.yml`, or `scripts/**`. E2E is skipped when
+only non-code paths change (e.g., docs, markdown files). The aggregator
+treats skipped e2e jobs as success.
 
 On E2E test failure, Playwright traces, screenshots, and failure reports
 are automatically uploaded as workflow artifacts (retained for 7 days).
@@ -247,11 +253,6 @@ remain local-only (`./scripts/preflight.sh`, `pnpm test`, `pnpm db:*`).
 Do not duplicate those in GitHub Actions. Full local unit coverage is
 still `pnpm test`.
 
-**Planned upgrade:** A follow-up PR will split the Quality Gate workflow
-into separate static-check, unit-build, and E2E jobs with an aggregator
-job still named `PR Quality Gate` for branch-protection compatibility.
-The stable check name and required-pass policy remain unchanged.
-
 ### Local validation
 
 As implementation develops, the standard local validation pipeline
@@ -276,7 +277,7 @@ Re-run relevant CI and review on the new HEAD before merge.
 
 ### Portable health gate
 
-`pnpm health` runs the same sequence as the CI `PR Quality Gate`:
+`pnpm health` mirrors the portable static and unit-build jobs from CI:
 
 1. `pnpm format:check`
 2. `pnpm lint`
@@ -285,9 +286,10 @@ Re-run relevant CI and review on the new HEAD before merge.
 5. `pnpm build`
 
 This script is portable and does not require local Docker resources,
-workstation canonical root, or owned PostgreSQL. It matches GitHub Actions
-CI validation except for E2E tests (which require a separate browser
-install step).
+workstation canonical root, or owned PostgreSQL. It matches the GitHub
+Actions static and unit-build jobs but does not include E2E tests (which
+require a separate `pnpm test:e2e:install` step and are run separately
+via `pnpm test:e2e`).
 
 ### Local health with path-locked tests
 
@@ -359,7 +361,8 @@ authenticated.
 ```
 
 The script parses `**HEAD reviewed:** \`<sha>\``(primary) or`**PASS/BLOCK/HOLD** at \`<sha>\`` (fallback) and validates the verdict
-matches the exact PR HEAD SHA.
+matches the exact PR HEAD SHA. If Nomi posts multiple comments, only the
+latest one is considered.
 
 ## 7. Critical commerce coverage
 
