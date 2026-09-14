@@ -2,13 +2,13 @@ import Link from "next/link";
 
 import { AuthHeaderActions } from "@/components/auth/auth-header-actions";
 import { Container } from "@/components/container";
+import { SiteDesktopNav, SiteMobileNav } from "@/components/site-mobile-nav";
 import { Button } from "@/components/ui/button";
-import { siteNavigation } from "@/lib/site-navigation";
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
-      <Container className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-4">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 shadow-soft backdrop-blur-md">
+      <Container className="flex items-center justify-between gap-4 py-3 sm:py-4">
         <Link
           href="/"
           className="font-display text-xl font-semibold tracking-tight text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -16,36 +16,22 @@ export function SiteHeader() {
           Nomi Numi
         </Link>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
-          <nav aria-label="Primary" className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {siteNavigation.map((item) =>
-              item.href.startsWith("#") ? (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  {item.label}
-                </a>
-              ) : (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  {item.label}
-                </Link>
-              ),
-            )}
-          </nav>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <SiteDesktopNav />
 
-          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-            <Button asChild variant="secondary" className="w-fit">
-              <Link href="/products">Explore Gifts</Link>
-            </Button>
-            <AuthHeaderActions />
-          </div>
+          <Button asChild variant="secondary" className="hidden w-fit sm:inline-flex">
+            <Link href="/products">Explore Gifts</Link>
+          </Button>
+
+          <AuthHeaderActions />
+          <SiteMobileNav />
         </div>
+      </Container>
+
+      <Container className="flex pb-3 sm:hidden">
+        <Button asChild variant="secondary" className="w-full">
+          <Link href="/products">Explore Gifts</Link>
+        </Button>
       </Container>
     </header>
   );

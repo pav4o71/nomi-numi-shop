@@ -20,40 +20,51 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 0.25rem);
-  --radius-md: calc(var(--radius) - 0.125rem);
+  --color-brown: var(--brown);
+  --color-brown-foreground: var(--brown-foreground);
+  --radius-sm: calc(var(--radius) - 0.35rem);
+  --radius-md: calc(var(--radius) - 0.2rem);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 0.25rem);
+  --radius-xl: calc(var(--radius) + 0.35rem);
+  --radius-2xl: calc(var(--radius) + 0.75rem);
+  --radius-pill: 9999px;
   --font-sans: var(--font-family-sans);
   --font-display: var(--font-family-display);
   --max-width-content: var(--content-max);
 }
 
 :root {
-  --background: #f7f3ef;
-  --foreground: #2a211c;
+  /* Soft kawaii / cozy couple: cream, blush, warm brown, mint/gray, charcoal */
+  --background: #f8f3ee;
+  --foreground: #2c241f;
   --surface: #fffaf7;
-  --surface-foreground: #2a211c;
+  --surface-foreground: #2c241f;
   --card: #fffaf7;
-  --card-foreground: #2a211c;
+  --card-foreground: #2c241f;
   --muted: #efe6df;
   --muted-foreground: #65564e;
-  --border: #e2d5cb;
-  --input: #e2d5cb;
-  --primary: #8a4557;
+  --border: #e4d6cc;
+  --input: #e4d6cc;
+  --primary: #c4788a;
   --primary-foreground: #fff8f6;
-  --secondary: #d7e2dc;
+  --secondary: #d8e4de;
   --secondary-foreground: #2c3832;
-  --accent: #f0e4db;
+  --accent: #f3e7de;
   --accent-foreground: #3a2e28;
+  --brown: #8b6b5a;
+  --brown-foreground: #fffaf7;
   --destructive: #b42318;
   --destructive-foreground: #fff7f6;
-  --ring: #8a4557;
-  --radius: 0.75rem;
+  --ring: #c4788a;
+  --radius: 1.25rem;
   --content-max: 72rem;
+  --shadow-soft: 0 10px 30px rgb(44 36 31 / 0.06);
+  --shadow-card: 0 8px 24px rgb(44 36 31 / 0.05);
   --font-family-sans:
     ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-family-display: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --header-offset: 5.5rem;
+  --header-offset-mobile: 8.5rem;
 }
 
 *,
@@ -86,6 +97,9 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-family-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
 }
 
 .font-display {
@@ -94,8 +108,8 @@ body {
 
 .hero-glow {
   background:
-    radial-gradient(ellipse 80% 60% at 15% 20%, rgb(138 69 87 / 0.14), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 90% 10%, rgb(215 226 220 / 0.7), transparent 50%),
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgb(196 120 138 / 0.16), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 90% 10%, rgb(216 228 222 / 0.75), transparent 50%),
     linear-gradient(180deg, #fbf7f3 0%, var(--background) 100%);
 }
 
@@ -107,5 +121,68 @@ body {
 }
 
 .section-shell {
-  scroll-margin-top: 5.5rem;
+  scroll-margin-top: var(--header-offset);
+}
+
+@media (max-width: 639px) {
+  .section-shell {
+    scroll-margin-top: var(--header-offset-mobile);
+  }
+}
+
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.surface-card {
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: var(--radius-xl, 1.6rem);
+  background-color: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+
+/* Mobile nav disclosure: native details, no JS */
+.site-mobile-nav > summary {
+  list-style: none;
+}
+
+.site-mobile-nav > summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-mobile-nav[open] > summary {
+  color: var(--foreground);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .site-mobile-nav-panel {
+    transition:
+      opacity 160ms ease,
+      transform 160ms ease;
+  }
+
+  .site-mobile-nav:not([open]) .site-mobile-nav-panel {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+
+  .site-mobile-nav[open] .site-mobile-nav-panel {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
