@@ -247,6 +247,11 @@ remain local-only (`./scripts/preflight.sh`, `pnpm test`, `pnpm db:*`).
 Do not duplicate those in GitHub Actions. Full local unit coverage is
 still `pnpm test`.
 
+**Planned upgrade:** A follow-up PR will split the Quality Gate workflow
+into separate static-check, unit-build, and E2E jobs with an aggregator
+job still named `PR Quality Gate` for branch-protection compatibility.
+The stable check name and required-pass policy remain unchanged.
+
 ### Local validation
 
 As implementation develops, the standard local validation pipeline
@@ -267,7 +272,96 @@ Never report a validation as passing unless it actually ran.
 Any new commit on a Pull Request invalidates the previous reviewed HEAD.
 Re-run relevant CI and review on the new HEAD before merge.
 
-## 6. Critical commerce coverage
+## 6. Health check scripts
+
+### Portable health gate
+
+`pnpm health` runs the same sequence as the CI `PR Quality Gate`:
+
+1. `pnpm format:check`
+2. `pnpm lint`
+3. `pnpm typecheck`
+4. `pnpm test:ci` (portable unit tests)
+5. `pnpm build`
+
+This script is portable and does not require local Docker resources,
+workstation canonical root, or owned PostgreSQL. It matches GitHub Actions
+CI validation except for E2E tests (which require a separate browser
+install step).
+
+### Local health with path-locked tests
+
+`pnpm health:local` runs the portable health gate plus local-only tests:
+
+    pnpm health:local
+
+Expands to:
+
+    pnpm health && pnpm test
+
+This includes path-locked tests requiring the workstation canonical root
+and/or owned local PostgreSQL (`database-safety`, `drizzle-foundation`,
+`email-local-safety`, `auth-first-admin-bootstrap-local`,
+`catalog-schema-local`, `catalog-domain-local`, `catalog-fixtures-local`,
+`catalog-factories-local`, `catalog-public-local`).
+
+Use `pnpm health:local` for comprehensive local validation before
+requesting review. Use `pnpm health` for quick portable checks.
+
+### Preflight validation
+
+Development branches should pass preflight before implementation:
+
+    pnpm preflight
+
+Expands to:
+
+    ./scripts/preflight.sh phase1
+
+This validates project identity, Git state, runtime versions, Docker
+ownership, reserved ports, and safety documentation. A failed preflight
+is evidence to investigate, not bypass.
+
+On synchronized `main`:
+
+    git fetch --prune origin
+    ./scripts/preflight.sh integration
+
+See `docs/ENVIRONMENTS.md` for historical Phase 0 preflight modes.
+
+### Wait for PR checks
+
+After pushing a PR, wait for required checks to complete:
+
+    ./scripts/wait-quality-and-nomi.sh <pr-number>
+
+This script:
+
+1. Captures the current PR HEAD SHA
+2. Fails closed if the HEAD SHA changes during the wait
+3. Waits for the `PR Quality Gate` check to succeed
+4. Verifies the latest `Nomi PR Verifier` issue comment is for the exact
+   SHA and shows `PASS` verdict
+5. Exits with success when both checks are ready
+
+Use this to confirm readiness before manual merge. The script never
+auto-merges. It requires the GitHub CLI (`gh`) to be installed and
+authenticated.
+
+**Expected Nomi PR Verifier comment format:**
+
+```
+## Nomi PR Verifier
+**HEAD reviewed:** `<40-hex-sha>`
+...
+### Verdict
+**PASS** at `<sha>` ...
+```
+
+The script parses `**HEAD reviewed:** \`<sha>\``(primary) or`**PASS/BLOCK/HOLD** at \`<sha>\`` (fallback) and validates the verdict
+matches the exact PR HEAD SHA.
+
+## 7. Critical commerce coverage
 
 High-risk behavior requiring strong coverage includes:
 
@@ -288,7 +382,7 @@ High-risk behavior requiring strong coverage includes:
 - payment-state transitions
 - fulfillment-state transitions
 
-## 7. Authorization coverage
+## 8. Authorization coverage
 
 Test:
 
@@ -301,7 +395,7 @@ Test:
 - review mutation
 - custom-video access
 
-## 8. Review coverage
+## 9. Review coverage
 
 Test:
 
@@ -312,7 +406,7 @@ Test:
 - image validation
 - moderation authorization
 
-## 9. Upload coverage
+## 10. Upload coverage
 
 Test:
 
@@ -323,14 +417,14 @@ Test:
 - unauthorized private-media access
 - cross-customer custom-video access
 
-## 10. E2E application identity
+## 11. E2E application identity
 
 Before stateful E2E execution, the test harness should eventually verify
 that port 3101 is actually serving nomi-numi-shop.
 
 Never silently fall back to port 3000 or another running project.
 
-## 11. Regression policy
+## 12. Regression policy
 
 Reproducible defects should receive regression coverage where practical.
 
