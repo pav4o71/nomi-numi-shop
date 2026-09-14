@@ -1,13 +1,14 @@
 /**
- * Lazy server-only Drizzle runtime client for Phase 2A auth.
+ * Lazy server-only Drizzle runtime client.
  *
- * Storefront modules must not import this file.
- * Connection is created only when auth infrastructure needs the database.
+ * Validates DATABASE_URL only (no Better Auth secrets).
+ * Import only from server modules (Route Handlers, Server Components,
+ * server-only catalog accessors). Do not import from Client Components.
  */
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { parseAuthRuntimeEnv } from "@/auth/env";
+import { parseDatabaseRuntimeEnv } from "@/db/env";
 import * as schema from "@/db/schema";
 
 type RuntimeSql = ReturnType<typeof postgres>;
@@ -23,9 +24,7 @@ const globalForRuntime = globalThis as typeof globalThis & {
 };
 
 function createRuntimeDb(): RuntimeCache {
-  const config = parseAuthRuntimeEnv({
-    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+  const config = parseDatabaseRuntimeEnv({
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     VERCEL: process.env.VERCEL,

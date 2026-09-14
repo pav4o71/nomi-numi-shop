@@ -3,6 +3,12 @@
  * Local development only. Fail closed. Never log credential-bearing values.
  */
 
+import {
+  DatabaseEnvValidationError,
+  parseDatabaseRuntimeEnv,
+  type DatabaseRuntimeConfig,
+} from "@/db/env";
+
 /** Primary local app origin (pnpm dev). */
 export const PHASE2A_AUTH_ORIGIN = "http://127.0.0.1:3100";
 
@@ -47,13 +53,7 @@ export type AuthRuntimeConfig = {
   baseURL: LocalAuthOrigin;
   basePath: typeof PHASE2A_AUTH_BASE_PATH;
   databaseUrl: string;
-  database: {
-    protocol: "postgres" | "postgresql";
-    hostname: "127.0.0.1";
-    port: 55432;
-    database: "nomi_numi_shop_dev";
-    username: "nomi_numi_dev";
-  };
+  database: DatabaseRuntimeConfig["database"];
 };
 
 function isLocalAuthOrigin(value: string): value is LocalAuthOrigin {
@@ -74,6 +74,27 @@ function reject(message: string): never {
 function isPlaceholderSecret(secret: string): boolean {
   const normalized = secret.trim().toLowerCase();
   return PLACEHOLDER_SECRET_MARKERS.some((marker) => normalized.includes(marker));
+}
+
+function parseAuthDatabaseUrl(input: AuthRuntimeEnvInput): DatabaseRuntimeConfig {
+  try {
+    return parseDatabaseRuntimeEnv({
+      DATABASE_URL: input.DATABASE_URL,
+      NODE_ENV: input.NODE_ENV,
+      VERCEL: input.VERCEL,
+      VERCEL_ENV: input.VERCEL_ENV,
+    });
+  } catch (error) {
+    if (error instanceof DatabaseEnvValidationError) {
+      // Preserve auth error identity/messages for existing auth callers/tests.
+      // Map the DB-runtime production refusal to the historical auth copy.
+      if (error.message === "Database runtime refuses production deployment environments") {
+        reject("Phase 2A auth refuses production deployment environments");
+      }
+      reject(error.message);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -117,68 +138,13 @@ export function parseAuthRuntimeEnv(input: AuthRuntimeEnvInput): AuthRuntimeConf
     reject(`BETTER_AUTH_URL must be exactly ${PHASE2A_AUTH_ORIGIN} or ${PHASE2A_AUTH_E2E_ORIGIN}`);
   }
 
-  const databaseUrl = input.DATABASE_URL;
-  if (typeof databaseUrl !== "string" || databaseUrl.length === 0) {
-    reject("DATABASE_URL is required");
-  }
-
-  let parsedDb: URL;
-  try {
-    parsedDb = new URL(databaseUrl);
-  } catch {
-    reject("DATABASE_URL must be a valid PostgreSQL URL");
-  }
-
-  if (parsedDb.search !== "" || parsedDb.hash !== "") {
-    reject("DATABASE_URL must not include query parameters or fragments");
-  }
-
-  const protocol = parsedDb.protocol.replace(/:$/, "");
-  if (protocol !== "postgres" && protocol !== "postgresql") {
-    reject("DATABASE_URL protocol must be postgres or postgresql");
-  }
-
-  if (parsedDb.hostname !== "127.0.0.1") {
-    reject("DATABASE_URL hostname must be 127.0.0.1");
-  }
-
-  const port = parsedDb.port === "" ? 5432 : Number(parsedDb.port);
-  if (port === 5433) {
-    reject("DATABASE_URL must not target protected port 5433");
-  }
-  if (port !== 55432) {
-    reject("DATABASE_URL port must be 55432 (DEV)");
-  }
-
-  const databaseName = decodeURIComponent(parsedDb.pathname.replace(/^\//, ""));
-  if (databaseName === "nomi_numi_shop_test") {
-    reject("DATABASE_URL must not target the TEST database");
-  }
-  if (databaseName !== "nomi_numi_shop_dev") {
-    reject("DATABASE_URL database must be nomi_numi_shop_dev");
-  }
-
-  const username = decodeURIComponent(parsedDb.username);
-  if (username !== "nomi_numi_dev") {
-    reject("DATABASE_URL username must be nomi_numi_dev");
-  }
-
-  const password = decodeURIComponent(parsedDb.password);
-  if (password.length === 0) {
-    reject("DATABASE_URL password must be non-empty");
-  }
+  const database = parseAuthDatabaseUrl(input);
 
   return {
     secret,
     baseURL: normalizedBaseURL,
     basePath: PHASE2A_AUTH_BASE_PATH,
-    databaseUrl,
-    database: {
-      protocol,
-      hostname: "127.0.0.1",
-      port: 55432,
-      database: "nomi_numi_shop_dev",
-      username: "nomi_numi_dev",
-    },
+    databaseUrl: database.databaseUrl,
+    database: database.database,
   };
 }

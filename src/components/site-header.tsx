@@ -18,20 +18,30 @@ export function SiteHeader() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
           <nav aria-label="Primary" className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {siteNavigation.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                {item.label}
-              </a>
-            ))}
+            {siteNavigation.map((item) =>
+              item.href.startsWith("#") ? (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  {item.label}
+                </Link>
+              ),
+            )}
           </nav>
 
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
             <Button asChild variant="secondary" className="w-fit">
-              <a href="#gifts">Explore Gifts</a>
+              <Link href="/products">Explore Gifts</Link>
             </Button>
             <AuthHeaderActions />
           </div>

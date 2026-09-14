@@ -173,8 +173,13 @@ Phase 3A implements the foundational catalog schema subset in
 Phase 3B adds the server-side catalog domain under `src/catalog/`
 (repository + service + Zod validation). Phase 3C adds deterministic
 DEV fixtures and TEST factories under `src/catalog/fixtures/` and
-`tests/support/`. Inventory runtime and public/admin catalog HTTP/UI
-surfaces remain later phases. Phase 3D has not started.
+`tests/support/`. Phase 3D adds public catalog reads
+(`src/catalog/public/`) and App Router storefront catalog pages
+(`/products`, `/categories`, `/collections`) with temporary USD at the
+page boundary. Catalog pages use `src/db/runtime.ts` with
+`DATABASE_URL`-only validation (`src/db/env.ts`); Better Auth secrets
+remain auth-path only. Inventory runtime and admin catalog HTTP/UI remain
+later phases.
 
 If implementation requirements conflict with those invariants, stop and
 resolve the design instead of silently choosing different behavior.

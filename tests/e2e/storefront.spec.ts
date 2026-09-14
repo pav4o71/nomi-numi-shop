@@ -42,21 +42,47 @@ async function expectSectionScrolledIntoView(page: Page, sectionId: string) {
     .toBe(true);
 }
 
-test("primary navigation scrolls homepage sections into view", async ({ page }) => {
+/**
+ * Portable CI storefront smoke: homepage + href contracts only.
+ * Must remain database-free. Do not navigate to /products (or other catalog
+ * routes) here — catalog navigation lives in local-only catalog-public.spec.ts.
+ */
+test("primary navigation includes catalog hrefs and homepage section anchors", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => window.scrollTo(0, 0));
 
   const primaryNav = page.getByRole("navigation", { name: "Primary" });
 
-  await primaryNav.getByRole("link", { name: "Gifts" }).click();
-  await expect(page).toHaveURL(/#gifts$/);
-  await expectSectionScrolledIntoView(page, "gifts");
+  await expect(primaryNav.getByRole("link", { name: "Products" })).toHaveAttribute(
+    "href",
+    "/products",
+  );
+  await expect(primaryNav.getByRole("link", { name: "Categories" })).toHaveAttribute(
+    "href",
+    "/categories",
+  );
+  await expect(primaryNav.getByRole("link", { name: "Collections" })).toHaveAttribute(
+    "href",
+    "/collections",
+  );
+  await expect(primaryNav.getByRole("link", { name: "Why Nomi Numi" })).toHaveAttribute(
+    "href",
+    "/#why-nomi-numi",
+  );
+  await expect(primaryNav.getByRole("link", { name: "How It Works" })).toHaveAttribute(
+    "href",
+    "/#how-it-works",
+  );
+  await expect(page.getByRole("link", { name: "Explore Gifts" }).first()).toHaveAttribute(
+    "href",
+    "/products",
+  );
 
   await primaryNav.getByRole("link", { name: "Why Nomi Numi" }).click();
-  await expect(page).toHaveURL(/#why-nomi-numi$/);
+  await expect(page).toHaveURL(/\/#why-nomi-numi$/);
   await expectSectionScrolledIntoView(page, "why-nomi-numi");
 
   await primaryNav.getByRole("link", { name: "How It Works" }).click();
-  await expect(page).toHaveURL(/#how-it-works$/);
+  await expect(page).toHaveURL(/\/#how-it-works$/);
   await expectSectionScrolledIntoView(page, "how-it-works");
 });

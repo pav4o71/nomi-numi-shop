@@ -466,7 +466,11 @@ per `docs/STORE_CATALOG.md` §17 after Phase 2D merge.
   (complete: `src/catalog/fixtures/`, guarded
   `pnpm catalog:seed:dev -- --confirm SEED-NOMI-DEV-CATALOG`, TEST
   builders/factories under `tests/support/`; no store_settings seed,
-  no public/admin catalog HTTP/UI, no Phase 3D)
+  no public/admin catalog HTTP/UI prior to 3D)
+- Phase 3D — public catalog reads (complete: `src/catalog/public/`
+  published-only read models; App Router pages under `/products`,
+  `/categories`, `/collections` with temporary USD; unit + Playwright
+  smoke; no cookies/geo, no `/api/catalog/*`, no schema changes)
 
 ### Phase 4
 

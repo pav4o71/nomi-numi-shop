@@ -27,11 +27,14 @@ collections, products, variants, options, prices, media metadata) through
 migration `0003_phase3a_catalog_schema`. Phase 3B adds the catalog domain
 repository/service layer in `src/catalog/` without schema changes.
 Phase 3C adds deterministic DEV fixtures (`src/catalog/fixtures/`) and
-TEST factories; it does not add schema/migrations, store_settings seed,
-or public/admin catalog HTTP runtime. Inventory ledger tables and Phase
-3D public catalog reads remain absent. The public storefront still does
-not require PostgreSQL for browsing; only the lazy `/api/auth` runtime
-connects to local DEV by default.
+TEST factories; it does not add schema/migrations or store_settings seed.
+Phase 3D adds public catalog reads (`src/catalog/public/`) and App Router
+storefront catalog pages; no new migrations. Inventory ledger tables
+remain absent. Public catalog pages use the lazy runtime DB client in
+`src/db/runtime.ts`, which validates `DATABASE_URL` only via
+`src/db/env.ts` (temporary USD; no Better Auth secrets). Auth continues
+to validate Better Auth env in `src/auth/env.ts` and reuses the shared
+DATABASE_URL rules; `/api/auth` remains auth-only.
 
 ## 2. Development database
 
