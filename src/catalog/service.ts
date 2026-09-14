@@ -44,7 +44,7 @@ import {
  * (docs/STORE_CATALOG.md §4). Phase 2D does not lock a restrictive
  * transition matrix; changeProductStatus accepts any of the three values
  * and keeps published_at / archived_at consistent with the target status.
- * Storefront sellability eligibility remains a later public-read concern.
+ * Storefront sellability eligibility is enforced by PublicCatalogReads (Phase 3D).
  */
 
 export class CatalogService {

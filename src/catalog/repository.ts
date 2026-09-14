@@ -3,7 +3,7 @@
  * Domain rules / validation / lifecycle live in CatalogService.
  */
 
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 
 import type { CatalogDb, CatalogExecutor, CatalogTx } from "@/catalog/db";
 import { createCatalogId } from "@/catalog/ids";
@@ -629,5 +629,136 @@ export class DrizzleCatalogRepository {
         position: assignment.position,
       })),
     );
+  }
+
+  /** Published, non-archived categories ordered by merchandising position. */
+  async listPublishedCategories(executor: CatalogExecutor): Promise<CategoryRow[]> {
+    return executor
+      .select()
+      .from(categories)
+      .where(and(eq(categories.published, true), isNull(categories.archivedAt)))
+      .orderBy(asc(categories.position), asc(categories.slug));
+  }
+
+  /**
+   * Published, non-archived collections. Publish-window filtering is applied
+   * by PublicCatalogReads (needs wall-clock `now`).
+   */
+  async listPublishedCollections(executor: CatalogExecutor): Promise<CollectionRow[]> {
+    return executor
+      .select()
+      .from(collections)
+      .where(and(eq(collections.published, true), isNull(collections.archivedAt)))
+      .orderBy(asc(collections.position), asc(collections.slug));
+  }
+
+  async listPublishedProducts(executor: CatalogExecutor): Promise<ProductRow[]> {
+    return executor
+      .select()
+      .from(products)
+      .where(eq(products.status, "published"))
+      .orderBy(asc(products.position), asc(products.slug));
+  }
+
+  async listProductIdsForCategory(
+    executor: CatalogExecutor,
+    categoryId: string,
+  ): Promise<Array<{ productId: string; position: number }>> {
+    const rows = await executor
+      .select({
+        productId: productCategories.productId,
+        position: productCategories.position,
+      })
+      .from(productCategories)
+      .where(eq(productCategories.categoryId, categoryId))
+      .orderBy(asc(productCategories.position), asc(productCategories.productId));
+    return rows;
+  }
+
+  async listProductIdsForCollection(
+    executor: CatalogExecutor,
+    collectionId: string,
+  ): Promise<Array<{ productId: string; position: number }>> {
+    const rows = await executor
+      .select({
+        productId: collectionProducts.productId,
+        position: collectionProducts.position,
+      })
+      .from(collectionProducts)
+      .where(eq(collectionProducts.collectionId, collectionId))
+      .orderBy(asc(collectionProducts.position), asc(collectionProducts.productId));
+    return rows;
+  }
+
+  async listVariantsForProducts(
+    executor: CatalogExecutor,
+    productIds: string[],
+  ): Promise<VariantRow[]> {
+    if (productIds.length === 0) {
+      return [];
+    }
+    return executor
+      .select()
+      .from(productVariants)
+      .where(inArray(productVariants.productId, productIds))
+      .orderBy(asc(productVariants.sku));
+  }
+
+  async listPricesForVariants(
+    executor: CatalogExecutor,
+    variantIds: string[],
+  ): Promise<VariantPriceRow[]> {
+    if (variantIds.length === 0) {
+      return [];
+    }
+    return executor
+      .select()
+      .from(variantPrices)
+      .where(inArray(variantPrices.variantId, variantIds))
+      .orderBy(asc(variantPrices.currency));
+  }
+
+  async listSelectionsForVariants(
+    executor: CatalogExecutor,
+    variantIds: string[],
+  ): Promise<Array<{ variantId: string; optionId: string; optionValueId: string }>> {
+    if (variantIds.length === 0) {
+      return [];
+    }
+    return executor
+      .select({
+        variantId: productVariantOptionValues.variantId,
+        optionId: productVariantOptionValues.optionId,
+        optionValueId: productVariantOptionValues.optionValueId,
+      })
+      .from(productVariantOptionValues)
+      .where(inArray(productVariantOptionValues.variantId, variantIds));
+  }
+
+  async listCategoriesByIds(
+    executor: CatalogExecutor,
+    categoryIds: string[],
+  ): Promise<CategoryRow[]> {
+    if (categoryIds.length === 0) {
+      return [];
+    }
+    return executor.select().from(categories).where(inArray(categories.id, categoryIds));
+  }
+
+  async listCollectionsByIds(
+    executor: CatalogExecutor,
+    collectionIds: string[],
+  ): Promise<CollectionRow[]> {
+    if (collectionIds.length === 0) {
+      return [];
+    }
+    return executor.select().from(collections).where(inArray(collections.id, collectionIds));
+  }
+
+  async listProductsByIds(executor: CatalogExecutor, productIds: string[]): Promise<ProductRow[]> {
+    if (productIds.length === 0) {
+      return [];
+    }
+    return executor.select().from(products).where(inArray(products.id, productIds));
   }
 }

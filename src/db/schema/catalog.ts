@@ -8,7 +8,7 @@
  * - category parent_id hierarchy
  * - inventory_balances / movements / reservations
  * - active-variant option-combination uniqueness (service layer in 3B)
- * - repositories, seeds, public reads, admin APIs, upload runtime
+ * - admin catalog APIs, upload runtime
  */
 import { relations, sql } from "drizzle-orm";
 import {
