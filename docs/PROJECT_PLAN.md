@@ -472,6 +472,11 @@ per `docs/STORE_CATALOG.md` §17 after Phase 2D merge.
   `/categories`, `/collections` with temporary USD; unit + Playwright
   smoke; no cookies/geo, no `/api/catalog/*`, no schema changes)
 
+Post-Phase-3D storefront visual polish restyles the public catalog pages
+(`/products`, `/categories`, `/collections` and detail routes) on the
+closed Phase 3D read layer. Presentation-only: no PublicCatalogReads,
+schema, auth, media runtime, or commerce changes.
+
 ### Phase 4
 
 Admin catalog management.

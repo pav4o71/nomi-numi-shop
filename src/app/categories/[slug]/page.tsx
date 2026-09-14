@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { CatalogPageHeader } from "@/components/catalog/catalog-page-header";
 import { ProductListingGrid } from "@/components/catalog/product-listing-grid";
 import { Container } from "@/components/container";
 import { getPublicCatalogReads, PUBLIC_STOREFRONT_CURRENCY } from "@/catalog/public/storefront";
@@ -39,19 +40,11 @@ export default async function CategoryDetailPage({ params }: CategoryPageProps) 
   return (
     <main className="section-shell py-12 sm:py-16">
       <Container className="space-y-8">
-        <header className="space-y-2">
-          <p className="font-display text-2xl font-semibold tracking-tight text-primary">
-            Nomi Numi
+        <CatalogPageHeader title={page.category.name} description={page.category.description}>
+          <p className="text-xs font-semibold tracking-[0.14em] text-brown uppercase">
+            Merchandise family
           </p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            {page.category.name}
-          </h1>
-          {page.category.description ? (
-            <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-              {page.category.description}
-            </p>
-          ) : null}
-        </header>
+        </CatalogPageHeader>
         <ProductListingGrid products={page.products} />
       </Container>
     </main>
