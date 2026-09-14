@@ -348,6 +348,20 @@ Use this to confirm readiness before manual merge. The script never
 auto-merges. It requires the GitHub CLI (`gh`) to be installed and
 authenticated.
 
+**Expected Nomi PR Verifier comment format:**
+
+```
+## Nomi PR Verifier
+**HEAD reviewed:** `<40-hex-sha>`
+...
+### Verdict
+**PASS** at `<sha>` ...
+```
+
+The script parses `**HEAD reviewed:** \`<sha>\`` (primary) or
+`**PASS/BLOCK/HOLD** at \`<sha>\`` (fallback) and validates the verdict
+matches the exact PR HEAD SHA.
+
 ## 7. Critical commerce coverage
 
 High-risk behavior requiring strong coverage includes:

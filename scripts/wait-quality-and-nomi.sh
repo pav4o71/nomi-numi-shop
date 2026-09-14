@@ -6,6 +6,17 @@ set -Eeuo pipefail
 # nomi-numi-shop
 # Wait for PR Quality Gate + Nomi PR Verifier readiness
 # ==========================================================
+#
+# Expected Nomi PR Verifier comment format:
+#
+#   ## Nomi PR Verifier
+#   **HEAD reviewed:** `<40-hex-sha>`
+#   ...
+#   ### Verdict
+#   **PASS** at `<sha>` ...
+#   (or **BLOCK** at / **HOLD** at)
+#
+# ==========================================================
 
 PR_NUMBER="${1:-}"
 
@@ -97,19 +108,32 @@ done
 # Step 3: Check Nomi PR Verifier issue comment for this exact SHA
 printf 'Step 3: Checking Nomi PR Verifier status...\n'
 
-# Fetch the latest issue comment from the PR that contains "## Nomi PR Verifier"
-NOMI_COMMENT="$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | contains("## Nomi PR Verifier")) | .body' 2>/dev/null | tail -1 || true)"
+# Fetch the latest issue comment containing "## Nomi PR Verifier" (full body, not just last line)
+NOMI_COMMENT="$(gh api "repos/{owner}/{repo}/issues/${PR_NUMBER}/comments" \
+  --jq '[.[] | select(.body | contains("## Nomi PR Verifier"))] | last | .body' 2>/dev/null || true)"
 
 if [[ -z "$NOMI_COMMENT" ]]; then
   printf 'Error: No Nomi PR Verifier comment found for PR #%s\n' "$PR_NUMBER" >&2
   exit 1
 fi
 
-# Extract the SHA from the Nomi comment (format: "**Commit:** `<sha>`")
-NOMI_SHA="$(printf '%s' "$NOMI_COMMENT" | grep -oP '\*\*Commit:\*\*\s*`\K[0-9a-f]{40}(?=`)' || true)"
+# Extract SHA from "**HEAD reviewed:** `<sha>`" (primary format)
+# Use portable sed instead of grep -P for macOS compatibility
+NOMI_SHA=""
+if [[ "$NOMI_COMMENT" =~ \*\*HEAD\ reviewed:\*\*[[:space:]]*\`([0-9a-f]{40})\` ]]; then
+  NOMI_SHA="${BASH_REMATCH[1]}"
+fi
+
+# Fallback: try to find SHA from verdict line patterns like "**PASS** at `<sha>`"
+if [[ -z "$NOMI_SHA" ]]; then
+  if [[ "$NOMI_COMMENT" =~ \*\*(PASS|BLOCK|HOLD)\*\*[[:space:]]+at[[:space:]]+\`([0-9a-f]{40})\` ]]; then
+    NOMI_SHA="${BASH_REMATCH[2]}"
+  fi
+fi
 
 if [[ -z "$NOMI_SHA" ]]; then
   printf 'Error: Could not extract SHA from Nomi PR Verifier comment\n' >&2
+  printf 'Expected format: **HEAD reviewed:** `<sha>` or **PASS/BLOCK/HOLD** at `<sha>`\n' >&2
   exit 1
 fi
 
@@ -121,11 +145,20 @@ if [[ "$NOMI_SHA" != "$EXPECTED_HEAD" ]]; then
   exit 1
 fi
 
-# Extract the verdict from the Nomi comment (format: "**Verdict:** <PASS|HOLD|BLOCK>")
-NOMI_VERDICT="$(printf '%s' "$NOMI_COMMENT" | grep -oP '\*\*Verdict:\*\*\s*\K(PASS|HOLD|BLOCK)' || true)"
+# Extract verdict from patterns like "**PASS** at `<sha>`" under ### Verdict section
+# Look for PASS/BLOCK/HOLD near the SHA we already validated
+NOMI_VERDICT=""
+if [[ "$NOMI_COMMENT" =~ \*\*PASS\*\*[[:space:]]+at[[:space:]]+\`${EXPECTED_HEAD}\` ]]; then
+  NOMI_VERDICT="PASS"
+elif [[ "$NOMI_COMMENT" =~ \*\*BLOCK\*\*[[:space:]]+at[[:space:]]+\`${EXPECTED_HEAD}\` ]]; then
+  NOMI_VERDICT="BLOCK"
+elif [[ "$NOMI_COMMENT" =~ \*\*HOLD\*\*[[:space:]]+at[[:space:]]+\`${EXPECTED_HEAD}\` ]]; then
+  NOMI_VERDICT="HOLD"
+fi
 
 if [[ -z "$NOMI_VERDICT" ]]; then
   printf 'Error: Could not extract verdict from Nomi PR Verifier comment\n' >&2
+  printf 'Expected format: **PASS/BLOCK/HOLD** at `<sha>` under ### Verdict section\n' >&2
   exit 1
 fi
 
