@@ -10,11 +10,18 @@ test("renders the public storefront homepage", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Gifts that help hearts stay close" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("main").getByRole("link", { name: "Browse products" }).first(),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Explore Gifts" }).first()).toBeVisible();
 
   await expect(page.getByRole("heading", { level: 2, name: "Gift directions" })).toBeVisible();
+  await expect(page.locator("#gifts")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Shop destinations" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Why Nomi Numi" })).toBeVisible();
+  await expect(page.locator("#why-nomi-numi")).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "How It Works" })).toBeVisible();
+  await expect(page.locator("#how-it-works")).toBeVisible();
   await expect(page.getByRole("contentinfo")).toBeVisible();
   await expect(page.getByRole("contentinfo").getByText("Nomi Numi", { exact: true })).toBeVisible();
 });
@@ -52,6 +59,7 @@ test("primary navigation includes catalog hrefs and homepage section anchors", a
   await page.evaluate(() => window.scrollTo(0, 0));
 
   const primaryNav = page.getByRole("navigation", { name: "Primary" });
+  const main = page.getByRole("main");
 
   await expect(primaryNav.getByRole("link", { name: "Products" })).toHaveAttribute(
     "href",
@@ -77,6 +85,29 @@ test("primary navigation includes catalog hrefs and homepage section anchors", a
     "href",
     "/products",
   );
+
+  await expect(
+    main.getByRole("link", { name: "Browse products", exact: true }).first(),
+  ).toHaveAttribute("href", "/products");
+  await expect(main.getByRole("link", { name: "See how it works", exact: true })).toHaveAttribute(
+    "href",
+    "/#how-it-works",
+  );
+  await expect(main.getByRole("heading", { level: 2, name: "Shop destinations" })).toBeVisible();
+  await expect(main.getByRole("link", { name: /^Products\b/ })).toHaveAttribute(
+    "href",
+    "/products",
+  );
+  await expect(main.getByRole("link", { name: /^Categories\b/ })).toHaveAttribute(
+    "href",
+    "/categories",
+  );
+  await expect(main.getByRole("link", { name: /^Collections\b/ })).toHaveAttribute(
+    "href",
+    "/collections",
+  );
+  await expect(main.getByText("Browse categories", { exact: true })).toBeVisible();
+  await expect(main.getByText("Explore collections", { exact: true }).first()).toBeVisible();
 
   await primaryNav.getByRole("link", { name: "Why Nomi Numi" }).click();
   await expect(page).toHaveURL(/\/#why-nomi-numi$/);
