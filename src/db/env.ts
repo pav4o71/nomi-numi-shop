@@ -8,6 +8,7 @@ export type DatabaseRuntimeEnvInput = {
   NODE_ENV?: string | undefined;
   VERCEL?: string | undefined;
   VERCEL_ENV?: string | undefined;
+  NOMI_ALLOW_TEST_DB?: string | undefined;
 };
 
 export type DatabaseRuntimeConfig = {
@@ -15,9 +16,9 @@ export type DatabaseRuntimeConfig = {
   database: {
     protocol: "postgres" | "postgresql";
     hostname: "127.0.0.1";
-    port: 55432;
-    database: "nomi_numi_shop_dev";
-    username: "nomi_numi_dev";
+    port: 55432 | 55433;
+    database: "nomi_numi_shop_dev" | "nomi_numi_shop_test";
+    username: "nomi_numi_dev" | "nomi_numi_test";
   };
 };
 
@@ -74,21 +75,30 @@ export function parseDatabaseRuntimeEnv(input: DatabaseRuntimeEnvInput): Databas
   if (port === 5433) {
     reject("DATABASE_URL must not target protected port 5433");
   }
-  if (port !== 55432) {
+
+  const allowTestDb = input.NOMI_ALLOW_TEST_DB === "1";
+  if (!allowTestDb && port !== 55432) {
     reject("DATABASE_URL port must be 55432 (DEV)");
   }
+  if (allowTestDb && port !== 55432 && port !== 55433) {
+    reject("DATABASE_URL port must be 55432 (DEV) or 55433 (TEST)");
+  }
+
+  const isTest = port === 55433;
+  const expectedDatabase = isTest ? "nomi_numi_shop_test" : "nomi_numi_shop_dev";
+  const expectedUsername = isTest ? "nomi_numi_test" : "nomi_numi_dev";
 
   const databaseName = decodeURIComponent(parsedDb.pathname.replace(/^\//, ""));
-  if (databaseName === "nomi_numi_shop_test") {
-    reject("DATABASE_URL must not target the TEST database");
-  }
-  if (databaseName !== "nomi_numi_shop_dev") {
-    reject("DATABASE_URL database must be nomi_numi_shop_dev");
+  if (databaseName !== expectedDatabase) {
+    if (!allowTestDb && databaseName === "nomi_numi_shop_test") {
+      reject("DATABASE_URL must not target the TEST database");
+    }
+    reject(`DATABASE_URL database must be ${expectedDatabase}`);
   }
 
   const username = decodeURIComponent(parsedDb.username);
-  if (username !== "nomi_numi_dev") {
-    reject("DATABASE_URL username must be nomi_numi_dev");
+  if (username !== expectedUsername) {
+    reject(`DATABASE_URL username must be ${expectedUsername}`);
   }
 
   const password = decodeURIComponent(parsedDb.password);
@@ -101,9 +111,9 @@ export function parseDatabaseRuntimeEnv(input: DatabaseRuntimeEnvInput): Databas
     database: {
       protocol,
       hostname: "127.0.0.1",
-      port: 55432,
-      database: "nomi_numi_shop_dev",
-      username: "nomi_numi_dev",
+      port: port as 55432 | 55433,
+      database: expectedDatabase,
+      username: expectedUsername,
     },
   };
 }

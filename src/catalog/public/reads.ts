@@ -214,13 +214,11 @@ export class PublicCatalogReads {
     const context = await this.loadVariantContext(tx, variants);
     const variantsByProduct = groupBy(variants, (variant) => variant.productId);
 
-    const optionsByProduct = new Map<string, ProductOptionWithValues[]>();
-    for (const product of products) {
-      optionsByProduct.set(
-        product.id,
-        await this.repo.listProductOptionsWithValues(tx, product.id),
-      );
-    }
+    const options = await this.repo.listProductOptionsWithValuesForProducts(
+      tx,
+      products.map((product) => product.id),
+    );
+    const optionsByProduct = groupBy(options, (option) => option.productId);
 
     const cards: PublicProductListingCard[] = [];
     for (const product of products) {

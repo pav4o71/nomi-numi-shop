@@ -69,6 +69,7 @@ function createAuthInstance() {
     NODE_ENV: process.env.NODE_ENV,
     VERCEL: process.env.VERCEL,
     VERCEL_ENV: process.env.VERCEL_ENV,
+    NOMI_ALLOW_TEST_DB: process.env.NOMI_ALLOW_TEST_DB,
   });
 
   // Email transport is required for verification/reset. Misconfiguration
