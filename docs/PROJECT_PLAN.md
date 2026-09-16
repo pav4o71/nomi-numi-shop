@@ -498,7 +498,9 @@ Admin catalog management, delivered in reviewed steps:
 - Phase 4C — product management base entity (`listAllProducts`, product CRUD
   API routes under `/api/admin/catalog/products`, product admin UI
   pages, form component, integration tests)
-- Phase 4D (Pending) — product options, variants, and pricing UI.
+- Phase 4D — product options, variants, and pricing UI (`getProductOptions`,
+  `listVariantDetailsForProduct`, `getVariantDetails`, option/variant CRUD
+  API routes, variant form components, tests)
 - Phase 4E (Pending) — assigning products to categories and collections.
 
 ### Phase 5
