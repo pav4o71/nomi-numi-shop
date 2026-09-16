@@ -32,8 +32,8 @@ type MailpitMessage = {
   HTML?: string;
 };
 
-function openDevSql() {
-  const credentials = loadValidatedCredentials("dev");
+function openTestSql() {
+  const credentials = loadValidatedCredentials("test");
   return postgres({
     host: credentials.host,
     port: credentials.port,
@@ -172,11 +172,11 @@ export async function pageApiJson(
 }
 
 /**
- * Delete fixture users by email from DEV (auth runtime DB). Does not print secrets.
+ * Delete fixture users by email from TEST (auth runtime DB). Does not print secrets.
  */
-export async function cleanupDevUsersByEmail(emails: string[]): Promise<void> {
+export async function cleanupTestUsersByEmail(emails: string[]): Promise<void> {
   if (emails.length === 0) return;
-  const sql = openDevSql();
+  const sql = openTestSql();
   try {
     await sql`
       DELETE FROM "session"
@@ -197,11 +197,11 @@ export async function cleanupDevUsersByEmail(emails: string[]): Promise<void> {
  * Test-only role mutation via SQL (no HTTP/admin promote API).
  * Used for invalid-role fail-closed and admin surface matrix isolation.
  */
-export async function setDevUserRoleByEmail(
+export async function setTestUserRoleByEmail(
   email: string,
   role: "customer" | "admin" | null,
 ): Promise<void> {
-  const sql = openDevSql();
+  const sql = openTestSql();
   try {
     await sql`UPDATE "user" SET role = ${role}, updated_at = now() WHERE email = ${email}`;
   } finally {
@@ -210,7 +210,7 @@ export async function setDevUserRoleByEmail(
 }
 
 /**
- * Live auth E2E requires local .env.local + owned DEV Postgres + Mailpit.
+ * Live auth E2E requires local .env.local + owned TEST Postgres + Mailpit.
  * Portable CI has none of those — skip rather than fail the quality gate.
  */
 export function shouldRunLiveAuthE2E(): boolean {

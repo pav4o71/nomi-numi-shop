@@ -46,6 +46,7 @@ export type AuthRuntimeEnvInput = {
   NODE_ENV?: string | undefined;
   VERCEL?: string | undefined;
   VERCEL_ENV?: string | undefined;
+  NOMI_ALLOW_TEST_DB?: string | undefined;
 };
 
 export type AuthRuntimeConfig = {
@@ -83,6 +84,7 @@ function parseAuthDatabaseUrl(input: AuthRuntimeEnvInput): DatabaseRuntimeConfig
       NODE_ENV: input.NODE_ENV,
       VERCEL: input.VERCEL,
       VERCEL_ENV: input.VERCEL_ENV,
+      NOMI_ALLOW_TEST_DB: input.NOMI_ALLOW_TEST_DB,
     });
   } catch (error) {
     if (error instanceof DatabaseEnvValidationError) {

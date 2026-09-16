@@ -4,11 +4,11 @@ import {
   FIXTURE_PASSWORD,
   FIXTURE_PASSWORD_NEXT,
   pageApiJson,
-  cleanupDevUsersByEmail,
+  cleanupTestUsersByEmail,
   loginWithPassword,
   logoutCurrentSession,
   mailpitDeleteAll,
-  setDevUserRoleByEmail,
+  setTestUserRoleByEmail,
   shouldRunLiveAuthE2E,
   signupCustomer,
   uniqueEmail,
@@ -32,7 +32,7 @@ test.describe("Phase 2C6 live auth security", () => {
   const createdEmails: string[] = [];
 
   test.afterAll(async () => {
-    await cleanupDevUsersByEmail(createdEmails);
+    await cleanupTestUsersByEmail(createdEmails);
   });
 
   test.beforeAll(async () => {
@@ -270,7 +270,7 @@ test.describe("Phase 2C6 live auth security", () => {
     });
     await verifyEmailFromMailpit(page, adminEmail);
     await logoutCurrentSession(page);
-    await setDevUserRoleByEmail(adminEmail, "admin");
+    await setTestUserRoleByEmail(adminEmail, "admin");
 
     await loginWithPassword(page, {
       email: adminEmail,
@@ -296,7 +296,7 @@ test.describe("Phase 2C6 live auth security", () => {
       password: FIXTURE_PASSWORD,
     });
     await verifyEmailFromMailpit(page, email);
-    await setDevUserRoleByEmail(email, null);
+    await setTestUserRoleByEmail(email, null);
 
     await page.goto("/account");
     await expect(page).toHaveURL(/\/forbidden/);

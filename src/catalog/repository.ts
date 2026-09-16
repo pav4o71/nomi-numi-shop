@@ -288,6 +288,37 @@ export class DrizzleCatalogRepository {
     }));
   }
 
+  async listProductOptionsWithValuesForProducts(
+    executor: CatalogExecutor,
+    productIds: string[],
+  ): Promise<ProductOptionWithValues[]> {
+    if (productIds.length === 0) {
+      return [];
+    }
+
+    const optionRows = await executor
+      .select()
+      .from(productOptions)
+      .where(inArray(productOptions.productId, productIds))
+      .orderBy(asc(productOptions.position), asc(productOptions.name));
+
+    if (optionRows.length === 0) {
+      return [];
+    }
+
+    const optionIds = optionRows.map((row) => row.id);
+    const valueRows = await executor
+      .select()
+      .from(productOptionValues)
+      .where(inArray(productOptionValues.optionId, optionIds))
+      .orderBy(asc(productOptionValues.position), asc(productOptionValues.value));
+
+    return optionRows.map((option) => ({
+      ...option,
+      values: valueRows.filter((value) => value.optionId === option.id),
+    }));
+  }
+
   async replaceProductOptions(
     executor: CatalogExecutor,
     productId: string,
