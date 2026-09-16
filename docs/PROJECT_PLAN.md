@@ -495,6 +495,11 @@ Admin catalog management, delivered in reviewed steps:
 - Phase 4B — collection management (`listAllCollections`, collection CRUD
   API routes under `/api/admin/catalog/collections`, collection admin UI
   pages, form component, integration tests)
+- Phase 4C — product management base entity (`listAllProducts`, product CRUD
+  API routes under `/api/admin/catalog/products`, product admin UI
+  pages, form component, integration tests)
+- Phase 4D (Pending) — product options, variants, and pricing UI.
+- Phase 4E (Pending) — assigning products to categories and collections.
 
 ### Phase 5
 
