@@ -165,6 +165,10 @@ export class CatalogService {
     );
   }
 
+  async listAllProducts(): Promise<ProductRow[]> {
+    return this.repo.transaction(async (tx) => this.repo.listAllProducts(tx));
+  }
+
   async getProductById(id: string): Promise<ProductRow> {
     const row = await this.repo.transaction(async (tx) => this.repo.getProductById(tx, id));
     if (!row) {
@@ -404,13 +408,42 @@ export class CatalogService {
     return row;
   }
 
-  async listVariantsForProduct(productId: string): Promise<VariantRow[]> {
+  async getProductOptions(productId: string): Promise<ProductOptionWithValues[]> {
     return this.repo.transaction(async (tx) => {
       const product = await this.repo.getProductById(tx, productId);
-      if (!product) {
-        throw notFound(`Product not found: ${productId}`);
-      }
+      if (!product) throw notFound(`Product not found: ${productId}`);
+      return this.repo.listProductOptionsWithValues(tx, productId);
+    });
+  }
+
+  async listVariantsForProduct(productId: string): Promise<VariantRow[]> {
+    return this.repo.transaction(async (tx) => {
       return this.repo.listVariantsForProduct(tx, productId);
+    });
+  }
+
+  async listVariantDetailsForProduct(productId: string) {
+    return this.repo.transaction(async (tx) => {
+      const product = await this.repo.getProductById(tx, productId);
+      if (!product) throw notFound(`Product not found: ${productId}`);
+      const variants = await this.repo.listVariantsForProduct(tx, productId);
+      return Promise.all(
+        variants.map(async (v) => {
+          const prices = await this.repo.listVariantPrices(tx, v.id);
+          const optionSelections = await this.repo.listVariantSelections(tx, v.id);
+          return { ...v, prices, optionSelections };
+        }),
+      );
+    });
+  }
+
+  async getVariantDetails(variantId: string) {
+    return this.repo.transaction(async (tx) => {
+      const variant = await this.repo.getVariantById(tx, variantId);
+      if (!variant) throw notFound(`Variant not found: ${variantId}`);
+      const prices = await this.repo.listVariantPrices(tx, variantId);
+      const optionSelections = await this.repo.listVariantSelections(tx, variantId);
+      return { ...variant, prices, optionSelections };
     });
   }
 
@@ -424,9 +457,29 @@ export class CatalogService {
     });
   }
 
+  async searchCategories(query: string, limit = 20): Promise<CategoryRow[]> {
+    return this.repo.transaction(async (tx) => {
+      return this.repo.searchCategories(tx, query, limit);
+    });
+  }
+
+  async listProductCategories(productId: string): Promise<ProductCategoryRow[]> {
+    return this.repo.transaction(async (tx) => {
+      const product = await this.repo.getProductById(tx, productId);
+      if (!product) throw notFound(`Product not found: ${productId}`);
+      return this.repo.listProductCategories(tx, productId);
+    });
+  }
+
   async listAllCollections(): Promise<CollectionRow[]> {
     return this.repo.transaction(async (tx) => {
       return this.repo.listAllCollections(tx);
+    });
+  }
+
+  async searchCollections(query: string, limit = 20): Promise<CollectionRow[]> {
+    return this.repo.transaction(async (tx) => {
+      return this.repo.searchCollections(tx, query, limit);
     });
   }
 
