@@ -71,6 +71,10 @@ export class CatalogService {
     return row;
   }
 
+  async listAllCategories(): Promise<CategoryRow[]> {
+    return this.repo.transaction(async (tx) => this.repo.listAllCategories(tx));
+  }
+
   async updateCategory(id: string, input: unknown): Promise<CategoryRow> {
     const data = parseCatalogInput(updateCategoryInputSchema, input, "updateCategory");
     return this.repo.transaction(async (tx) => {

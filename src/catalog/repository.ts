@@ -662,6 +662,14 @@ export class DrizzleCatalogRepository {
     );
   }
 
+  /** All categories ordered by position then name (admin view). */
+  async listAllCategories(executor: CatalogExecutor): Promise<CategoryRow[]> {
+    return executor
+      .select()
+      .from(categories)
+      .orderBy(asc(categories.position), asc(categories.name));
+  }
+
   /** Published, non-archived categories ordered by merchandising position. */
   async listPublishedCategories(executor: CatalogExecutor): Promise<CategoryRow[]> {
     return executor
