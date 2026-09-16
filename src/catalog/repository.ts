@@ -3,7 +3,7 @@
  * Domain rules / validation / lifecycle live in CatalogService.
  */
 
-import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, isNull, ne } from "drizzle-orm";
 
 import type { CatalogDb, CatalogExecutor, CatalogTx } from "@/catalog/db";
 import { createCatalogId } from "@/catalog/ids";
@@ -670,6 +670,19 @@ export class DrizzleCatalogRepository {
       .orderBy(asc(categories.position), asc(categories.name));
   }
 
+  async searchCategories(
+    executor: CatalogExecutor,
+    query: string,
+    limit: number,
+  ): Promise<CategoryRow[]> {
+    return executor
+      .select()
+      .from(categories)
+      .where(ilike(categories.name, `%${query}%`))
+      .orderBy(asc(categories.position), asc(categories.name))
+      .limit(limit);
+  }
+
   /** Published, non-archived categories ordered by merchandising position. */
   async listPublishedCategories(executor: CatalogExecutor): Promise<CategoryRow[]> {
     return executor
@@ -693,6 +706,19 @@ export class DrizzleCatalogRepository {
       .from(collections)
       .where(and(eq(collections.published, true), isNull(collections.archivedAt)))
       .orderBy(asc(collections.position), asc(collections.slug));
+  }
+
+  async searchCollections(
+    executor: CatalogExecutor,
+    query: string,
+    limit: number,
+  ): Promise<CollectionRow[]> {
+    return executor
+      .select()
+      .from(collections)
+      .where(ilike(collections.name, `%${query}%`))
+      .orderBy(asc(collections.position), asc(collections.name))
+      .limit(limit);
   }
 
   async listAllProducts(executor: CatalogExecutor): Promise<ProductRow[]> {

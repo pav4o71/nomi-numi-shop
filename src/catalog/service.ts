@@ -457,9 +457,29 @@ export class CatalogService {
     });
   }
 
+  async searchCategories(query: string, limit = 20): Promise<CategoryRow[]> {
+    return this.repo.transaction(async (tx) => {
+      return this.repo.searchCategories(tx, query, limit);
+    });
+  }
+
+  async listProductCategories(productId: string): Promise<ProductCategoryRow[]> {
+    return this.repo.transaction(async (tx) => {
+      const product = await this.repo.getProductById(tx, productId);
+      if (!product) throw notFound(`Product not found: ${productId}`);
+      return this.repo.listProductCategories(tx, productId);
+    });
+  }
+
   async listAllCollections(): Promise<CollectionRow[]> {
     return this.repo.transaction(async (tx) => {
       return this.repo.listAllCollections(tx);
+    });
+  }
+
+  async searchCollections(query: string, limit = 20): Promise<CollectionRow[]> {
+    return this.repo.transaction(async (tx) => {
+      return this.repo.searchCollections(tx, query, limit);
     });
   }
 

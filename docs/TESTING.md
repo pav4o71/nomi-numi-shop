@@ -151,6 +151,8 @@ Auth foundation unit coverage lives in:
 - `tests/unit/admin-catalog-products-local.test.ts` (Phase 4C path-locked TEST DB product integration; local `pnpm test` only)
 - `tests/unit/admin-catalog-variants.test.ts` (Phase 4D portable authorization contracts)
 - `tests/unit/admin-catalog-variants-local.test.ts` (Phase 4D path-locked TEST DB variant integration; local `pnpm test` only)
+- `tests/unit/admin-catalog-organization.test.ts` (Phase 4E portable authorization contracts)
+- `tests/unit/admin-catalog-organization-local.test.ts` (Phase 4E path-locked TEST DB organization integration; local `pnpm test` only)
 - `tests/e2e/auth-ui.spec.ts` (Phase 2C3 public auth page smoke +
   Phase 2C5 `/forbidden` landing; portable CI)
 - `tests/e2e/auth-security.spec.ts` (Phase 2C6 live lifecycle/security

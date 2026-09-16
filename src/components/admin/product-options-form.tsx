@@ -85,7 +85,9 @@ export function ProductOptionsForm({
 
   function removeValue(optionIndex: number, valueIndex: number) {
     const newOptions = [...options];
-    newOptions[optionIndex].values = newOptions[optionIndex].values.filter((_, i) => i !== valueIndex);
+    newOptions[optionIndex].values = newOptions[optionIndex].values.filter(
+      (_, i) => i !== valueIndex,
+    );
     setOptions(newOptions);
   }
 
@@ -100,7 +102,7 @@ export function ProductOptionsForm({
             <div key={opt.name} className="p-4 border rounded-lg">
               <h3 className="font-semibold">{opt.name}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                {opt.values.map(v => v.value).join(", ")}
+                {opt.values.map((v) => v.value).join(", ")}
               </p>
             </div>
           ))}
@@ -110,7 +112,11 @@ export function ProductOptionsForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 max-w-3xl space-y-6" data-testid="product-options-form">
+    <form
+      onSubmit={handleSubmit}
+      className="mt-6 max-w-3xl space-y-6"
+      data-testid="product-options-form"
+    >
       {options.length === 0 ? (
         <p className="text-sm text-muted-foreground">No options defined.</p>
       ) : (

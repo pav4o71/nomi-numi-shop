@@ -12,13 +12,15 @@ export default async function AdminEditProductVariantsPage({
 }) {
   const { id } = await params;
   const service = new CatalogService(new DrizzleCatalogRepository(getRuntimeDb()));
-  
+
   const variants = await service.listVariantDetailsForProduct(id);
 
   return (
     <div data-testid="admin-product-variants">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Manage SKUs, inventory details, and pricing.</p>
+        <p className="text-sm text-muted-foreground">
+          Manage SKUs, inventory details, and pricing.
+        </p>
         <Button asChild size="sm">
           <Link href={`/admin/products/${id}/variants/new`}>Add Variant</Link>
         </Button>

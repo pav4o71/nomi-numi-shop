@@ -1,5 +1,5 @@
 /**
- * Phase 4D path-locked TEST DB integration for admin catalog variants.
+ * Phase 4E path-locked TEST DB integration for admin catalog organization.
  */
 
 import { describe, expect, it, beforeAll, afterAll, beforeEach } from "vitest";
@@ -18,7 +18,7 @@ import {
 
 const credentials = loadValidatedCredentials("test");
 
-describe("admin catalog variants integration (local)", () => {
+describe("admin catalog organization integration (local)", () => {
   let sql: ReturnType<typeof postgres>;
   let db: CatalogDb;
   let repo: DrizzleCatalogRepository;
@@ -64,57 +64,51 @@ describe("admin catalog variants integration (local)", () => {
     await sql`DELETE FROM store_settings`;
   });
 
-  it("can define options, create a variant, and update it", async () => {
+  it("can search and assign categories and collections to a product", async () => {
     const product = await service.createProduct({
       title: "Test Product",
       slug: "test-prod",
     });
 
-    // 1. Define options
-    const options = await service.defineProductOptions(product.id, {
-      options: [{ name: "Size", values: [{ value: "Small" }, { value: "Large" }] }],
+    const cat1 = await service.createCategory({ name: "Category A", slug: "cat-a" });
+    const cat2 = await service.createCategory({ name: "Category B", slug: "cat-b" });
+    const col1 = await service.createCollection({ name: "Collection A", slug: "col-a" });
+
+    // 1. Search tests (case insensitive ilike)
+    const foundCats = await service.searchCategories("gory A");
+    expect(foundCats.length).toBe(1);
+    expect(foundCats[0].id).toBe(cat1.id);
+
+    // 2. Assign categories (Cat 2 is primary)
+    await service.replaceProductCategories(product.id, {
+      categories: [
+        { categoryId: cat1.id, isPrimary: false },
+        { categoryId: cat2.id, isPrimary: true },
+      ],
     });
-    expect(options.length).toBe(1);
-    expect(options[0].name).toBe("Size");
-    const smallValueId = options[0].values.find((v) => v.value === "Small")!.id;
 
-    // 2. Create variant
-    const { variant, prices } = await service.createVariant(product.id, {
-      sku: "TEST-S",
-      isActive: true,
-      optionSelections: [{ optionId: options[0].id, optionValueId: smallValueId }],
-      prices: [{ currency: "USD", amountMinor: 1000 }],
+    const assignedCats = await service.listProductCategories(product.id);
+    expect(assignedCats.length).toBe(2);
+    const primaryCat = assignedCats.find((c) => c.isPrimary);
+    expect(primaryCat!.categoryId).toBe(cat2.id);
+
+    // 3. Assign collections
+    await service.replaceProductCollections(product.id, {
+      collections: [{ collectionId: col1.id }],
     });
 
-    expect(variant.sku).toBe("TEST-S");
-    expect(prices.length).toBe(1);
-    expect(prices[0].amountMinor).toBe(1000);
+    const assignedCols = await service.listProductCollections(product.id);
+    expect(assignedCols.length).toBe(1);
+    expect(assignedCols[0].collectionId).toBe(col1.id);
 
-    // 3. Prevent defining options now that variant exists
+    // 4. Duplicate collection check prevents bad inserts
     await expect(
-      service.defineProductOptions(product.id, {
-        options: [{ name: "Color", values: [{ value: "Red" }] }],
+      service.replaceProductCollections(product.id, {
+        collections: [{ collectionId: col1.id }, { collectionId: col1.id }],
       }),
     ).rejects.toMatchObject({
-      code: "CONFLICT",
-      message: expect.stringContaining("Cannot redefine product options"),
+      code: "INVALID_INPUT",
+      message: "Duplicate collection assignments are not allowed",
     });
-
-    // 4. Update variant and prices
-    const updated = await service.updateVariant(variant.id, {
-      sku: "TEST-S-UPDATED",
-    });
-    expect(updated.sku).toBe("TEST-S-UPDATED");
-
-    const newPrices = await service.setVariantPrices(variant.id, {
-      prices: [{ currency: "USD", amountMinor: 1500 }],
-    });
-    expect(newPrices[0].amountMinor).toBe(1500);
-
-    // 5. Read back via service convenience method
-    const details = await service.getVariantDetails(variant.id);
-    expect(details.sku).toBe("TEST-S-UPDATED");
-    expect(details.prices[0].amountMinor).toBe(1500);
-    expect(details.optionSelections[0].optionValueId).toBe(smallValueId);
   });
 });

@@ -26,7 +26,10 @@ export default async function AdminEditProductGeneralPage({
 
   return (
     <div data-testid="admin-product-general">
-      <ProductForm action="update" product={{ ...product, status: product.status as "draft" | "published" | "archived" }} />
+      <ProductForm
+        action="update"
+        product={{ ...product, status: product.status as "draft" | "published" | "archived" }}
+      />
     </div>
   );
 }

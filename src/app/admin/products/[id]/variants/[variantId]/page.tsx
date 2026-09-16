@@ -32,7 +32,7 @@ export default async function AdminEditVariantPage({
       <p className="mb-6 text-sm text-muted-foreground">
         ID: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{variant.id}</code>
       </p>
-      
+
       <VariantForm
         productId={id}
         productOptions={productOptions}

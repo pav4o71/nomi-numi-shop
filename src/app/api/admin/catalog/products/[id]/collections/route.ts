@@ -13,15 +13,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
 
     const service = new CatalogService(new DrizzleCatalogRepository(getRuntimeDb()));
-    const variant = await service.getVariantDetails(id);
+    const collections = await service.listProductCollections(id);
 
-    return NextResponse.json(variant);
+    return NextResponse.json(collections);
   } catch (error) {
     return adminCatalogErrorResponse(error);
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAdmin(await headers());
     const { id } = await params;
@@ -29,16 +29,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await parseJsonBody(request);
     const service = new CatalogService(new DrizzleCatalogRepository(getRuntimeDb()));
 
-    await service.updateVariant(id, body);
+    await service.replaceProductCollections(id, body);
 
-    const parsedBody = body as { prices?: unknown[] };
-    if (parsedBody?.prices !== undefined) {
-      await service.setVariantPrices(id, { prices: parsedBody.prices });
-    }
-
-    const updatedVariant = await service.getVariantDetails(id);
-
-    return NextResponse.json(updatedVariant);
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     return adminCatalogErrorResponse(error);
   }

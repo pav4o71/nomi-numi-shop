@@ -33,10 +33,14 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
   // Initialize prices map (using amount directly instead of minor for UI)
   const initialPrices = variant?.prices || [];
   const [usdPrice, setUsdPrice] = useState(
-    initialPrices.find((p) => p.currency === "USD")?.amountMinor ? initialPrices.find((p) => p.currency === "USD")!.amountMinor / 100 : ""
+    initialPrices.find((p) => p.currency === "USD")?.amountMinor
+      ? initialPrices.find((p) => p.currency === "USD")!.amountMinor / 100
+      : "",
   );
   const [phpPrice, setPhpPrice] = useState(
-    initialPrices.find((p) => p.currency === "PHP")?.amountMinor ? initialPrices.find((p) => p.currency === "PHP")!.amountMinor / 100 : ""
+    initialPrices.find((p) => p.currency === "PHP")?.amountMinor
+      ? initialPrices.find((p) => p.currency === "PHP")!.amountMinor / 100
+      : "",
   );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -45,12 +49,14 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
     setError(null);
 
     const form = new FormData(event.currentTarget);
-    
+
     // Collect option selections
-    const optionSelections = productOptions.map((opt) => ({
-      optionId: opt.id,
-      optionValueId: form.get(`option-${opt.id}`) as string,
-    })).filter(o => o.optionValueId);
+    const optionSelections = productOptions
+      .map((opt) => ({
+        optionId: opt.id,
+        optionValueId: form.get(`option-${opt.id}`) as string,
+      }))
+      .filter((o) => o.optionValueId);
 
     if (optionSelections.length !== productOptions.length) {
       setError("Please select a value for all options.");
@@ -79,9 +85,10 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
       prices,
     };
 
-    const url = action === "create" 
-      ? `/api/admin/catalog/products/${productId}/variants`
-      : `/api/admin/catalog/variants/${variant!.id}`;
+    const url =
+      action === "create"
+        ? `/api/admin/catalog/products/${productId}/variants`
+        : `/api/admin/catalog/variants/${variant!.id}`;
 
     try {
       const resp = await fetch(url, {
@@ -109,9 +116,14 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-6" data-testid="variant-form">
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <div className="space-y-1.5 md:col-span-2">
-          <label htmlFor="sku" className="text-sm font-medium">SKU <span className="text-destructive">*</span></label>
+          <label htmlFor="sku" className="text-sm font-medium">
+            SKU <span className="text-destructive">*</span>
+          </label>
           <input
-            id="sku" name="sku" type="text" required
+            id="sku"
+            name="sku"
+            type="text"
+            required
             defaultValue={variant?.sku ?? ""}
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
@@ -119,11 +131,15 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
 
         <div className="space-y-1.5 md:col-span-2 flex items-center gap-2">
           <input
-            id="isActive" name="isActive" type="checkbox"
+            id="isActive"
+            name="isActive"
+            type="checkbox"
             defaultChecked={variant?.isActive ?? true}
             className="h-4 w-4 rounded border-gray-300"
           />
-          <label htmlFor="isActive" className="text-sm font-medium">Active (sellable)</label>
+          <label htmlFor="isActive" className="text-sm font-medium">
+            Active (sellable)
+          </label>
         </div>
 
         {/* Dynamic Options */}
@@ -132,7 +148,9 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
             <h3 className="text-sm font-medium text-foreground">Options</h3>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {productOptions.map((opt) => {
-                const selectedVal = variant?.optionSelections.find(s => s.optionId === opt.id)?.optionValueId;
+                const selectedVal = variant?.optionSelections.find(
+                  (s) => s.optionId === opt.id,
+                )?.optionValueId;
                 return (
                   <div key={opt.id} className="space-y-1.5">
                     <label className="text-sm font-medium text-muted-foreground">{opt.name}</label>
@@ -142,9 +160,13 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
                       defaultValue={selectedVal ?? ""}
                       className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm"
                     >
-                      <option value="" disabled>Select {opt.name}</option>
-                      {opt.values.map(v => (
-                        <option key={v.id} value={v.id}>{v.value}</option>
+                      <option value="" disabled>
+                        Select {opt.name}
+                      </option>
+                      {opt.values.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.value}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -161,9 +183,11 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
             <div className="space-y-1.5">
               <label className="text-sm text-muted-foreground">USD</label>
               <input
-                type="number" step="0.01" min="0"
+                type="number"
+                step="0.01"
+                min="0"
                 value={usdPrice}
-                onChange={e => setUsdPrice(e.target.value)}
+                onChange={(e) => setUsdPrice(e.target.value)}
                 className="w-full rounded-lg border border-input px-3 py-2 text-sm"
                 placeholder="0.00"
               />
@@ -171,9 +195,11 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
             <div className="space-y-1.5">
               <label className="text-sm text-muted-foreground">PHP</label>
               <input
-                type="number" step="0.01" min="0"
+                type="number"
+                step="0.01"
+                min="0"
                 value={phpPrice}
-                onChange={e => setPhpPrice(e.target.value)}
+                onChange={(e) => setPhpPrice(e.target.value)}
                 className="w-full rounded-lg border border-input px-3 py-2 text-sm"
                 placeholder="0.00"
               />
@@ -188,7 +214,9 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
             <div className="space-y-1.5">
               <label className="text-sm text-muted-foreground">Weight (grams)</label>
               <input
-                name="weightGrams" type="number" min="0"
+                name="weightGrams"
+                type="number"
+                min="0"
                 defaultValue={variant?.weightGrams ?? ""}
                 className="w-full rounded-lg border border-input px-3 py-2 text-sm"
               />
@@ -196,7 +224,8 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
             <div className="space-y-1.5">
               <label className="text-sm text-muted-foreground">Fulfillment Hint</label>
               <input
-                name="fulfillmentHint" type="text"
+                name="fulfillmentHint"
+                type="text"
                 defaultValue={variant?.fulfillmentHint ?? ""}
                 className="w-full rounded-lg border border-input px-3 py-2 text-sm"
               />
@@ -204,7 +233,9 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
             <div className="space-y-1.5">
               <label className="text-sm text-muted-foreground">Length (mm)</label>
               <input
-                name="lengthMm" type="number" min="0"
+                name="lengthMm"
+                type="number"
+                min="0"
                 defaultValue={variant?.lengthMm ?? ""}
                 className="w-full rounded-lg border border-input px-3 py-2 text-sm"
               />
@@ -212,7 +243,9 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
             <div className="space-y-1.5">
               <label className="text-sm text-muted-foreground">Width (mm)</label>
               <input
-                name="widthMm" type="number" min="0"
+                name="widthMm"
+                type="number"
+                min="0"
                 defaultValue={variant?.widthMm ?? ""}
                 className="w-full rounded-lg border border-input px-3 py-2 text-sm"
               />
@@ -220,14 +253,15 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
             <div className="space-y-1.5">
               <label className="text-sm text-muted-foreground">Height (mm)</label>
               <input
-                name="heightMm" type="number" min="0"
+                name="heightMm"
+                type="number"
+                min="0"
                 defaultValue={variant?.heightMm ?? ""}
                 className="w-full rounded-lg border border-input px-3 py-2 text-sm"
               />
             </div>
           </div>
         </div>
-
       </div>
 
       {error && (
@@ -240,7 +274,11 @@ export function VariantForm({ productId, productOptions, action, variant }: Vari
         <Button type="submit" disabled={submitting}>
           {submitting ? "Saving…" : action === "create" ? "Create Variant" : "Save Changes"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push(`/admin/products/${productId}/variants`)}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push(`/admin/products/${productId}/variants`)}
+        >
           Cancel
         </Button>
       </div>

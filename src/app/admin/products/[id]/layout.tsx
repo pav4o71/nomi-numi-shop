@@ -60,6 +60,12 @@ export default async function AdminProductLayout({
           >
             Variants
           </Link>
+          <Link
+            href={`/admin/products/${product.id}/organization`}
+            className="border-transparent text-muted-foreground hover:border-muted-foreground hover:text-foreground whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium"
+          >
+            Organization
+          </Link>
         </nav>
       </div>
 

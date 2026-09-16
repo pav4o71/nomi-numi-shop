@@ -21,11 +21,7 @@ export default async function AdminEditProductOptionsPage({
 
   return (
     <div data-testid="admin-product-options">
-      <ProductOptionsForm
-        productId={id}
-        initialOptions={options}
-        hasVariants={hasVariants}
-      />
+      <ProductOptionsForm productId={id} initialOptions={options} hasVariants={hasVariants} />
     </div>
   );
 }

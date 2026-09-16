@@ -501,7 +501,8 @@ Admin catalog management, delivered in reviewed steps:
 - Phase 4D — product options, variants, and pricing UI (`getProductOptions`,
   `listVariantDetailsForProduct`, `getVariantDetails`, option/variant CRUD
   API routes, variant form components, tests)
-- Phase 4E (Pending) — assigning products to categories and collections.
+- Phase 4E — product organization via scalable search/autocomplete interfaces
+  (assigning products to categories and collections, tests)
 
 ### Phase 5
 
