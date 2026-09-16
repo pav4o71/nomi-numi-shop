@@ -695,6 +695,10 @@ export class DrizzleCatalogRepository {
       .orderBy(asc(collections.position), asc(collections.slug));
   }
 
+  async listAllProducts(executor: CatalogExecutor): Promise<ProductRow[]> {
+    return executor.select().from(products).orderBy(products.position, products.createdAt);
+  }
+
   async listPublishedProducts(executor: CatalogExecutor): Promise<ProductRow[]> {
     return executor
       .select()

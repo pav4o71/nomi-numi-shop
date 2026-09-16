@@ -165,6 +165,10 @@ export class CatalogService {
     );
   }
 
+  async listAllProducts(): Promise<ProductRow[]> {
+    return this.repo.transaction(async (tx) => this.repo.listAllProducts(tx));
+  }
+
   async getProductById(id: string): Promise<ProductRow> {
     const row = await this.repo.transaction(async (tx) => this.repo.getProductById(tx, id));
     if (!row) {
