@@ -12,21 +12,21 @@ The repository is a production-grade e-commerce application. Do not assume that 
 
 Use the versions discovered from the repository's `package.json`, lockfile, engine declarations, and version files. At the time this rulebook was created, the expected baseline is:
 
-| Tool | Version |
-|---|---:|
-| Next.js | `16.3.4` |
-| React | `19.2.8` |
-| React DOM | `19.2.8` |
-| Drizzle ORM | `0.45.2` |
+| Tool        |   Version |
+| ----------- | --------: |
+| Next.js     |  `16.3.4` |
+| React       |  `19.2.8` |
+| React DOM   |  `19.2.8` |
+| Drizzle ORM |  `0.45.2` |
 | Drizzle Kit | `0.31.10` |
-| postgres-js | `3.4.9` |
-| Vitest | `5.0.0` |
-| Playwright | `1.63.0` |
-| pnpm | `11.26.0` |
-| Node.js | `24.19.0` |
-| TypeScript | `5.9.3` |
-| ESLint | `9.39.5` |
-| Prettier | `3.9.6` |
+| postgres-js |   `3.4.9` |
+| Vitest      |   `5.0.0` |
+| Playwright  |  `1.63.0` |
+| pnpm        | `11.26.0` |
+| Node.js     | `24.19.0` |
+| TypeScript  |   `5.9.3` |
+| ESLint      |  `9.39.5` |
+| Prettier    |   `3.9.6` |
 
 The active health script is:
 
@@ -156,26 +156,20 @@ This project runs Next.js 16. Dynamic route parameters are asynchronous and must
 Correct pattern:
 
 ```ts
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const { id } = await params
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-  return Response.json({ id })
+  return Response.json({ id });
 }
 ```
 
 When supported by the project’s generated Next.js types, use the framework route context helper:
 
 ```ts
-export async function GET(
-  request: Request,
-  context: RouteContext<'/api/products/[id]'>,
-) {
-  const { id } = await context.params
+export async function GET(request: Request, context: RouteContext<"/api/products/[id]">) {
+  const { id } = await context.params;
 
-  return Response.json({ id })
+  return Response.json({ id });
 }
 ```
 
@@ -288,13 +282,13 @@ Recommended Vitest configuration principles:
 ```ts
 export default defineConfig({
   test: {
-    environment: 'node',
+    environment: "node",
     clearMocks: true,
     restoreMocks: true,
-    setupFiles: ['./vitest.setup.ts'],
+    setupFiles: ["./vitest.setup.ts"],
     passWithNoTests: false,
   },
-})
+});
 ```
 
 Use the repository’s existing configuration as the source of truth and do not replace it wholesale without a reason.
