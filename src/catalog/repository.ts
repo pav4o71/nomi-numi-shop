@@ -9,6 +9,7 @@ import type { CatalogDb, CatalogExecutor, CatalogTx } from "@/catalog/db";
 import { createCatalogId } from "@/catalog/ids";
 import type { CatalogMoney } from "@/catalog/money";
 import type { OptionSelection } from "@/catalog/option-combination";
+import { conflict } from "@/catalog/errors";
 import { withUniqueConflictMapping } from "@/catalog/pg-errors";
 import type { ProductStatus } from "@/catalog/validators";
 import {
@@ -883,21 +884,54 @@ export class DrizzleCatalogRepository {
         })
         .onConflictDoNothing();
 
-      await db
+      // Lock the balance row so concurrent last-unit reservations serialize.
+      const locked = await db
+        .select()
+        .from(inventoryBalances)
+        .where(eq(inventoryBalances.variantId, params.variantId))
+        .for("update");
+      if (locked.length === 0) {
+        throw conflict("Inventory balance row missing after ensure-insert", [
+          {
+            path: ["variantId"],
+            message: "Inventory balance could not be locked",
+            code: "inventory_balance_missing",
+          },
+        ]);
+      }
+
+      // Conditional UPDATE … RETURNING enforces non-negative / available invariants atomically.
+      const updated = await db
         .update(inventoryBalances)
         .set({
           onHand: sql`${inventoryBalances.onHand} + ${params.deltaOnHand}`,
           reserved: sql`${inventoryBalances.reserved} + ${params.deltaReserved}`,
         })
-        .where(eq(inventoryBalances.variantId, params.variantId));
+        .where(
+          and(
+            eq(inventoryBalances.variantId, params.variantId),
+            sql`${inventoryBalances.onHand} + ${params.deltaOnHand} >= 0`,
+            sql`${inventoryBalances.reserved} + ${params.deltaReserved} >= 0`,
+            sql`${inventoryBalances.reserved} + ${params.deltaReserved} <= ${inventoryBalances.onHand} + ${params.deltaOnHand}`,
+          ),
+        )
+        .returning();
 
-      // The movement delta conventionally reflects the onHand change for manual/restocks.
-      // But if it's purely a reservation, we log it with a delta of 0 for onHand?
-      // The rules say "delta (signed integer minor units of stock)". We'll store deltaOnHand.
+      if (updated.length === 0) {
+        throw conflict("Inventory adjustment conflicts with current balance", [
+          {
+            path: ["deltaOnHand"],
+            message: "Insufficient inventory for this adjustment",
+            code: "insufficient_inventory",
+          },
+        ]);
+      }
+
       await db.insert(inventoryMovements).values({
         id: createCatalogId("ivm"),
         variantId: params.variantId,
-        delta: params.deltaOnHand !== 0 ? params.deltaOnHand : params.deltaReserved, // Just a simplification for the ledger display. In a real system, you might want separate delta columns or encode it in the reason.
+        deltaOnHand: params.deltaOnHand,
+        deltaReserved: params.deltaReserved,
         reason: params.reason,
         sourceReference: params.sourceReference ?? null,
         note: params.note ?? null,

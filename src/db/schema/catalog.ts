@@ -175,8 +175,9 @@ export const inventoryMovements = pgTable("inventory_movements", {
   id: text("id").primaryKey(),
   variantId: text("variant_id")
     .notNull()
-    .references(() => productVariants.id, { onDelete: "cascade" }),
-  delta: integer("delta").notNull(),
+    .references(() => productVariants.id, { onDelete: "restrict" }),
+  deltaOnHand: integer("delta_on_hand").notNull(),
+  deltaReserved: integer("delta_reserved").notNull(),
   reason: text("reason").notNull(),
   sourceReference: text("source_reference"),
   note: text("note"),
