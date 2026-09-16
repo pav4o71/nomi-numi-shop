@@ -17,6 +17,19 @@ test("renders the public storefront homepage", async ({ page }) => {
     page.getByRole("main").getByRole("link", { name: "Shop Gifts" }).first(),
   ).toBeVisible();
 
+  await expect(page.getByRole("heading", { level: 2, name: "Featured products" })).toBeVisible();
+  await expect(page.locator("#featured-products")).toBeVisible();
+  await expect(
+    page
+      .getByTestId("home-featured-products-empty")
+      .or(page.getByTestId("home-featured-products-grid")),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Featured categories" })).toBeVisible();
+  await expect(page.locator("#featured-categories")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Featured collections" })).toBeVisible();
+  await expect(page.locator("#featured-collections")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Seasonal collections" })).toBeVisible();
+  await expect(page.locator("#seasonal-collections")).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Gift directions" })).toBeVisible();
   await expect(page.locator("#gifts")).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Shop destinations" })).toBeVisible();
@@ -63,6 +76,8 @@ test("primary navigation includes catalog hrefs and homepage section anchors", a
     "href",
     "/gifts",
   );
+  await expect(main.getByRole("heading", { level: 2, name: "Featured products" })).toBeVisible();
+  await expect(main.getByRole("heading", { level: 2, name: "Seasonal collections" })).toBeVisible();
   await expect(main.getByRole("heading", { level: 2, name: "Shop destinations" })).toBeVisible();
   await expect(main.getByRole("link", { name: /^Products\b/ })).toHaveAttribute(
     "href",
