@@ -662,6 +662,14 @@ export class DrizzleCatalogRepository {
     );
   }
 
+  /** All categories ordered by position then name (admin view). */
+  async listAllCategories(executor: CatalogExecutor): Promise<CategoryRow[]> {
+    return executor
+      .select()
+      .from(categories)
+      .orderBy(asc(categories.position), asc(categories.name));
+  }
+
   /** Published, non-archived categories ordered by merchandising position. */
   async listPublishedCategories(executor: CatalogExecutor): Promise<CategoryRow[]> {
     return executor
@@ -675,6 +683,10 @@ export class DrizzleCatalogRepository {
    * Published, non-archived collections. Publish-window filtering is applied
    * by PublicCatalogReads (needs wall-clock `now`).
    */
+  async listAllCollections(executor: CatalogExecutor): Promise<CollectionRow[]> {
+    return executor.select().from(collections).orderBy(collections.position, collections.createdAt);
+  }
+
   async listPublishedCollections(executor: CatalogExecutor): Promise<CollectionRow[]> {
     return executor
       .select()

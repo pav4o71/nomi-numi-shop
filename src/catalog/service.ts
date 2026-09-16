@@ -71,6 +71,10 @@ export class CatalogService {
     return row;
   }
 
+  async listAllCategories(): Promise<CategoryRow[]> {
+    return this.repo.transaction(async (tx) => this.repo.listAllCategories(tx));
+  }
+
   async updateCategory(id: string, input: unknown): Promise<CategoryRow> {
     const data = parseCatalogInput(updateCategoryInputSchema, input, "updateCategory");
     return this.repo.transaction(async (tx) => {
@@ -417,6 +421,12 @@ export class CatalogService {
         throw notFound(`Variant not found: ${variantId}`);
       }
       return this.repo.listVariantPrices(tx, variantId);
+    });
+  }
+
+  async listAllCollections(): Promise<CollectionRow[]> {
+    return this.repo.transaction(async (tx) => {
+      return this.repo.listAllCollections(tx);
     });
   }
 

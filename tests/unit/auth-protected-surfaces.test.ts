@@ -287,8 +287,12 @@ describe("Phase 2C5 protected surface wiring", () => {
     expect(accountPage).not.toMatch(/useSession/);
     expect(accountPage).not.toMatch(/role\s*===/);
 
+    const adminLayout = readSrc("src/app/admin/layout.tsx");
+    expect(adminLayout).toMatch(/requireAdminPage/);
+    expect(adminLayout).not.toMatch(/useSession/);
+    expect(adminLayout).not.toMatch(/role\s*===/);
+
     const adminPage = readSrc("src/app/admin/page.tsx");
-    expect(adminPage).toMatch(/requireAdminPage/);
     expect(adminPage).not.toMatch(/useSession/);
     expect(adminPage).not.toMatch(/role\s*===/);
 
