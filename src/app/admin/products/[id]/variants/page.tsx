@@ -37,44 +37,57 @@ export default async function AdminEditProductVariantsPage({
               <tr className="border-b border-border/60 bg-muted/30 text-left">
                 <th className="px-4 py-3 font-medium text-muted-foreground">SKU</th>
                 <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Available</th>
                 <th className="px-4 py-3 font-medium text-muted-foreground">Prices</th>
                 <th className="px-4 py-3 font-medium text-muted-foreground">Weight</th>
                 <th className="px-4 py-3 font-medium text-muted-foreground" />
               </tr>
             </thead>
             <tbody>
-              {variants.map((v) => (
-                <tr key={v.id} className="border-b border-border/30 last:border-b-0">
-                  <td className="px-4 py-3 font-medium">
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{v.sku}</code>
-                  </td>
-                  <td className="px-4 py-3">
-                    {v.isActive ? (
-                      <span className="text-emerald-600 dark:text-emerald-400">Active</span>
-                    ) : (
-                      <span className="text-muted-foreground">Inactive</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {v.prices.map((p) => (
-                      <div key={p.currency} className="text-xs">
-                        {p.currency} {p.amountMinor / 100}
-                      </div>
-                    ))}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {v.weightGrams !== null ? `${v.weightGrams}g` : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/admin/products/${id}/variants/${v.id}`}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {variants.map((v) => {
+                const available = v.inventoryBalance
+                  ? v.inventoryBalance.onHand - v.inventoryBalance.reserved
+                  : 0;
+                return (
+                  <tr key={v.id} className="border-b border-border/30 last:border-b-0">
+                    <td className="px-4 py-3 font-medium">
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{v.sku}</code>
+                    </td>
+                    <td className="px-4 py-3">
+                      {v.isActive ? (
+                        <span className="text-emerald-600 dark:text-emerald-400">Active</span>
+                      ) : (
+                        <span className="text-muted-foreground">Inactive</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">{available}</td>
+                    <td className="px-4 py-3">
+                      {v.prices.map((p) => (
+                        <div key={p.currency} className="text-xs">
+                          {p.currency} {p.amountMinor / 100}
+                        </div>
+                      ))}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {v.weightGrams !== null ? `${v.weightGrams}g` : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/admin/products/${id}/variants/${v.id}`}
+                        className="text-sm text-primary hover:underline block mb-1"
+                      >
+                        Edit
+                      </Link>
+                      <Link
+                        href={`/admin/products/${id}/variants/${v.id}/inventory`}
+                        className="text-sm text-primary hover:underline block"
+                      >
+                        Inventory
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

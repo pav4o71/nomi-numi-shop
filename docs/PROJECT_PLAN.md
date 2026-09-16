@@ -504,9 +504,9 @@ Admin catalog management, delivered in reviewed steps:
 - Phase 4E — product organization via scalable search/autocomplete interfaces
   (assigning products to categories and collections, tests)
 
-### Phase 5
+### Phase 5 (Completed)
 
-Inventory and fulfillment.
+Inventory tracking and ledger implementation. Fulfillment processing deferred until Order system (Phase 8).
 
 ### Phase 6
 

@@ -40,4 +40,8 @@ export {
   storeSettingsRelations,
   variantPrices,
   variantPricesRelations,
+  inventoryBalances,
+  inventoryBalancesRelations,
+  inventoryMovements,
+  inventoryMovementsRelations,
 } from "./catalog";
