@@ -140,8 +140,9 @@ describe("admin catalog categories integration (local)", () => {
   });
 
   it("fails to get a non-existent category", async () => {
+    const id = "cat_not_exist";
     await expect(
-      service.getCategoryById("cat_not_exist")
+      service.getCategoryById(id)
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
