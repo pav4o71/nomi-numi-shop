@@ -492,6 +492,9 @@ Admin catalog management, delivered in reviewed steps:
   `listAllCategories` repository/service methods, category CRUD API
   routes under `/api/admin/catalog/categories`, category admin UI pages
   under `/admin/categories`, authorization tests)
+- Phase 4B — collection management (`listAllCollections`, collection CRUD
+  API routes under `/api/admin/catalog/collections`, collection admin UI
+  pages, form component, integration tests)
 
 ### Phase 5
 

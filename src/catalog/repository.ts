@@ -683,6 +683,10 @@ export class DrizzleCatalogRepository {
    * Published, non-archived collections. Publish-window filtering is applied
    * by PublicCatalogReads (needs wall-clock `now`).
    */
+  async listAllCollections(executor: CatalogExecutor): Promise<CollectionRow[]> {
+    return executor.select().from(collections).orderBy(collections.position, collections.createdAt);
+  }
+
   async listPublishedCollections(executor: CatalogExecutor): Promise<CollectionRow[]> {
     return executor
       .select()

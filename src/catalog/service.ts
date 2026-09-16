@@ -424,6 +424,12 @@ export class CatalogService {
     });
   }
 
+  async listAllCollections(): Promise<CollectionRow[]> {
+    return this.repo.transaction(async (tx) => {
+      return this.repo.listAllCollections(tx);
+    });
+  }
+
   async listProductCollections(productId: string): Promise<CollectionProductRow[]> {
     return this.repo.transaction(async (tx) => {
       const product = await this.repo.getProductById(tx, productId);
