@@ -14,6 +14,8 @@ import {
   type CategoryRow,
   type CollectionProductRow,
   type CollectionRow,
+  type InventoryBalanceRow,
+  type InventoryMovementRow,
   type ProductCategoryRow,
   type ProductOptionWithValues,
   type ProductRow,
@@ -21,6 +23,7 @@ import {
   type VariantRow,
 } from "@/catalog/repository";
 import {
+  adjustInventoryInputSchema,
   changeProductStatusInputSchema,
   createCategoryInputSchema,
   createCollectionInputSchema,
@@ -431,7 +434,8 @@ export class CatalogService {
         variants.map(async (v) => {
           const prices = await this.repo.listVariantPrices(tx, v.id);
           const optionSelections = await this.repo.listVariantSelections(tx, v.id);
-          return { ...v, prices, optionSelections };
+          const inventoryBalance = await this.repo.getInventoryBalance(v.id, tx);
+          return { ...v, prices, optionSelections, inventoryBalance };
         }),
       );
     });
@@ -443,7 +447,8 @@ export class CatalogService {
       if (!variant) throw notFound(`Variant not found: ${variantId}`);
       const prices = await this.repo.listVariantPrices(tx, variantId);
       const optionSelections = await this.repo.listVariantSelections(tx, variantId);
-      return { ...variant, prices, optionSelections };
+      const inventoryBalance = await this.repo.getInventoryBalance(variantId, tx);
+      return { ...variant, prices, optionSelections, inventoryBalance };
     });
   }
 
@@ -691,5 +696,80 @@ export class CatalogService {
         ]);
       }
     }
+  }
+
+  async getVariantInventoryBalance(variantId: string): Promise<InventoryBalanceRow | null> {
+    const variant = await this.repo.transaction(async (tx) =>
+      this.repo.getVariantById(tx, variantId),
+    );
+    if (!variant) {
+      throw notFound(`Variant not found: ${variantId}`);
+    }
+    return this.repo.transaction(async (tx) => this.repo.getInventoryBalance(variantId, tx));
+  }
+
+  async getVariantInventoryMovements(variantId: string): Promise<InventoryMovementRow[]> {
+    const variant = await this.repo.transaction(async (tx) =>
+      this.repo.getVariantById(tx, variantId),
+    );
+    if (!variant) {
+      throw notFound(`Variant not found: ${variantId}`);
+    }
+    return this.repo.transaction(async (tx) => this.repo.getInventoryMovements(variantId, tx));
+  }
+
+  async adjustVariantInventory(
+    variantId: string,
+    input: unknown,
+    sourceReference?: string,
+  ): Promise<void> {
+    const data = parseCatalogInput(adjustInventoryInputSchema, input, "adjustInventory");
+
+    await this.repo.transaction(async (tx) => {
+      const variant = await this.repo.getVariantById(tx, variantId);
+      if (!variant) {
+        throw notFound(`Variant not found: ${variantId}`);
+      }
+
+      // Check if it's a negative adjustment that would drop onHand < 0
+      // PostgreSQL constraints will catch this, but throwing a domain error here is cleaner.
+      if (data.deltaOnHand < 0 || data.deltaReserved > 0) {
+        const balance = await this.repo.getInventoryBalance(variantId, tx);
+        const currentOnHand = balance?.onHand ?? 0;
+        const currentReserved = balance?.reserved ?? 0;
+
+        if (currentOnHand + data.deltaOnHand < 0) {
+          throw conflict("Cannot reduce on-hand inventory below zero", [
+            {
+              path: ["deltaOnHand"],
+              message: "Insufficient on-hand inventory",
+              code: "insufficient_inventory",
+            },
+          ]);
+        }
+
+        if (currentReserved + data.deltaReserved > currentOnHand + data.deltaOnHand) {
+          throw conflict("Cannot reserve more inventory than is available on-hand", [
+            {
+              path: ["deltaReserved"],
+              message: "Insufficient available inventory for reservation",
+              code: "insufficient_inventory",
+            },
+          ]);
+        }
+      }
+
+      await this.repo.recordInventoryMovement(
+        {
+          variantId,
+          deltaOnHand: data.deltaOnHand,
+          deltaReserved: data.deltaReserved,
+          reason: data.reason,
+          sourceReference,
+          note: data.note,
+        },
+        tx,
+      );
+    });
   }
 }

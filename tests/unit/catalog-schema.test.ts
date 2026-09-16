@@ -14,7 +14,7 @@ const migrationSql = readFileSync(
 );
 
 describe("Phase 3A catalog schema portable contracts", () => {
-  it("exports catalog tables without inventory or commerce runtime tables", () => {
+  it("exports catalog tables alongside inventory tables without commerce runtime tables", () => {
     expect(schema.storeSettings).toBeDefined();
     expect(schema.categories).toBeDefined();
     expect(schema.collections).toBeDefined();
@@ -27,10 +27,10 @@ describe("Phase 3A catalog schema portable contracts", () => {
     expect(schema.productVariantOptionValues).toBeDefined();
     expect(schema.variantPrices).toBeDefined();
     expect(schema.productMedia).toBeDefined();
+    expect(schema.inventoryBalances).toBeDefined();
+    expect(schema.inventoryMovements).toBeDefined();
 
     const exported = Object.keys(schema);
-    expect(exported).not.toContain("inventoryBalances");
-    expect(exported).not.toContain("inventoryMovements");
     expect(exported).not.toContain("inventoryReservations");
     expect(exported).not.toContain("orders");
     expect(exported).not.toContain("carts");

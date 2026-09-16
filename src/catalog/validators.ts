@@ -203,6 +203,13 @@ export const replaceProductCollectionsInputSchema = z.object({
   ),
 });
 
+export const adjustInventoryInputSchema = z.object({
+  deltaOnHand: z.number().int(),
+  deltaReserved: z.number().int(),
+  reason: nonEmptyTrimmedString,
+  note: z.string().optional(),
+});
+
 export type CreateCategoryInput = z.infer<typeof createCategoryInputSchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategoryInputSchema>;
 export type CreateCollectionInput = z.infer<typeof createCollectionInputSchema>;
@@ -214,6 +221,7 @@ export type UpdateVariantInput = z.infer<typeof updateVariantInputSchema>;
 export type DefineProductOptionsInput = z.infer<typeof defineProductOptionsInputSchema>;
 export type ReplaceProductCategoriesInput = z.infer<typeof replaceProductCategoriesInputSchema>;
 export type ReplaceProductCollectionsInput = z.infer<typeof replaceProductCollectionsInputSchema>;
+export type AdjustInventoryInput = z.infer<typeof adjustInventoryInputSchema>;
 
 /**
  * Parse with Zod 4 and map failures to CatalogError INVALID_INPUT.

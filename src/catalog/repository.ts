@@ -3,7 +3,7 @@
  * Domain rules / validation / lifecycle live in CatalogService.
  */
 
-import { and, asc, eq, ilike, inArray, isNull, ne } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, ne, sql } from "drizzle-orm";
 
 import type { CatalogDb, CatalogExecutor, CatalogTx } from "@/catalog/db";
 import { createCatalogId } from "@/catalog/ids";
@@ -15,6 +15,8 @@ import {
   categories,
   collectionProducts,
   collections,
+  inventoryBalances,
+  inventoryMovements,
   productCategories,
   productOptionValues,
   productOptions,
@@ -33,6 +35,8 @@ export type ProductOptionValueRow = typeof productOptionValues.$inferSelect;
 export type VariantPriceRow = typeof variantPrices.$inferSelect;
 export type ProductCategoryRow = typeof productCategories.$inferSelect;
 export type CollectionProductRow = typeof collectionProducts.$inferSelect;
+export type InventoryBalanceRow = typeof inventoryBalances.$inferSelect;
+export type InventoryMovementRow = typeof inventoryMovements.$inferSelect;
 
 export type ProductOptionWithValues = ProductOptionRow & {
   values: ProductOptionValueRow[];
@@ -833,5 +837,77 @@ export class DrizzleCatalogRepository {
       return [];
     }
     return executor.select().from(products).where(inArray(products.id, productIds));
+  }
+  async getInventoryBalance(
+    variantId: string,
+    tx?: CatalogExecutor,
+  ): Promise<InventoryBalanceRow | null> {
+    const db = tx ?? this.db;
+    const [row] = await db
+      .select()
+      .from(inventoryBalances)
+      .where(eq(inventoryBalances.variantId, variantId));
+    return row ?? null;
+  }
+
+  async getInventoryMovements(
+    variantId: string,
+    tx?: CatalogExecutor,
+  ): Promise<InventoryMovementRow[]> {
+    const db = tx ?? this.db;
+    return db
+      .select()
+      .from(inventoryMovements)
+      .where(eq(inventoryMovements.variantId, variantId))
+      .orderBy(desc(inventoryMovements.createdAt));
+  }
+
+  async recordInventoryMovement(
+    params: {
+      variantId: string;
+      deltaOnHand: number;
+      deltaReserved: number;
+      reason: string;
+      sourceReference?: string;
+      note?: string;
+    },
+    tx?: CatalogExecutor,
+  ): Promise<void> {
+    const execute = async (db: CatalogTx) => {
+      await db
+        .insert(inventoryBalances)
+        .values({
+          variantId: params.variantId,
+          onHand: 0,
+          reserved: 0,
+        })
+        .onConflictDoNothing();
+
+      await db
+        .update(inventoryBalances)
+        .set({
+          onHand: sql`${inventoryBalances.onHand} + ${params.deltaOnHand}`,
+          reserved: sql`${inventoryBalances.reserved} + ${params.deltaReserved}`,
+        })
+        .where(eq(inventoryBalances.variantId, params.variantId));
+
+      // The movement delta conventionally reflects the onHand change for manual/restocks.
+      // But if it's purely a reservation, we log it with a delta of 0 for onHand?
+      // The rules say "delta (signed integer minor units of stock)". We'll store deltaOnHand.
+      await db.insert(inventoryMovements).values({
+        id: createCatalogId("ivm"),
+        variantId: params.variantId,
+        delta: params.deltaOnHand !== 0 ? params.deltaOnHand : params.deltaReserved, // Just a simplification for the ledger display. In a real system, you might want separate delta columns or encode it in the reason.
+        reason: params.reason,
+        sourceReference: params.sourceReference ?? null,
+        note: params.note ?? null,
+      });
+    };
+
+    if (tx) {
+      await execute(tx as CatalogTx);
+    } else {
+      await this.transaction(execute);
+    }
   }
 }

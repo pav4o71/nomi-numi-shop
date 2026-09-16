@@ -148,6 +148,41 @@ export const collectionProducts = pgTable(
   ],
 );
 
+/**
+ * Variant-level inventory balance tracking.
+ */
+export const inventoryBalances = pgTable(
+  "inventory_balances",
+  {
+    variantId: text("variant_id")
+      .primaryKey()
+      .references(() => productVariants.id, { onDelete: "cascade" }),
+    onHand: integer("on_hand").notNull().default(0),
+    reserved: integer("reserved").notNull().default(0),
+    ...timestamps,
+  },
+  (table) => [
+    check("inventory_balances_on_hand_nonneg_chk", sql`${table.onHand} >= 0`),
+    check("inventory_balances_reserved_nonneg_chk", sql`${table.reserved} >= 0`),
+    check("inventory_balances_reserved_lte_on_hand_chk", sql`${table.reserved} <= ${table.onHand}`),
+  ],
+);
+
+/**
+ * Immutable ledger of inventory movements.
+ */
+export const inventoryMovements = pgTable("inventory_movements", {
+  id: text("id").primaryKey(),
+  variantId: text("variant_id")
+    .notNull()
+    .references(() => productVariants.id, { onDelete: "cascade" }),
+  delta: integer("delta").notNull(),
+  reason: text("reason").notNull(),
+  sourceReference: text("source_reference"),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const productOptions = pgTable(
   "product_options",
   {
@@ -376,6 +411,11 @@ export const productVariantsRelations = relations(productVariants, ({ one, many 
   optionValues: many(productVariantOptionValues),
   prices: many(variantPrices),
   media: many(productMedia),
+  inventoryBalance: one(inventoryBalances, {
+    fields: [productVariants.id],
+    references: [inventoryBalances.variantId],
+  }),
+  inventoryMovements: many(inventoryMovements),
 }));
 
 export const productVariantOptionValuesRelations = relations(
@@ -403,6 +443,20 @@ export const productVariantOptionValuesRelations = relations(
 export const variantPricesRelations = relations(variantPrices, ({ one }) => ({
   variant: one(productVariants, {
     fields: [variantPrices.variantId],
+    references: [productVariants.id],
+  }),
+}));
+
+export const inventoryBalancesRelations = relations(inventoryBalances, ({ one }) => ({
+  variant: one(productVariants, {
+    fields: [inventoryBalances.variantId],
+    references: [productVariants.id],
+  }),
+}));
+
+export const inventoryMovementsRelations = relations(inventoryMovements, ({ one }) => ({
+  variant: one(productVariants, {
+    fields: [inventoryMovements.variantId],
     references: [productVariants.id],
   }),
 }));
