@@ -943,14 +943,19 @@ schema/migrations, fixtures, auth, media runtime, or commerce flows.
 - **Validation:** concurrent TEST DB tests; audit assertions
 - **Depends on:** variants schema; before or with checkout as needed
 
-### Phase 6 — Storefront merchandising integration
+### Phase 6 — Storefront merchandising integration (Completed)
 
 - **Scope:** featured products/categories/collections wiring, seasonal
   collection surfaces using published catalog data
 - **Out of scope:** best-seller analytics finalization if commerce data
-  insufficient; promotions engine
-- **Validation:** storefront E2E smoke
+  insufficient; promotions engine; dedicated featured-flag schema (uses
+  existing merchandising `position` ordering until admin pin overrides)
+- **Validation:** storefront E2E smoke (portable empty-safe homepage
+  sections) + local catalog-public homepage fixture assertions
 - **Depends on:** public reads + admin merchandising fields
+- **Shipped:** homepage sections `#featured-products`,
+  `#featured-categories`, `#featured-collections`, `#seasonal-collections`
+  via `loadStorefrontMerchandising()` / `PublicCatalogReads` extensions
 
 ### Later (unchanged project-plan lanes)
 
