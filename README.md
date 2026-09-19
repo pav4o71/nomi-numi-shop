@@ -5,7 +5,7 @@ store.
 
 ## Current phase
 
-Post-Phase-3D storefront presentation + hardening
+Phase 6 storefront merchandising + hardening
 
 Phase 0 through Phase 3D are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only

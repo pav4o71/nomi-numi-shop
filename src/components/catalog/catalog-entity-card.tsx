@@ -10,6 +10,8 @@ type CatalogEntityCardProps = {
   "data-testid": string;
   className?: string;
   showPlaceholder?: boolean;
+  /** Heading element for the card title (default h2 for index pages). */
+  titleAs?: "h2" | "h3";
 };
 
 /**
@@ -23,6 +25,7 @@ export function CatalogEntityCard({
   "data-testid": testId,
   className,
   showPlaceholder = true,
+  titleAs: TitleTag = "h2",
 }: CatalogEntityCardProps) {
   return (
     <Link
@@ -40,9 +43,9 @@ export function CatalogEntityCard({
         />
       ) : null}
       <div className="flex flex-1 flex-col gap-2 px-5 py-4 sm:px-6 sm:py-5">
-        <h2 className="font-display text-xl font-semibold tracking-tight text-foreground">
+        <TitleTag className="font-display text-xl font-semibold tracking-tight text-foreground">
           {name}
-        </h2>
+        </TitleTag>
         {description ? (
           <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
             {description}

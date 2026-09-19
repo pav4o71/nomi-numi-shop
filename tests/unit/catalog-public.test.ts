@@ -252,3 +252,31 @@ describe("public money display formatting", () => {
     ).toBe("$10.00");
   });
 });
+
+describe("Phase 6 merchandising selection", () => {
+  it("takeFeatured returns the leading slice and clamps bad limits", async () => {
+    const { takeFeatured } = await import("@/catalog/public/merchandising");
+    expect(takeFeatured(["a", "b", "c"], 2)).toEqual(["a", "b"]);
+    expect(takeFeatured(["a", "b"], 10)).toEqual(["a", "b"]);
+    expect(takeFeatured(["a"], 0)).toEqual([]);
+    expect(takeFeatured(["a"], -3)).toEqual([]);
+  });
+
+  it("selectSeasonalCollections prefers windowed collections then falls back", async () => {
+    const { selectSeasonalCollections } = await import("@/catalog/public/merchandising");
+    const openEnded = {
+      slug: "always",
+      publishedFrom: null,
+      publishedUntil: null,
+    };
+    const seasonal = {
+      slug: "holiday",
+      publishedFrom: new Date("2026-12-01T00:00:00.000Z"),
+      publishedUntil: new Date("2026-12-31T00:00:00.000Z"),
+    };
+    expect(selectSeasonalCollections([openEnded, seasonal], 4).map((c) => c.slug)).toEqual([
+      "holiday",
+    ]);
+    expect(selectSeasonalCollections([openEnded], 4).map((c) => c.slug)).toEqual(["always"]);
+  });
+});

@@ -16,6 +16,14 @@ import {
   isProductPublished,
   selectInitialEligibleVariant,
 } from "@/catalog/public/eligibility";
+import {
+  FEATURED_CATEGORY_LIMIT,
+  FEATURED_COLLECTION_LIMIT,
+  FEATURED_PRODUCT_LIMIT,
+  SEASONAL_COLLECTION_LIMIT,
+  selectSeasonalCollections,
+  takeFeatured,
+} from "@/catalog/public/merchandising";
 import type {
   PublicCategoryPage,
   PublicCategorySummary,
@@ -57,6 +65,47 @@ export class PublicCatalogReads {
     return this.repo.transaction(async (tx) => {
       const products = await this.repo.listPublishedProducts(tx);
       return this.buildListingCards(tx, products, currency);
+    });
+  }
+
+  /** Featured products: leading published slice by merchandising position. */
+  async listFeaturedProducts(
+    currency: CatalogCurrency,
+    limit: number = FEATURED_PRODUCT_LIMIT,
+  ): Promise<PublicProductListingCard[]> {
+    const products = await this.listPublishedProducts(currency);
+    return takeFeatured(products, limit);
+  }
+
+  /** Featured categories: leading published slice by merchandising position. */
+  async listFeaturedCategories(
+    limit: number = FEATURED_CATEGORY_LIMIT,
+  ): Promise<PublicCategorySummary[]> {
+    const categories = await this.listPublishedCategories();
+    return takeFeatured(categories, limit);
+  }
+
+  /** Featured collections: leading currently-public slice by merchandising position. */
+  async listFeaturedCollections(
+    now: Date = new Date(),
+    limit: number = FEATURED_COLLECTION_LIMIT,
+  ): Promise<PublicCollectionSummary[]> {
+    const collections = await this.listPublishedCollections(now);
+    return takeFeatured(collections, limit);
+  }
+
+  /**
+   * Seasonal collection surface: prefer schedule-windowed public collections;
+   * otherwise the published collection list (collections are the seasonal entity).
+   */
+  async listSeasonalCollections(
+    now: Date = new Date(),
+    limit: number = SEASONAL_COLLECTION_LIMIT,
+  ): Promise<PublicCollectionSummary[]> {
+    return this.repo.transaction(async (tx) => {
+      const rows = await this.repo.listPublishedCollections(tx);
+      const publicRows = rows.filter((row) => isCollectionPublic(row, now));
+      return selectSeasonalCollections(publicRows, limit).map(toCollectionSummary);
     });
   }
 

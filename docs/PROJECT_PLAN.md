@@ -508,9 +508,10 @@ Admin catalog management, delivered in reviewed steps:
 
 Inventory tracking and ledger implementation. Fulfillment processing deferred until Order system (Phase 8).
 
-### Phase 6
+### Phase 6 (Completed)
 
-Storefront and merchandising.
+Storefront merchandising: featured products/categories/collections and
+seasonal collection surfaces wired from published catalog reads.
 
 ### Phase 7
 

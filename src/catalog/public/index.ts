@@ -30,3 +30,13 @@ export type {
   PublicVariant,
   PublicVariantSelection,
 } from "@/catalog/public/types";
+
+export {
+  FEATURED_CATEGORY_LIMIT,
+  FEATURED_COLLECTION_LIMIT,
+  FEATURED_PRODUCT_LIMIT,
+  SEASONAL_COLLECTION_LIMIT,
+  selectSeasonalCollections,
+  takeFeatured,
+  type CollectionWindowHint,
+} from "@/catalog/public/merchandising";

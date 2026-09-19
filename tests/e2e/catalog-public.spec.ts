@@ -48,6 +48,18 @@ test.describe("Phase 3D public catalog reads", () => {
     await expect(page.getByTestId(`product-card-${productSlug}`)).toBeVisible();
   });
 
+  test("homepage merchandising surfaces list published fixtures", async ({ page }) => {
+    const { productSlug, categorySlug, collectionSlug } = CATALOG_PUBLIC_E2E_FIXTURES;
+
+    const response = await page.goto("/");
+    expect(response?.ok()).toBe(true);
+
+    await expect(page.getByTestId("home-featured-products")).toBeVisible();
+    await expect(page.getByTestId(`home-featured-product-${productSlug}`)).toBeVisible();
+    await expect(page.getByTestId(`home-featured-category-${categorySlug}`)).toBeVisible();
+    await expect(page.getByTestId(`home-featured-collection-${collectionSlug}`)).toBeVisible();
+    await expect(page.getByTestId(`home-seasonal-collection-${collectionSlug}`)).toBeVisible();
+  });
   test("draft product slug returns 404", async ({ page }) => {
     const response = await page.goto(`/products/${CATALOG_PUBLIC_E2E_FIXTURES.draftSlug}`);
     expect(response?.status()).toBe(404);
