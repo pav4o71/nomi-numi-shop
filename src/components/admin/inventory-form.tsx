@@ -13,7 +13,8 @@ type InventoryBalance = {
 
 type InventoryMovement = {
   id: string;
-  delta: number;
+  deltaOnHand: number;
+  deltaReserved: number;
   reason: string;
   sourceReference: string | null;
   note: string | null;
@@ -172,7 +173,8 @@ export function InventoryForm({
               <thead>
                 <tr className="border-b bg-muted/30 text-left">
                   <th className="p-3 font-medium text-muted-foreground">Date</th>
-                  <th className="p-3 font-medium text-muted-foreground">Delta</th>
+                  <th className="p-3 font-medium text-muted-foreground">On Hand Δ</th>
+                  <th className="p-3 font-medium text-muted-foreground">Reserved Δ</th>
                   <th className="p-3 font-medium text-muted-foreground">Reason</th>
                   <th className="p-3 font-medium text-muted-foreground">Note</th>
                 </tr>
@@ -186,15 +188,29 @@ export function InventoryForm({
                     <td className="p-3 font-medium">
                       <span
                         className={
-                          m.delta > 0
+                          m.deltaOnHand > 0
                             ? "text-emerald-600 dark:text-emerald-400"
-                            : m.delta < 0
+                            : m.deltaOnHand < 0
                               ? "text-red-600 dark:text-red-400"
                               : ""
                         }
                       >
-                        {m.delta > 0 ? "+" : ""}
-                        {m.delta}
+                        {m.deltaOnHand > 0 ? "+" : ""}
+                        {m.deltaOnHand}
+                      </span>
+                    </td>
+                    <td className="p-3 font-medium">
+                      <span
+                        className={
+                          m.deltaReserved > 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : m.deltaReserved < 0
+                              ? "text-red-600 dark:text-red-400"
+                              : ""
+                        }
+                      >
+                        {m.deltaReserved > 0 ? "+" : ""}
+                        {m.deltaReserved}
                       </span>
                     </td>
                     <td className="p-3">

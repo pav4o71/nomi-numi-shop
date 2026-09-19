@@ -19,7 +19,7 @@
     "health": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:ci && pnpm build",
     "health:local": "pnpm health && pnpm test",
     "test": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest run",
-    "test:ci": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest run --exclude tests/unit/database-safety.test.ts --exclude tests/unit/drizzle-foundation.test.ts --exclude tests/unit/email-local-safety.test.ts --exclude tests/unit/auth-first-admin-bootstrap-local.test.ts --exclude tests/unit/catalog-schema-local.test.ts --exclude tests/unit/catalog-domain-local.test.ts --exclude tests/unit/catalog-fixtures-local.test.ts --exclude tests/unit/catalog-factories-local.test.ts --exclude tests/unit/catalog-public-local.test.ts --exclude tests/unit/admin-catalog-categories-local.test.ts --exclude tests/unit/admin-catalog-collections-local.test.ts --exclude tests/unit/admin-catalog-products-local.test.ts --exclude tests/unit/admin-catalog-variants-local.test.ts --exclude tests/unit/admin-catalog-organization-local.test.ts --exclude tests/unit/admin-inventory-local.test.ts",
+    "test:ci": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest run --exclude tests/unit/database-safety.test.ts --exclude tests/unit/drizzle-foundation.test.ts --exclude \"tests/unit/**/*local*.test.ts\"",
     "test:local": "pnpm test",
     "test:watch": "mkdir -p var/tmp && TMPDIR=\"$PWD/var/tmp\" vitest",
     "test:e2e": "mkdir -p var/playwright-browsers var/tmp && PLAYWRIGHT_BROWSERS_PATH=var/playwright-browsers TMPDIR=\"$PWD/var/tmp\" playwright test",

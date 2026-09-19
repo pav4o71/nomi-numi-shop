@@ -26,7 +26,12 @@ export {
   type CatalogMoneyInput,
 } from "@/catalog/money";
 export { optionCombinationKey, type OptionSelection } from "@/catalog/option-combination";
-export { catalogConflictFromUniqueViolation, uniqueConstraintName } from "@/catalog/pg-errors";
+export {
+  catalogConflictFromCheckViolation,
+  catalogConflictFromUniqueViolation,
+  checkConstraintName,
+  uniqueConstraintName,
+} from "@/catalog/pg-errors";
 export { DrizzleCatalogRepository } from "@/catalog/repository";
 export type {
   CategoryRow,

@@ -731,14 +731,16 @@ export class CatalogService {
         throw notFound(`Variant not found: ${variantId}`);
       }
 
-      // Check if it's a negative adjustment that would drop onHand < 0
-      // PostgreSQL constraints will catch this, but throwing a domain error here is cleaner.
-      if (data.deltaOnHand < 0 || data.deltaReserved > 0) {
+      // Pre-check balance invariants (repo also locks + conditional UPDATE).
+      // Covers under-zero on-hand, oversell/over-reserve, and excess release (F5).
+      if (data.deltaOnHand !== 0 || data.deltaReserved !== 0) {
         const balance = await this.repo.getInventoryBalance(variantId, tx);
         const currentOnHand = balance?.onHand ?? 0;
         const currentReserved = balance?.reserved ?? 0;
+        const nextOnHand = currentOnHand + data.deltaOnHand;
+        const nextReserved = currentReserved + data.deltaReserved;
 
-        if (currentOnHand + data.deltaOnHand < 0) {
+        if (nextOnHand < 0) {
           throw conflict("Cannot reduce on-hand inventory below zero", [
             {
               path: ["deltaOnHand"],
@@ -748,7 +750,17 @@ export class CatalogService {
           ]);
         }
 
-        if (currentReserved + data.deltaReserved > currentOnHand + data.deltaOnHand) {
+        if (nextReserved < 0) {
+          throw conflict("Cannot release more reserved inventory than is held", [
+            {
+              path: ["deltaReserved"],
+              message: "Excess reservation release",
+              code: "insufficient_reserved",
+            },
+          ]);
+        }
+
+        if (nextReserved > nextOnHand) {
           throw conflict("Cannot reserve more inventory than is available on-hand", [
             {
               path: ["deltaReserved"],
