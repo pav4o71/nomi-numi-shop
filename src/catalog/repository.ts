@@ -851,6 +851,40 @@ export class DrizzleCatalogRepository {
     return row ?? null;
   }
 
+  async ensureAndLockInventoryBalance(
+    variantId: string,
+    tx: CatalogExecutor,
+  ): Promise<InventoryBalanceRow> {
+    const db = tx as CatalogTx;
+
+    await db
+      .insert(inventoryBalances)
+      .values({
+        variantId,
+        onHand: 0,
+        reserved: 0,
+      })
+      .onConflictDoNothing();
+
+    const locked = await db
+      .select()
+      .from(inventoryBalances)
+      .where(eq(inventoryBalances.variantId, variantId))
+      .for("update");
+
+    if (locked.length === 0) {
+      throw conflict("Inventory balance row missing after ensure-insert", [
+        {
+          path: ["variantId"],
+          message: "Inventory balance could not be locked",
+          code: "inventory_balance_missing",
+        },
+      ]);
+    }
+
+    return locked[0];
+  }
+
   async getInventoryMovements(
     variantId: string,
     tx?: CatalogExecutor,

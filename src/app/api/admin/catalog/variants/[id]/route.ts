@@ -30,12 +30,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const service = new CatalogService(new DrizzleCatalogRepository(getRuntimeDb()));
 
     await service.updateVariant(id, body);
-
-    const parsedBody = body as { prices?: unknown[] };
-    if (parsedBody?.prices !== undefined) {
-      await service.setVariantPrices(id, { prices: parsedBody.prices });
-    }
-
     const updatedVariant = await service.getVariantDetails(id);
 
     return NextResponse.json(updatedVariant);

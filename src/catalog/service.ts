@@ -195,11 +195,44 @@ export class CatalogService {
       if (!existing) {
         throw notFound(`Product not found: ${id}`);
       }
-      const updated = await this.repo.updateProduct(tx, id, data);
-      if (!updated) {
-        throw notFound(`Product not found: ${id}`);
+
+      let patch: any = {};
+
+      const baseKeys = [
+        "slug",
+        "title",
+        "description",
+        "position",
+        "seoTitle",
+        "seoDescription",
+      ] as const;
+      if (baseKeys.some((k) => data[k] !== undefined)) {
+        for (const k of baseKeys) {
+          if (data[k] !== undefined) patch[k] = data[k] as any;
+        }
       }
-      return updated;
+
+      if (data.status !== undefined && existing.status !== data.status) {
+        const next = data.status;
+        patch.status = next;
+        if (next === "published") {
+          patch.archivedAt = null;
+          patch.publishedAt = existing.publishedAt ?? new Date();
+        } else if (next === "archived") {
+          patch.archivedAt = existing.archivedAt ?? new Date();
+        } else {
+          patch.archivedAt = null;
+        }
+      }
+
+      if (Object.keys(patch).length > 0) {
+        const updated = await this.repo.updateProduct(tx, id, patch);
+        if (!updated) {
+          throw notFound(`Product not found: ${id}`);
+        }
+        return updated;
+      }
+      return existing;
     });
   }
 
@@ -365,18 +398,27 @@ export class CatalogService {
         );
       }
 
-      const updated = await this.repo.updateVariant(tx, variantId, {
-        sku: data.sku,
-        isActive: data.isActive,
-        weightGrams: data.weightGrams,
-        lengthMm: data.lengthMm,
-        widthMm: data.widthMm,
-        heightMm: data.heightMm,
-        fulfillmentHint: data.fulfillmentHint,
-      });
-
-      if (!updated) {
-        throw notFound(`Variant not found: ${variantId}`);
+      let updated = existing;
+      const baseKeys = [
+        "sku",
+        "isActive",
+        "weightGrams",
+        "lengthMm",
+        "widthMm",
+        "heightMm",
+        "fulfillmentHint",
+      ] as const;
+      if (baseKeys.some((k) => data[k] !== undefined)) {
+        updated =
+          (await this.repo.updateVariant(tx, variantId, {
+            sku: data.sku,
+            isActive: data.isActive,
+            weightGrams: data.weightGrams,
+            lengthMm: data.lengthMm,
+            widthMm: data.widthMm,
+            heightMm: data.heightMm,
+            fulfillmentHint: data.fulfillmentHint,
+          })) ?? existing;
       }
 
       if (data.optionSelections !== undefined) {
@@ -385,6 +427,10 @@ export class CatalogService {
           variantId,
           selections: data.optionSelections,
         });
+      }
+
+      if (data.prices !== undefined) {
+        await this.repo.replaceVariantPrices(tx, variantId, this.dedupePrices(data.prices));
       }
 
       return updated;
@@ -439,6 +485,101 @@ export class CatalogService {
         }),
       );
     });
+  }
+
+  async reserveInventoryForCheckout(
+    items: { variantId: string; quantity: number }[],
+    sourceReference: string,
+    tx?: import("./db").CatalogExecutor,
+  ): Promise<void> {
+    const sorted = [...items].sort((a, b) => a.variantId.localeCompare(b.variantId));
+
+    const execute = async (executor: import("./db").CatalogExecutor) => {
+      for (const item of sorted) {
+        if (item.quantity <= 0) continue;
+
+        const variant = await this.repo.getVariantById(executor, item.variantId);
+        if (!variant) {
+          throw notFound(`Variant not found: ${item.variantId}`);
+        }
+
+        const balance = await this.repo.ensureAndLockInventoryBalance(item.variantId, executor);
+        const available = balance.onHand - balance.reserved;
+
+        if (available < item.quantity) {
+          throw conflict(`Insufficient inventory for variant ${item.variantId}`);
+        }
+
+        await this.repo.recordInventoryMovement(
+          {
+            variantId: item.variantId,
+            deltaOnHand: 0,
+            deltaReserved: item.quantity,
+            reason: "reservation",
+            sourceReference,
+          },
+          executor,
+        );
+      }
+    };
+
+    if (tx) {
+      await execute(tx);
+    } else {
+      await this.repo.transaction(execute);
+    }
+  }
+
+  async finalizeCheckoutInventory(
+    items: { variantId: string; quantity: number }[],
+    isSuccess: boolean,
+    sourceReference: string,
+    tx?: import("./db").CatalogExecutor,
+  ): Promise<void> {
+    const sorted = [...items].sort((a, b) => a.variantId.localeCompare(b.variantId));
+
+    const execute = async (executor: import("./db").CatalogExecutor) => {
+      for (const item of sorted) {
+        if (item.quantity <= 0) continue;
+
+        const variant = await this.repo.getVariantById(executor, item.variantId);
+        if (!variant) {
+          throw notFound(`Variant not found: ${item.variantId}`);
+        }
+
+        // Lock the row to prevent concurrent adjustments while we finalize
+        const balance = await this.repo.ensureAndLockInventoryBalance(item.variantId, executor);
+
+        // Technically, releasing reservation shouldn't exceed the currently reserved amount,
+        // but for robustness against manual admin adjustments, we just apply the delta.
+        // A sale drops BOTH onHand and reserved. A failure only drops reserved.
+        const deltaOnHand = isSuccess ? -item.quantity : 0;
+        const deltaReserved = -item.quantity;
+
+        if (balance.reserved + deltaReserved < 0) {
+          // If an admin manually cleared the reservation during the 15-minute window,
+          // we log it or let the CHECK constraint handle it. The repo's recordInventoryMovement
+          // respects DB constraints.
+        }
+
+        await this.repo.recordInventoryMovement(
+          {
+            variantId: item.variantId,
+            deltaOnHand,
+            deltaReserved,
+            reason: isSuccess ? "sale" : "adjustment",
+            sourceReference,
+          },
+          executor,
+        );
+      }
+    };
+
+    if (tx) {
+      await execute(tx);
+    } else {
+      await this.repo.transaction(execute);
+    }
   }
 
   async getVariantDetails(variantId: string) {
@@ -734,9 +875,9 @@ export class CatalogService {
       // Pre-check balance invariants (repo also locks + conditional UPDATE).
       // Covers under-zero on-hand, oversell/over-reserve, and excess release (F5).
       if (data.deltaOnHand !== 0 || data.deltaReserved !== 0) {
-        const balance = await this.repo.getInventoryBalance(variantId, tx);
-        const currentOnHand = balance?.onHand ?? 0;
-        const currentReserved = balance?.reserved ?? 0;
+        const balance = await this.repo.ensureAndLockInventoryBalance(variantId, tx);
+        const currentOnHand = balance.onHand;
+        const currentReserved = balance.reserved;
         const nextOnHand = currentOnHand + data.deltaOnHand;
         const nextReserved = currentReserved + data.deltaReserved;
 

@@ -89,6 +89,7 @@ export const updateProductInputSchema = z
     position: z.number().int().optional(),
     seoTitle: z.string().nullable().optional(),
     seoDescription: z.string().nullable().optional(),
+    status: productStatusSchema.optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one product field must be provided",
@@ -152,6 +153,7 @@ export const updateVariantInputSchema = z
     widthMm: z.number().int().nonnegative().nullable().optional(),
     heightMm: z.number().int().nonnegative().nullable().optional(),
     fulfillmentHint: z.string().nullable().optional(),
+    prices: z.array(catalogPriceInputSchema).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one variant field must be provided",
