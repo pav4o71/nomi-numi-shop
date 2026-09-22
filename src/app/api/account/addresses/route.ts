@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { requireCustomer } from "@/auth/authorization";
+import { authorizationErrorResponse } from "@/auth/http";
 import { CustomerService } from "@/customer/service";
 import { DrizzleCustomerRepository } from "@/customer/repository";
 import { getRuntimeDb } from "@/db/runtime";
@@ -28,9 +29,9 @@ export async function GET() {
     const service = getCustomerService();
     const addresses = await service.listAddresses(principal.userId);
     return NextResponse.json(addresses);
-  } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized")
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error: unknown) {
+    const authResponse = authorizationErrorResponse(error);
+    if (authResponse) return authResponse;
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -38,7 +39,14 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const principal = await requireCustomer(await headers());
-    const body = await request.json();
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+
     const parsed = addressSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -51,9 +59,9 @@ export async function POST(request: Request) {
     const service = getCustomerService();
     const address = await service.addAddress(principal.userId, parsed.data);
     return NextResponse.json(address, { status: 201 });
-  } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized")
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error: unknown) {
+    const authResponse = authorizationErrorResponse(error);
+    if (authResponse) return authResponse;
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
