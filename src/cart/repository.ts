@@ -1,4 +1,4 @@
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { carts, cartItems } from "@/db/schema";
 import { CartDb, CartExecutor } from "./db";
 import { createCatalogId } from "@/catalog/ids";
@@ -53,7 +53,29 @@ export class DrizzleCartRepository {
     return tx.select().from(cartItems).where(eq(cartItems.cartId, cartId));
   }
 
-  async upsertCartItem(tx: CartExecutor, cartId: string, variantId: string, quantity: number) {
+  async incrementCartItemQuantity(
+    tx: CartExecutor,
+    cartId: string,
+    variantId: string,
+    quantity: number,
+  ) {
+    const [item] = await tx
+      .insert(cartItems)
+      .values({
+        id: createCatalogId("crt_itm"),
+        cartId,
+        variantId,
+        quantity,
+      })
+      .onConflictDoUpdate({
+        target: [cartItems.cartId, cartItems.variantId],
+        set: { quantity: sql`${cartItems.quantity} + EXCLUDED.quantity` },
+      })
+      .returning();
+    return item;
+  }
+
+  async setCartItemQuantity(tx: CartExecutor, cartId: string, variantId: string, quantity: number) {
     const [item] = await tx
       .insert(cartItems)
       .values({

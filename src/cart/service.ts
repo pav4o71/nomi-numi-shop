@@ -114,11 +114,7 @@ export class CartService {
       const cart = await this.repo.getCartById(tx, cartId);
       if (!cart) throw new Error("Cart not found");
 
-      const items = await this.repo.getCartItems(tx, cart.id);
-      const existing = items.find((i) => i.variantId === variantId);
-      const newQuantity = (existing?.quantity ?? 0) + quantity;
-
-      await this.repo.upsertCartItem(tx, cartId, variantId, newQuantity);
+      await this.repo.incrementCartItemQuantity(tx, cartId, variantId, quantity);
     });
   }
 
@@ -131,7 +127,7 @@ export class CartService {
         const items = await this.repo.getCartItems(tx, cartId);
         const item = items.find((i) => i.id === itemId);
         if (item) {
-          await this.repo.upsertCartItem(tx, cartId, item.variantId, quantity);
+          await this.repo.setCartItemQuantity(tx, cartId, item.variantId, quantity);
         }
       }
     });
@@ -156,10 +152,12 @@ export class CartService {
       // Merge items
       const anonItems = await this.repo.getCartItems(tx, anonCart.id);
       for (const item of anonItems) {
-        const existingItems = await this.repo.getCartItems(tx, customerCart.id);
-        const existing = existingItems.find((i) => i.variantId === item.variantId);
-        const newQuantity = (existing?.quantity ?? 0) + item.quantity;
-        await this.repo.upsertCartItem(tx, customerCart.id, item.variantId, newQuantity);
+        await this.repo.incrementCartItemQuantity(
+          tx,
+          customerCart.id,
+          item.variantId,
+          item.quantity,
+        );
       }
 
       await this.repo.deleteCart(tx, anonCart.id);
