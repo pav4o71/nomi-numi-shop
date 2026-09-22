@@ -4,11 +4,12 @@ import { requireCustomer } from "@/auth/authorization";
 import { CustomerService } from "@/customer/service";
 import { DrizzleCustomerRepository } from "@/customer/repository";
 import { getRuntimeDb } from "@/db/runtime";
+import { type CustomerDb } from "@/customer/db";
 import { z } from "zod";
 
 function getCustomerService() {
   const db = getRuntimeDb();
-  return new CustomerService(new DrizzleCustomerRepository(db as any));
+  return new CustomerService(new DrizzleCustomerRepository(db as unknown as CustomerDb));
 }
 
 const addressSchema = z.object({
@@ -27,8 +28,8 @@ export async function GET() {
     const service = getCustomerService();
     const addresses = await service.listAddresses(principal.userId);
     return NextResponse.json(addresses);
-  } catch (error: any) {
-    if (error.message === "Unauthorized")
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
@@ -50,8 +51,8 @@ export async function POST(request: Request) {
     const service = getCustomerService();
     const address = await service.addAddress(principal.userId, parsed.data);
     return NextResponse.json(address, { status: 201 });
-  } catch (error: any) {
-    if (error.message === "Unauthorized")
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

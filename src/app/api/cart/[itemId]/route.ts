@@ -3,6 +3,7 @@ import { headers, cookies } from "next/headers";
 import { getAuthorizationPrincipal } from "@/auth/authorization";
 import { CartService } from "@/cart/service";
 import { DrizzleCartRepository } from "@/cart/repository";
+import { type CartDb } from "@/cart/db";
 import { getRuntimeDb } from "@/db/runtime";
 import { CatalogService } from "@/catalog/service";
 import { DrizzleCatalogRepository } from "@/catalog/repository";
@@ -27,7 +28,7 @@ async function getCartIdentity() {
 function getServices() {
   const db = getRuntimeDb();
   const catalog = new CatalogService(new DrizzleCatalogRepository(db));
-  const cart = new CartService(new DrizzleCartRepository(db as any), catalog);
+  const cart = new CartService(new DrizzleCartRepository(db as unknown as CartDb), catalog);
   return { catalog, cart };
 }
 

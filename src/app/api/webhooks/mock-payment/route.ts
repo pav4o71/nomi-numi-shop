@@ -6,13 +6,18 @@ import { DrizzleCartRepository } from "@/cart/repository";
 import { CatalogService } from "@/catalog/service";
 import { DrizzleCatalogRepository } from "@/catalog/repository";
 import { getRuntimeDb } from "@/db/runtime";
+import { type CheckoutDb } from "@/checkout/db";
 import { z } from "zod";
 
 function getCheckoutService() {
   const db = getRuntimeDb();
   const catalog = new CatalogService(new DrizzleCatalogRepository(db));
-  const cart = new CartService(new DrizzleCartRepository(db as any), catalog);
-  return new CheckoutService(new DrizzleCheckoutRepository(db as any), cart, catalog);
+  const cart = new CartService(new DrizzleCartRepository(db as unknown as CheckoutDb), catalog);
+  return new CheckoutService(
+    new DrizzleCheckoutRepository(db as unknown as CheckoutDb),
+    cart,
+    catalog,
+  );
 }
 
 const webhookSchema = z.object({
@@ -37,8 +42,11 @@ export async function POST(request: Request) {
     await checkout.processPaymentWebhook(orderId, isSuccess, transactionId);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Mock Webhook Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 },
+    );
   }
 }

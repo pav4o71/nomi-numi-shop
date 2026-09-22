@@ -6,6 +6,7 @@ import { DrizzleCartRepository } from "@/cart/repository";
 import { CheckoutService } from "@/checkout/service";
 import { DrizzleCheckoutRepository } from "@/checkout/repository";
 import { getRuntimeDb } from "@/db/runtime";
+import { type CheckoutDb } from "@/checkout/db";
 import { CatalogService } from "@/catalog/service";
 import { DrizzleCatalogRepository } from "@/catalog/repository";
 import { z } from "zod";
@@ -29,8 +30,12 @@ async function getCartIdentity() {
 function getServices() {
   const db = getRuntimeDb();
   const catalog = new CatalogService(new DrizzleCatalogRepository(db));
-  const cart = new CartService(new DrizzleCartRepository(db as any), catalog);
-  const checkout = new CheckoutService(new DrizzleCheckoutRepository(db as any), cart, catalog);
+  const cart = new CartService(new DrizzleCartRepository(db as unknown as CheckoutDb), catalog);
+  const checkout = new CheckoutService(
+    new DrizzleCheckoutRepository(db as unknown as CheckoutDb),
+    cart,
+    catalog,
+  );
   return { checkout };
 }
 
@@ -82,14 +87,14 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(order);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Checkout error:", error);
 
     // Map inventory availability failures to 409 Conflict
     if (
-      error.message?.includes("unavailable or inactive") ||
-      error.name === "ConflictError" ||
-      error.message?.includes("Insufficient inventory")
+      (error instanceof Error ? error.message : "").includes("unavailable or inactive") ||
+      (error instanceof Error ? error.name : "") === "ConflictError" ||
+      (error instanceof Error ? error.message : "").includes("Insufficient inventory")
     ) {
       return NextResponse.json({ error: "Inventory conflict" }, { status: 409 });
     }

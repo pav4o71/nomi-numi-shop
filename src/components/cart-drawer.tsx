@@ -39,7 +39,7 @@ export function CartDrawer() {
       mutateCart(); // Cart is now empty
       closeCart();
       router.push(`/checkout/${order.id}/success`);
-    } catch (err) {
+    } catch {
       setCheckoutError("An unexpected error occurred during checkout.");
     }
   };

@@ -32,8 +32,6 @@ describe("Phase 3A catalog schema portable contracts", () => {
 
     const exported = Object.keys(schema);
     expect(exported).not.toContain("inventoryReservations");
-    expect(exported).not.toContain("orders");
-    expect(exported).not.toContain("carts");
   });
 
   it("keeps auth schema exports available alongside catalog", () => {

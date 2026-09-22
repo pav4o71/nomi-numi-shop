@@ -1,5 +1,7 @@
 import { DrizzleCartRepository } from "./repository";
 import { CatalogService } from "@/catalog/service";
+import { carts } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export type ResolvedCartItem = {
   id: string;
@@ -81,7 +83,7 @@ export class CartService {
         if (priceObj) {
           totalAmount += unitPrice * item.quantity;
         }
-      } catch (e) {
+      } catch {
         // Variant deleted or not found
         resolvedItems.push({
           id: item.id,
@@ -145,9 +147,9 @@ export class CartService {
       if (!customerCart) {
         // Just link anon cart to customer
         await tx
-          .update(require("@/db/schema").carts)
+          .update(carts)
           .set({ customerId, sessionId: null })
-          .where(require("drizzle-orm").eq(require("@/db/schema").carts.id, anonCart.id));
+          .where(eq(carts.id, anonCart.id));
         return;
       }
 

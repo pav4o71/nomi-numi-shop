@@ -3,6 +3,7 @@ import { headers, cookies } from "next/headers";
 import { getAuthorizationPrincipal } from "@/auth/authorization";
 import { CartService } from "@/cart/service";
 import { DrizzleCartRepository } from "@/cart/repository";
+import { type CartDb } from "@/cart/db";
 import { getRuntimeDb } from "@/db/runtime";
 import { CatalogService } from "@/catalog/service";
 import { DrizzleCatalogRepository } from "@/catalog/repository";
@@ -28,11 +29,11 @@ async function getCartIdentity() {
 function getServices() {
   const db = getRuntimeDb();
   const catalog = new CatalogService(new DrizzleCatalogRepository(db));
-  const cart = new CartService(new DrizzleCartRepository(db as any), catalog);
+  const cart = new CartService(new DrizzleCartRepository(db as unknown as CartDb), catalog);
   return { catalog, cart };
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const identity = await getCartIdentity();
 
@@ -79,7 +80,8 @@ const addItemSchema = z.object({
 export async function POST(request: Request) {
   try {
     const identity = await getCartIdentity();
-    let { customerId, sessionId } = identity;
+    const { customerId } = identity;
+    let { sessionId } = identity;
 
     let setCookieHeader = false;
     if (!customerId && !sessionId) {

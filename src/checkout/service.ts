@@ -3,6 +3,7 @@ import { cartItems } from "@/db/schema";
 import { DrizzleCheckoutRepository } from "./repository";
 import { CartService } from "@/cart/service";
 import { CatalogService } from "@/catalog/service";
+import { type CatalogDb } from "@/catalog/db";
 import { createCatalogId } from "@/catalog/ids";
 
 export class CheckoutService {
@@ -41,7 +42,7 @@ export class CheckoutService {
       // 3. Atomically Reserve Inventory
       // Because CheckoutExecutor and CatalogExecutor are structurally identical (both use same PG driver and schema),
       // we can safely cast the transaction to pass it to CatalogService.
-      const catalogTx = tx as any;
+      const catalogTx = tx as unknown as CatalogDb;
 
       const reservationItems = cart.items.map((i) => ({
         variantId: i.variantId,
@@ -81,7 +82,7 @@ export class CheckoutService {
       const order = await this.repo.createOrder(tx, orderData, itemsData);
 
       // 5. Empty Cart
-      await (tx as any).delete(cartItems).where(eq(cartItems.cartId, cart.id));
+      await tx.delete(cartItems).where(eq(cartItems.cartId, cart.id));
 
       return order;
     });
@@ -110,7 +111,7 @@ export class CheckoutService {
         inventoryItems,
         isSuccess,
         `payment_${transactionId}`,
-        tx as any,
+        tx as unknown as CatalogDb,
       );
 
       // 4. Update Order Status

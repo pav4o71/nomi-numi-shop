@@ -196,7 +196,7 @@ export class CatalogService {
         throw notFound(`Product not found: ${id}`);
       }
 
-      let patch: any = {};
+      const patch: Partial<Parameters<typeof this.repo.updateProduct>[2]> = {};
 
       const baseKeys = [
         "slug",
@@ -208,7 +208,7 @@ export class CatalogService {
       ] as const;
       if (baseKeys.some((k) => data[k] !== undefined)) {
         for (const k of baseKeys) {
-          if (data[k] !== undefined) patch[k] = data[k] as any;
+          if (data[k] !== undefined) patch[k] = data[k] as never;
         }
       }
 

@@ -6,7 +6,6 @@ import { adminCatalogErrorResponse, parseJsonBody } from "@/catalog/admin";
 import { CatalogService } from "@/catalog/service";
 import { DrizzleCatalogRepository } from "@/catalog/repository";
 import { getRuntimeDb } from "@/db/runtime";
-import type { ProductStatus } from "@/catalog/validators";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
