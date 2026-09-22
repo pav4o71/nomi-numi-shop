@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   description: "Meaningful gifts for staying close, even from far away.",
 };
 
+import { CartProvider } from "@/cart/client";
+import { CartDrawer } from "@/components/cart-drawer";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -18,11 +21,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
-        <div className="flex min-h-screen flex-col">
-          <SiteHeader />
-          <div className="flex-1">{children}</div>
-          <SiteFooter />
-        </div>
+        <CartProvider>
+          <div className="flex min-h-screen flex-col">
+            <SiteHeader />
+            <div className="flex-1">{children}</div>
+            <SiteFooter />
+          </div>
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );
