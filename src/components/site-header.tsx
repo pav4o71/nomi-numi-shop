@@ -5,6 +5,8 @@ import { Container } from "@/components/container";
 import { SiteDesktopNav, SiteMobileNav } from "@/components/site-mobile-nav";
 import { Button } from "@/components/ui/button";
 
+import { CartTriggerButton } from "@/components/cart-trigger";
+
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 shadow-soft backdrop-blur-md">
@@ -23,6 +25,7 @@ export function SiteHeader() {
             <Link href="/products">Explore Gifts</Link>
           </Button>
 
+          <CartTriggerButton />
           <AuthHeaderActions />
           <SiteMobileNav />
         </div>

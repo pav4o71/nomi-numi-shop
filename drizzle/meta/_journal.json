@@ -43,6 +43,13 @@
       "when": 1789557686539,
       "tag": "0005_inventory_ledger_contract",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790025866038,
+      "tag": "0006_acoustic_valkyrie",
+      "breakpoints": true
     }
   ]
 }

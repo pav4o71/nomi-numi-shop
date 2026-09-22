@@ -45,3 +45,21 @@ export {
   inventoryMovements,
   inventoryMovementsRelations,
 } from "./catalog";
+
+export {
+  customerAddresses,
+  customerAddressesRelations,
+  wishlists,
+  wishlistsRelations,
+} from "./customer";
+
+export {
+  carts,
+  cartsRelations,
+  cartItems,
+  cartItemsRelations,
+  orders,
+  ordersRelations,
+  orderItems,
+  orderItemsRelations,
+} from "./checkout";

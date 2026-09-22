@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import type { PublicProductDetail } from "@/catalog/public/types";
 import { formatPublicMoney } from "@/catalog/public/format-money";
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/catalog/media-placeholder";
 
 export function ProductDetailView({ product }: { product: PublicProductDetail }) {
@@ -76,11 +77,14 @@ export function ProductDetailView({ product }: { product: PublicProductDetail })
               key={variant.id}
               data-testid={`product-variant-${variant.sku}`}
               data-initial={variant.id === product.initialVariantId ? "true" : "false"}
-              className="surface-card px-4 py-3 text-sm"
+              className="surface-card flex items-center justify-between px-4 py-3 text-sm"
             >
-              <span className="font-medium text-foreground">{variant.sku}</span>
-              <span className="mx-2 text-muted-foreground">·</span>
-              <span>{formatPublicMoney(variant.price)}</span>
+              <div>
+                <span className="font-medium text-foreground">{variant.sku}</span>
+                <span className="mx-2 text-muted-foreground">·</span>
+                <span>{formatPublicMoney(variant.price)}</span>
+              </div>
+              <AddToCartButton variantId={variant.id} />
             </li>
           ))}
         </ul>
