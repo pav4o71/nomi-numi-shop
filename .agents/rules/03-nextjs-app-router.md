@@ -8,6 +8,7 @@ alwaysApply: true
 This project runs Next.js 16. Dynamic route parameters are asynchronous and must be awaited. This is not optional legacy compatibility behavior.
 
 **Correct pattern:**
+
 ```ts
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,6 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 ```
 
 **Rules:**
+
 - Always use `Promise<...>` for dynamic `params` in Route Handlers.
 - Always `await params` before accessing values.
 - Do not use the obsolete synchronous `{ params: { id: string } }` signature.

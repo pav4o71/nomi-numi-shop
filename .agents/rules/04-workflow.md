@@ -6,14 +6,18 @@ alwaysApply: true
 # Workflow & Pre-edit Protocol
 
 ## First-response protocol
+
 Before changing files, you must inspect the repository state:
+
 ```bash
 git status --short --branch
 git log -5 --oneline
 find . -maxdepth 2 -type f | sort | sed -n '1,240p'
 cat package.json
 ```
+
 Then:
+
 1. Restate the requested outcome in one sentence.
 2. Identify acceptance criteria.
 3. Search for existing implementations and patterns.
@@ -25,7 +29,9 @@ Then:
 Do not ask for confirmation for ordinary safe repository edits. Ask only when the requested result cannot be implemented safely without a missing requirement, destructive action, ambiguous business rule, or credential.
 
 ## Definition of done
+
 A task is complete only when:
+
 - The requested behavior works.
 - The implementation follows repository patterns.
 - Actual installed versions were respected.
@@ -40,19 +46,25 @@ A task is complete only when:
 - The final response contains evidence.
 
 Required final response:
+
 ```md
 ## Completed
+
 - ...
 
 ## Files changed
+
 - ...
 
 ## Validation
+
 - `command`: passed
 
 ## Database and migration impact
+
 - None, or describe the migration and test strategy.
 
 ## Risks and follow-up
+
 - None, or describe remaining uncertainty.
 ```

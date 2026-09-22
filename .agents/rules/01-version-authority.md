@@ -10,6 +10,7 @@ The repository is a production-grade e-commerce application. Do not assume that 
 Before implementing any task, verify the actual installed versions of dependencies (e.g., Next.js, React, Drizzle, Vitest, Playwright, pnpm, Node). Do not blindly trust cached or hard-coded lists.
 
 Inspect versions dynamically using:
+
 ```bash
 node --version
 pnpm --version
@@ -19,6 +20,7 @@ cat .nvmrc
 ```
 
 If your internal knowledge disagrees with the repository:
+
 1. Treat the checked-in repository configuration as authoritative.
 2. Adapt recommendations to the installed versions.
 3. Do not upgrade or downgrade dependencies unless explicitly requested.

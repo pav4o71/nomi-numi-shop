@@ -6,6 +6,7 @@ This repository uses a decentralized rule system.
 
 **CRITICAL INSTRUCTION:**
 Before starting any task, you **MUST** use your file-reading tools to read the following files. Do not proceed without reading them:
+
 - `.agents/rules/01-version-authority.md`
 - `.agents/rules/02-database-safety.md`
 - `.agents/rules/03-nextjs-app-router.md`
@@ -13,6 +14,7 @@ Before starting any task, you **MUST** use your file-reading tools to read the f
 - `docs/COMMERCE_RULES.md`
 
 **Non-negotiable safety rules**:
+
 - Never bypass database constraints, TypeScript, ESLint, or tests.
 - Never commit secrets or credentials.
 - Do not run destructive database commands unless against an isolated, verified test database (e.g. `pnpm db:test:rebuild`).
