@@ -3,6 +3,7 @@ description: Mandatory Git workflow and repository-state safety for nomi-numi-sh
 alwaysApply: true
 ---
 
+
 # Git Workflow
 
 The canonical Git repository is:

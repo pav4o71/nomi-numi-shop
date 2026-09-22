@@ -119,6 +119,7 @@ pnpm-lock.yaml.
 Before implementation, read the documents relevant to the current task:
 
 - AGENTS.md
+- .agents/rules/
 - docs/PROJECT_PLAN.md
 - docs/ARCHITECTURE.md
 - docs/COMMERCE_RULES.md

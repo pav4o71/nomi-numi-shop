@@ -3,6 +3,7 @@ description: Mandatory validation, regression checks, and quality gates for nomi
 alwaysApply: true
 ---
 
+
 # Testing and Quality
 
 Every implementation step must be validated according to its scope.
