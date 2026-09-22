@@ -47,6 +47,12 @@ describe("admin inventory ledger logic (local)", () => {
     // Clear catalog data in reverse dependency order
     await db.execute(drizzleSql`DELETE FROM inventory_movements`);
     await db.execute(drizzleSql`DELETE FROM inventory_balances`);
+    await db.execute(drizzleSql`DELETE FROM order_items`);
+    await db.execute(drizzleSql`DELETE FROM orders`);
+    await db.execute(drizzleSql`DELETE FROM cart_items`);
+    await db.execute(drizzleSql`DELETE FROM carts`);
+    await db.execute(drizzleSql`DELETE FROM inventory_movements`);
+    await db.execute(drizzleSql`DELETE FROM inventory_balances`);
     await db.execute(drizzleSql`DELETE FROM variant_prices`);
     await db.execute(drizzleSql`DELETE FROM product_variant_option_values`);
     await db.execute(drizzleSql`DELETE FROM product_option_values`);
@@ -261,6 +267,12 @@ describe("admin inventory concurrent last-unit oversell prevention (local)", () 
     const repo = new DrizzleCatalogRepository(db);
     service = new CatalogService(repo);
 
+    await db.execute(drizzleSql`DELETE FROM inventory_movements`);
+    await db.execute(drizzleSql`DELETE FROM inventory_balances`);
+    await db.execute(drizzleSql`DELETE FROM order_items`);
+    await db.execute(drizzleSql`DELETE FROM orders`);
+    await db.execute(drizzleSql`DELETE FROM cart_items`);
+    await db.execute(drizzleSql`DELETE FROM carts`);
     await db.execute(drizzleSql`DELETE FROM inventory_movements`);
     await db.execute(drizzleSql`DELETE FROM inventory_balances`);
     await db.execute(drizzleSql`DELETE FROM variant_prices`);
