@@ -67,6 +67,8 @@ describe("Phase 3C catalog fixtures against TEST database", () => {
 
   beforeEach(async () => {
     await sql`DELETE FROM product_media`;
+    await sql`DELETE FROM payment_events`;
+    await sql`DELETE FROM inventory_reservations`;
     await sql`DELETE FROM order_items`;
     await sql`DELETE FROM orders`;
     await sql`DELETE FROM cart_items`;
@@ -292,6 +294,8 @@ describe("Phase 3C catalog fixtures against TEST database", () => {
     });
     // Create a product then attach a DEVFIX SKU that belongs to moonlight tumbler.
     // First remove tumbler variant to free SKU.
+    await sql`DELETE FROM payment_events`;
+    await sql`DELETE FROM inventory_reservations`;
     await sql`DELETE FROM order_items`;
     await sql`DELETE FROM orders`;
     await sql`DELETE FROM cart_items`;
@@ -400,6 +404,8 @@ describe("Phase 3C catalog fixtures against TEST database", () => {
     const hug = await service.getProductBySlug("dev-fixture-hug-plush");
 
     await sql`DELETE FROM product_variant_option_values WHERE product_id = ${hug.id}`;
+    await sql`DELETE FROM payment_events`;
+    await sql`DELETE FROM inventory_reservations`;
     await sql`DELETE FROM order_items`;
     await sql`DELETE FROM orders`;
     await sql`DELETE FROM cart_items`;

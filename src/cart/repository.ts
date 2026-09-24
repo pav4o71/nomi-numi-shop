@@ -1,4 +1,4 @@
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import { carts, cartItems } from "@/db/schema";
 import { CartDb, CartExecutor } from "./db";
 import { createCatalogId } from "@/catalog/ids";
@@ -15,17 +15,82 @@ export class DrizzleCartRepository {
     return cart ?? null;
   }
 
-  async getCartByCustomer(tx: CartExecutor, customerId: string) {
-    const [cart] = await tx.select().from(carts).where(eq(carts.customerId, customerId));
-    return cart ?? null;
-  }
-
-  async getCartBySession(tx: CartExecutor, sessionId: string) {
+  async getCartByIdForUpdate(tx: CartExecutor, cartId: string) {
     const [cart] = await tx
       .select()
       .from(carts)
-      .where(and(eq(carts.sessionId, sessionId), isNull(carts.customerId)));
+      .where(and(eq(carts.id, cartId), gt(carts.expiresAt, new Date())))
+      .for("update");
     return cart ?? null;
+  }
+
+  async lockCartIdentity(tx: CartExecutor, params: { customerId?: string; sessionId?: string }) {
+    const identity = params.customerId
+      ? `customer:${params.customerId}`
+      : params.sessionId
+        ? `session:${params.sessionId}`
+        : null;
+    if (!identity) return;
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${identity}, 0))`);
+  }
+
+  async getCartByCustomer(tx: CartExecutor, customerId: string, now: Date = new Date()) {
+    const [cart] = await tx
+      .select()
+      .from(carts)
+      .where(and(eq(carts.customerId, customerId), gt(carts.expiresAt, now)));
+    return cart ?? null;
+  }
+
+  async getCartBySession(tx: CartExecutor, sessionId: string, now: Date = new Date()) {
+    const [cart] = await tx
+      .select()
+      .from(carts)
+      .where(
+        and(eq(carts.sessionId, sessionId), isNull(carts.customerId), gt(carts.expiresAt, now)),
+      );
+    return cart ?? null;
+  }
+
+  async getCartByIdentityForUpdate(
+    tx: CartExecutor,
+    params: { customerId?: string; sessionId?: string },
+    now: Date = new Date(),
+  ) {
+    const ownerCondition = params.customerId
+      ? eq(carts.customerId, params.customerId)
+      : params.sessionId
+        ? and(eq(carts.sessionId, params.sessionId), isNull(carts.customerId))
+        : undefined;
+    if (!ownerCondition) return null;
+
+    const [cart] = await tx
+      .select()
+      .from(carts)
+      .where(and(ownerCondition, gt(carts.expiresAt, now)))
+      .for("update");
+    return cart ?? null;
+  }
+
+  async deleteExpiredCartsForIdentity(
+    tx: CartExecutor,
+    params: { customerId?: string; sessionId?: string },
+    now: Date = new Date(),
+  ) {
+    const ownerConditions = [
+      params.customerId ? eq(carts.customerId, params.customerId) : undefined,
+      params.sessionId ? eq(carts.sessionId, params.sessionId) : undefined,
+    ].filter((condition): condition is NonNullable<typeof condition> => condition !== undefined);
+    if (ownerConditions.length === 0) return;
+
+    await tx
+      .delete(carts)
+      .where(
+        and(
+          ownerConditions.length === 1 ? ownerConditions[0] : or(...ownerConditions),
+          lte(carts.expiresAt, now),
+        ),
+      );
   }
 
   async createCart(
@@ -45,12 +110,21 @@ export class DrizzleCartRepository {
         currency: params.currency,
         expiresAt,
       })
+      .onConflictDoNothing()
       .returning();
-    return cart;
+    return cart ?? null;
   }
 
   async getCartItems(tx: CartExecutor, cartId: string) {
     return tx.select().from(cartItems).where(eq(cartItems.cartId, cartId));
+  }
+
+  async getCartItem(tx: CartExecutor, cartId: string, itemId: string) {
+    const [item] = await tx
+      .select()
+      .from(cartItems)
+      .where(and(eq(cartItems.id, itemId), eq(cartItems.cartId, cartId)));
+    return item ?? null;
   }
 
   async incrementCartItemQuantity(
@@ -92,8 +166,12 @@ export class DrizzleCartRepository {
     return item;
   }
 
-  async deleteCartItem(tx: CartExecutor, itemId: string) {
-    await tx.delete(cartItems).where(eq(cartItems.id, itemId));
+  async deleteCartItem(tx: CartExecutor, cartId: string, itemId: string) {
+    const [deleted] = await tx
+      .delete(cartItems)
+      .where(and(eq(cartItems.id, itemId), eq(cartItems.cartId, cartId)))
+      .returning({ id: cartItems.id });
+    return deleted ?? null;
   }
 
   async deleteCartItems(tx: CartExecutor, cartId: string) {

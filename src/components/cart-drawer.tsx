@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useCartUI, useCartData } from "@/cart/client";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -9,38 +9,62 @@ export function CartDrawer() {
   const { isCartOpen, closeCart } = useCartUI();
   const { cart, isLoading, mutateCart } = useCartData();
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const attemptKey = useRef<string | null>(null);
   const router = useRouter();
+
+  const cartSignature = cart?.items
+    ? cart.items
+        .map((item) => `${item.variantId}:${item.quantity}`)
+        .sort()
+        .join("|")
+    : "";
+  useEffect(() => {
+    attemptKey.current = null;
+  }, [cartSignature]);
 
   if (!isCartOpen) return null;
 
   const handleCheckout = async () => {
     setCheckoutError(null);
+    if (!email.trim()) {
+      setCheckoutError("Enter the email address for your receipt.");
+      return;
+    }
+    setIsCheckingOut(true);
+    attemptKey.current ??= crypto.randomUUID();
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: "guest@example.com", // In a real flow, this would come from an auth context or a form
-          idempotencyKey: crypto.randomUUID(),
+          email: email.trim(),
+          idempotencyKey: attemptKey.current,
         }),
       });
 
       if (response.status === 409) {
-        setCheckoutError("Some items became unavailable. Please review your cart.");
-        mutateCart(); // Refresh cart to show unavailable items
+        const body = (await response.json()) as { error?: string };
+        setCheckoutError(body.error ?? "Some items became unavailable. Please review your cart.");
+        await mutateCart();
         return;
       }
 
       if (!response.ok) {
-        throw new Error("Checkout failed");
+        const body = (await response.json()) as { error?: string };
+        throw new Error(body.error ?? "Checkout failed");
       }
 
-      const order = await response.json();
-      mutateCart(); // Cart is now empty
+      const result = (await response.json()) as { successPath: string };
+      attemptKey.current = null;
+      await mutateCart();
       closeCart();
-      router.push(`/checkout/${order.id}/success`);
-    } catch {
-      setCheckoutError("An unexpected error occurred during checkout.");
+      router.push(result.successPath);
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : "Checkout failed");
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
@@ -138,8 +162,20 @@ export function CartDrawer() {
               <span>Total</span>
               <span>${(cart.totalAmount / 100).toFixed(2)}</span>
             </div>
-            <Button className="w-full" onClick={handleCheckout}>
-              Proceed to Checkout
+            <label className="mb-4 block text-sm font-medium" htmlFor="checkout-email">
+              Receipt email
+              <input
+                id="checkout-email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 font-normal"
+              />
+            </label>
+            <Button className="w-full" disabled={isCheckingOut} onClick={handleCheckout}>
+              {isCheckingOut ? "Processing…" : "Proceed to Checkout"}
             </Button>
           </div>
         )}

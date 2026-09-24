@@ -8,6 +8,8 @@ import { DrizzleCatalogRepository } from "@/catalog/repository";
 import { getRuntimeDb } from "@/db/runtime";
 import { type CheckoutDb } from "@/checkout/db";
 import { z } from "zod";
+import { authenticateMockWebhook } from "@/checkout/mock-payment";
+import { isCheckoutError } from "@/checkout/errors";
 
 function getCheckoutService() {
   const db = getRuntimeDb();
@@ -28,7 +30,15 @@ const webhookSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    if (!authenticateMockWebhook(request.headers.get("authorization"))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
     const parsed = webhookSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -43,10 +53,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (isCheckoutError(error)) {
+      const status = error.code === "INVALID_INPUT" ? 400 : error.code === "NOT_FOUND" ? 404 : 409;
+      return NextResponse.json({ error: error.message }, { status });
+    }
     console.error("Mock Webhook Error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

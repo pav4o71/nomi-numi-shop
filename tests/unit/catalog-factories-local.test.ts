@@ -70,6 +70,8 @@ describe("Phase 3C catalog factories against TEST database", () => {
 
   beforeEach(async () => {
     await sql`DELETE FROM product_media`;
+    await sql`DELETE FROM payment_events`;
+    await sql`DELETE FROM inventory_reservations`;
     await sql`DELETE FROM order_items`;
     await sql`DELETE FROM orders`;
     await sql`DELETE FROM cart_items`;

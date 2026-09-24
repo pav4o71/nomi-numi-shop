@@ -8,6 +8,10 @@ import { getRuntimeDb } from "@/db/runtime";
 import { CatalogService } from "@/catalog/service";
 import { DrizzleCatalogRepository } from "@/catalog/repository";
 import { z } from "zod";
+import { isCartError } from "@/cart/errors";
+import { isCatalogError } from "@/catalog/errors";
+import { toPublicCart } from "@/cart/public";
+import { authorizationErrorResponse } from "@/auth/http";
 
 const CART_SESSION_COOKIE = "nomi_cart_session";
 const DEFAULT_CURRENCY = "USD";
@@ -20,7 +24,7 @@ async function getCartIdentity() {
   const sessionCookie = cookieStore.get(CART_SESSION_COOKIE);
 
   return {
-    customerId: principal?.userId ?? null,
+    customerId: principal?.role === "customer" ? principal.userId : null,
     sessionId: sessionCookie?.value ?? null,
   };
 }
@@ -84,8 +88,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ it
       currency: DEFAULT_CURRENCY,
     });
 
-    return NextResponse.json(updatedCart);
+    return NextResponse.json(toPublicCart(updatedCart));
   } catch (error) {
+    const authResponse = authorizationErrorResponse(error);
+    if (authResponse) return authResponse;
+    if (isCartError(error) || isCatalogError(error)) {
+      const status = error.code === "INVALID_INPUT" ? 400 : error.code === "NOT_FOUND" ? 404 : 409;
+      return NextResponse.json({ error: error.message }, { status });
+    }
     console.error("Cart PATCH error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
@@ -127,8 +137,14 @@ export async function DELETE(
       currency: DEFAULT_CURRENCY,
     });
 
-    return NextResponse.json(updatedCart);
+    return NextResponse.json(toPublicCart(updatedCart));
   } catch (error) {
+    const authResponse = authorizationErrorResponse(error);
+    if (authResponse) return authResponse;
+    if (isCartError(error) || isCatalogError(error)) {
+      const status = error.code === "INVALID_INPUT" ? 400 : error.code === "NOT_FOUND" ? 404 : 409;
+      return NextResponse.json({ error: error.message }, { status });
+    }
     console.error("Cart DELETE error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

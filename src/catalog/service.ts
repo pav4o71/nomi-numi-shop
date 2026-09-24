@@ -7,7 +7,7 @@
 
 import type { CatalogExecutor } from "@/catalog/db";
 import { conflict, invalidInput, notFound } from "@/catalog/errors";
-import type { CatalogMoney } from "@/catalog/money";
+import type { CatalogCurrency, CatalogMoney } from "@/catalog/money";
 import { optionCombinationKey, type OptionSelection } from "@/catalog/option-combination";
 import {
   DrizzleCatalogRepository,
@@ -191,7 +191,7 @@ export class CatalogService {
   async updateProduct(id: string, input: unknown): Promise<ProductRow> {
     const data = parseCatalogInput(updateProductInputSchema, input, "updateProduct");
     return this.repo.transaction(async (tx) => {
-      const existing = await this.repo.getProductById(tx, id);
+      const existing = await this.repo.lockProduct(tx, id);
       if (!existing) {
         throw notFound(`Product not found: ${id}`);
       }
@@ -591,6 +591,99 @@ export class CatalogService {
       const inventoryBalance = await this.repo.getInventoryBalance(variantId, tx);
       return { ...variant, prices, optionSelections, inventoryBalance };
     });
+  }
+
+  async getCheckoutVariantDetails(
+    variantId: string,
+    currency: CatalogCurrency,
+    executor?: CatalogExecutor,
+  ) {
+    const load = async (tx: CatalogExecutor) => {
+      const variant = await this.repo.getVariantById(tx, variantId);
+      if (!variant) throw notFound(`Variant not found: ${variantId}`);
+
+      const product = await this.repo.getProductById(tx, variant.productId);
+      if (!product) throw notFound(`Product not found: ${variant.productId}`);
+      if (product.status !== "published" || !variant.isActive) {
+        throw conflict("Product or variant is not available for checkout");
+      }
+
+      const prices = await this.repo.listVariantPrices(tx, variantId);
+      const price = prices.find(
+        (candidate) => candidate.currency === currency && candidate.amountMinor > 0,
+      );
+      if (!price) {
+        throw conflict(`Variant is not priced in ${currency}`);
+      }
+
+      const selections = await this.repo.listVariantSelections(tx, variantId);
+      const options = await this.repo.listProductOptionsWithValues(tx, product.id);
+      const selectedOptions = selections.map((selection) => {
+        const option = options.find((candidate) => candidate.id === selection.optionId);
+        const value = option?.values.find((candidate) => candidate.id === selection.optionValueId);
+        if (!option || !value) {
+          throw conflict("Variant option selection is incomplete");
+        }
+        return { name: option.name, value: value.value };
+      });
+
+      const balance = await this.repo.getInventoryBalance(variantId, tx);
+      const available = (balance?.onHand ?? 0) - (balance?.reserved ?? 0);
+
+      return {
+        variantId: variant.id,
+        productId: product.id,
+        title: product.title,
+        sku: variant.sku,
+        selectedOptions,
+        unitPrice: price.amountMinor,
+        available: Math.max(0, available),
+      };
+    };
+
+    return executor ? load(executor) : this.repo.transaction(load);
+  }
+
+  async lockCheckoutCatalogAuthority(
+    variantIds: string[],
+    executor: CatalogExecutor,
+  ): Promise<void> {
+    const uniqueVariantIds = [...new Set(variantIds)].sort((a, b) => a.localeCompare(b));
+    if (uniqueVariantIds.length === 0) return;
+
+    const discoveredMappings = await this.repo.getVariantProductMappings(
+      executor,
+      uniqueVariantIds,
+    );
+    const discoveredVariantIds = new Set(discoveredMappings.map((row) => row.variantId));
+    const missingVariantId = uniqueVariantIds.find((id) => !discoveredVariantIds.has(id));
+    if (missingVariantId) {
+      throw notFound(`Variant not found: ${missingVariantId}`);
+    }
+
+    const productIds = [...new Set(discoveredMappings.map((row) => row.productId))].sort((a, b) =>
+      a.localeCompare(b),
+    );
+    for (const productId of productIds) {
+      const product = await this.repo.lockProduct(executor, productId);
+      if (!product) throw notFound(`Product not found: ${productId}`);
+    }
+
+    const lockedVariants = await this.repo.lockVariants(executor, uniqueVariantIds);
+    if (lockedVariants.length !== uniqueVariantIds.length) {
+      throw conflict("Catalog changed during checkout; retry the checkout attempt");
+    }
+
+    const discoveredProductByVariant = new Map(
+      discoveredMappings.map((row) => [row.variantId, row.productId]),
+    );
+    if (
+      lockedVariants.some(
+        (variant) => discoveredProductByVariant.get(variant.id) !== variant.productId,
+      )
+    ) {
+      throw conflict("Catalog changed during checkout; retry the checkout attempt");
+    }
   }
 
   async listVariantPrices(variantId: string): Promise<VariantPriceRow[]> {

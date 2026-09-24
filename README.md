@@ -5,7 +5,7 @@ store.
 
 ## Current phase
 
-Phase 6 storefront merchandising + hardening
+Phase 7 customer/account/cart + Phase 8 checkout/order closure
 
 Phase 0 through Phase 3D are complete. The repository includes isolated
 local PostgreSQL, Drizzle ORM, committed migrations, a guarded TEST-only
@@ -30,7 +30,9 @@ Storefront presentation adds polished public catalog pages (`/products`,
 and static content pages (`/about`, `/faq`, `/shipping`, `/returns`,
 `/contact`, `/legal/privacy`, `/legal/terms`, `/legal/imprint`, `/gifts`,
 `/lookbook`, `/size-guide`) with placeholder/template content. Admin
-catalog HTTP/UI, cart, checkout, and inventory runtime remain later phases.
+catalog HTTP/UI and inventory tracking are implemented. Phase 7
+customer/account/cart and Phase 8 checkout/order/payment runtime are implemented
+and in closure.
 
 Hardening progress includes SHA-pinned GitHub Actions (all third-party
 actions pinned to full commit SHAs), minimal workflow permissions
@@ -123,6 +125,7 @@ Before implementation, read the documents relevant to the current task:
 - docs/PROJECT_PLAN.md
 - docs/ARCHITECTURE.md
 - docs/COMMERCE_RULES.md
+- docs/CHECKOUT.md
 - docs/STORE_CATALOG.md
 - docs/DATABASE.md
 - docs/AUTH.md

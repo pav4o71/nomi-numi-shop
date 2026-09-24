@@ -200,8 +200,9 @@ Guest browsing is required.
 
 Guest cart usage is required.
 
-Whether checkout itself permits guest checkout or requires an account is
-an explicit open decision to lock before checkout implementation.
+Checkout permits both guests and authenticated customers. The authoritative
+Phase 7/8 identity, order-access, idempotency, reservation, snapshot, and mock
+payment rules are locked in `docs/CHECKOUT.md`.
 
 ## 8. Reviews
 
@@ -513,11 +514,11 @@ Inventory tracking and ledger implementation. Fulfillment processing deferred un
 Storefront merchandising: featured products/categories/collections and
 seasonal collection surfaces wired from published catalog reads.
 
-### Phase 7
+### Phase 7 (In closure)
 
 Customer account, cart, wishlist and addresses.
 
-### Phase 8
+### Phase 8 (In closure)
 
 Checkout and order lifecycle using mock providers.
 
@@ -583,7 +584,6 @@ The following are intentionally not decided during Phase 0:
 
 - final public domain
 - production Hetzner topology
-- guest checkout versus account-required checkout
 - exact real payment providers
 - exact courier providers
 - return/refund policy details

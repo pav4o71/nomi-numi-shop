@@ -4,6 +4,7 @@ import type { PublicProductDetail } from "@/catalog/public/types";
 import { formatPublicMoney } from "@/catalog/public/format-money";
 import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/catalog/media-placeholder";
+import { WishlistButton } from "@/components/customer/wishlist-button";
 
 export function ProductDetailView({ product }: { product: PublicProductDetail }) {
   const initial =
@@ -84,7 +85,10 @@ export function ProductDetailView({ product }: { product: PublicProductDetail })
                 <span className="mx-2 text-muted-foreground">·</span>
                 <span>{formatPublicMoney(variant.price)}</span>
               </div>
-              <AddToCartButton variantId={variant.id} />
+              <div className="flex items-center gap-2">
+                <WishlistButton variantId={variant.id} />
+                <AddToCartButton variantId={variant.id} />
+              </div>
             </li>
           ))}
         </ul>

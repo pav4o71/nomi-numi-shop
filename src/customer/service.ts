@@ -1,6 +1,7 @@
 import { DrizzleCustomerRepository } from "./repository";
 import { createCatalogId } from "@/catalog/ids";
 import { customerAddresses } from "@/db/schema";
+import { CustomerError } from "./errors";
 
 type AddressInput = Omit<
   typeof customerAddresses.$inferInsert,
@@ -34,21 +35,25 @@ export class CustomerService {
   async updateAddress(customerId: string, addressId: string, input: Partial<AddressInput>) {
     return this.repo.transaction(async (tx) => {
       const addr = await this.repo.getAddress(tx, customerId, addressId);
-      if (!addr) throw new Error("Address not found");
+      if (!addr) throw new CustomerError("NOT_FOUND", "Address not found");
 
-      if (input.isDefault && input.type === addr.type) {
-        await this.repo.clearDefaultAddresses(tx, customerId, addr.type);
-      } else if (input.isDefault && input.type && input.type !== addr.type) {
-        await this.repo.clearDefaultAddresses(tx, customerId, input.type);
+      const nextType = input.type ?? addr.type;
+      const nextDefault = input.isDefault ?? addr.isDefault;
+      if (nextDefault) {
+        await this.repo.clearDefaultAddresses(tx, customerId, nextType);
       }
 
-      return this.repo.updateAddress(tx, addressId, customerId, input);
+      return this.repo.updateAddress(tx, addressId, customerId, {
+        ...input,
+        isDefault: nextDefault,
+      });
     });
   }
 
   async deleteAddress(customerId: string, addressId: string) {
     return this.repo.transaction(async (tx) => {
-      await this.repo.deleteAddress(tx, addressId, customerId);
+      const deleted = await this.repo.deleteAddress(tx, addressId, customerId);
+      if (!deleted) throw new CustomerError("NOT_FOUND", "Address not found");
     });
   }
 

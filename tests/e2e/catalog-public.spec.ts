@@ -1,21 +1,24 @@
 import { expect, test } from "@playwright/test";
 
 import {
-  assertDevCatalogFixturesReady,
+  assertTestCatalogFixturesReady,
   CATALOG_PUBLIC_E2E_FIXTURES,
   shouldRunCatalogPublicE2E,
 } from "./helpers/catalog-public";
 
 /**
  * Phase 3D public catalog Playwright smoke (local only).
- * Read-only against Phase 3C DEV fixtures. Skipped in portable CI.
+ * Read-only during tests against Phase 3C fixtures installed in TEST setup.
  */
 
 test.describe("Phase 3D public catalog reads", () => {
-  test.skip(!shouldRunCatalogPublicE2E(), "catalog public E2E requires local DEV (skipped in CI)");
+  test.skip(
+    !shouldRunCatalogPublicE2E(),
+    "catalog public E2E requires local TEST DB (skipped in CI)",
+  );
 
   test.beforeAll(async () => {
-    await assertDevCatalogFixturesReady();
+    await assertTestCatalogFixturesReady();
   });
 
   test("lists products and opens PDP", async ({ page }) => {

@@ -9,6 +9,10 @@ import { CatalogService } from "@/catalog/service";
 import { DrizzleCatalogRepository } from "@/catalog/repository";
 import { createCatalogId } from "@/catalog/ids";
 import { z } from "zod";
+import { isCartError } from "@/cart/errors";
+import { isCatalogError } from "@/catalog/errors";
+import { toPublicCart } from "@/cart/public";
+import { authorizationErrorResponse } from "@/auth/http";
 
 const CART_SESSION_COOKIE = "nomi_cart_session";
 const DEFAULT_CURRENCY = "USD";
@@ -21,7 +25,7 @@ async function getCartIdentity() {
   const sessionCookie = cookieStore.get(CART_SESSION_COOKIE);
 
   return {
-    customerId: principal?.userId ?? null,
+    customerId: principal?.role === "customer" ? principal.userId : null,
     sessionId: sessionCookie?.value ?? null,
   };
 }
@@ -41,8 +45,6 @@ export async function GET() {
     if (!identity.customerId && !identity.sessionId) {
       return NextResponse.json({
         id: "",
-        customerId: null,
-        sessionId: null,
         currency: DEFAULT_CURRENCY,
         items: [],
         totalAmount: 0,
@@ -65,8 +67,10 @@ export async function GET() {
       currency: DEFAULT_CURRENCY,
     });
 
-    return NextResponse.json(resolvedCart);
+    return NextResponse.json(toPublicCart(resolvedCart));
   } catch (error) {
+    const authResponse = authorizationErrorResponse(error);
+    if (authResponse) return authResponse;
     console.error("Cart GET error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
@@ -131,7 +135,7 @@ export async function POST(request: Request) {
       currency: DEFAULT_CURRENCY,
     });
 
-    const response = NextResponse.json(updatedCart);
+    const response = NextResponse.json(toPublicCart(updatedCart));
 
     if (setCookieHeader && sessionId) {
       const cookieStore = await cookies();
@@ -148,6 +152,12 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
+    const authResponse = authorizationErrorResponse(error);
+    if (authResponse) return authResponse;
+    if (isCartError(error) || isCatalogError(error)) {
+      const status = error.code === "INVALID_INPUT" ? 400 : error.code === "NOT_FOUND" ? 404 : 409;
+      return NextResponse.json({ error: error.message }, { status });
+    }
     console.error("Cart POST error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

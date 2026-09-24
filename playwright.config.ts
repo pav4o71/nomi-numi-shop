@@ -18,6 +18,7 @@ if (!isCi) {
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: isCi ? undefined : "./tests/e2e/global-setup.ts",
   timeout: isCi ? 30_000 : 90_000,
   expect: {
     timeout: isCi ? 5_000 : 15_000,
@@ -45,10 +46,16 @@ export default defineConfig({
         ? {
             BETTER_AUTH_SECRET: "ci-stub-secret-not-for-production-0123456789abcdef",
             BETTER_AUTH_URL: e2eAuthOrigin,
+            MOCK_PAYMENT_WEBHOOK_SECRET: "ci-mock-payment-secret-0123456789abcdef",
+            MOCK_PAYMENT_OUTCOME: "success",
           }
         : {
             BETTER_AUTH_URL: e2eAuthOrigin,
             DATABASE_URL: localTestDbUrl,
+            MOCK_PAYMENT_WEBHOOK_SECRET:
+              process.env.MOCK_PAYMENT_WEBHOOK_SECRET ??
+              "local-e2e-mock-payment-secret-0123456789abcdef",
+            MOCK_PAYMENT_OUTCOME: "success",
           }),
     },
   },

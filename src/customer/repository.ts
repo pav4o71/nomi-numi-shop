@@ -44,11 +44,11 @@ export class DrizzleCustomerRepository {
   }
 
   async deleteAddress(tx: CustomerExecutor, addressId: string, customerId: string) {
-    await tx
+    const deleted = await tx
       .delete(customerAddresses)
-      .where(
-        and(eq(customerAddresses.id, addressId), eq(customerAddresses.customerId, customerId)),
-      );
+      .where(and(eq(customerAddresses.id, addressId), eq(customerAddresses.customerId, customerId)))
+      .returning({ id: customerAddresses.id });
+    return deleted.length === 1;
   }
 
   async clearDefaultAddresses(

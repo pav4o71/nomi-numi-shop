@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { GET, POST } from "@/app/api/cart/route";
-import { PATCH, DELETE } from "@/app/api/cart/[itemId]/route";
+import { POST } from "@/app/api/cart/route";
+import { PATCH } from "@/app/api/cart/[itemId]/route";
 import * as auth from "@/auth/authorization";
 
 vi.mock("@/auth/authorization", async (importOriginal) => {

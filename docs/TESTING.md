@@ -49,6 +49,12 @@ Run the available test commands:
 - `catalog-fixtures-local.test.ts` — TEST DB fixture preflight/install
 - `catalog-factories-local.test.ts` — TEST DB factory persistence
 - `catalog-public-local.test.ts` — TEST DB public reads
+- `cart-service-local.test.ts` — TEST DB cart ownership, concurrency,
+  sellability, and mutation isolation
+- `checkout-service-local.test.ts` — TEST DB order snapshots,
+  idempotency, inventory races, guest access, and reservation expiry
+- `checkout-webhook-local.test.ts` — TEST DB payment replay and terminal
+  reservation transitions
 
 These path locks are **intentional safety guards** preventing accidental
 mutation of external projects or databases. Local full coverage remains
@@ -131,9 +137,10 @@ Auth foundation unit coverage lives in:
 - `tests/unit/database-runtime-env.test.ts` (portable DATABASE_URL-only
   runtime env validation; no Better Auth secrets)
 - `tests/e2e/catalog-public.spec.ts` (Phase 3D public catalog smoke;
-  skipped when `CI=true`; read-only against Phase 3C DEV fixtures;
-  fails with a manual `pnpm catalog:seed:dev` setup hint when missing;
-  never seeds/deletes DEV data)
+  skipped when `CI=true`; reads deterministic Phase 3C fixtures installed
+  into TEST by guarded Playwright global setup)
+- `tests/e2e/cart-checkout.spec.ts` (Phase 7/8 guest cart and deterministic
+  mock-payment checkout; skipped when `CI=true`)
 - `tests/e2e/storefront.spec.ts` (portable homepage smoke; asserts
   Products/`/#` hrefs; must not navigate to catalog routes in CI)
 - `tests/unit/auth-protected-surfaces.test.ts` (Phase 2C5 page guards,
@@ -156,7 +163,7 @@ Auth foundation unit coverage lives in:
 - `tests/e2e/auth-ui.spec.ts` (Phase 2C3 public auth page smoke +
   Phase 2C5 `/forbidden` landing; portable CI)
 - `tests/e2e/auth-security.spec.ts` (Phase 2C6 live lifecycle/security
-  evidence via browser + Mailpit + DEV Postgres; skipped when `CI=true`;
+  evidence via browser + Mailpit + TEST Postgres; skipped when `CI=true`;
   required for local `pnpm test:e2e` closure)
 
 Local email / Mailpit coverage lives in:
@@ -166,18 +173,21 @@ Local email / Mailpit coverage lives in:
 
 Playwright starts the application through `pnpm dev:e2e` on
 `127.0.0.1:3101`. It must never reuse an unknown process already
-listening on port 3101. Local live auth E2E overrides
-`BETTER_AUTH_URL=http://127.0.0.1:3101` for the Playwright webServer so
-verification/reset links match the E2E origin. Auth runtime still uses
-DEV Postgres (`55432` / `nomi_numi_shop_dev`) only.
+listening on port 3101. Local E2E overrides
+`BETTER_AUTH_URL=http://127.0.0.1:3101` and `DATABASE_URL` for the owned
+TEST database (`55433` / `nomi_numi_shop_test`). The guarded global setup
+verifies that identity, clears only commerce/catalog TEST rows, installs
+deterministic catalog fixtures, and stocks variants through the inventory
+ledger service. It never mutates DEV.
 
 ### Live auth E2E vs portable CI
 
 `pnpm test:e2e` in GitHub Actions runs portable Chromium smoke
-(`auth-ui`, storefront). Live `auth-security` and `catalog-public` cases
-detect `CI` and skip. Full local closure requires owned DEV Postgres,
-seeded Phase 3C DEV fixtures (manual `pnpm catalog:seed:dev`), Mailpit
-(for auth), and `.env.local`, then `pnpm test:e2e` without `CI`.
+(`auth-ui`, storefront). Live `auth-security`, `catalog-public`, and
+`cart-checkout` cases detect `CI` and skip. Full local closure requires
+owned TEST Postgres, Mailpit (for auth), and `.env.local`, then
+`pnpm test:e2e` without `CI`; catalog fixtures are installed automatically
+into TEST.
 
 `pnpm test:ci` still excludes path-locked suites
 (`database-safety`, `drizzle-foundation`, `email-local-safety`,
