@@ -83,6 +83,14 @@ The service is ephemeral, has no persistent volume, and uses no production
 secrets or resources. `pnpm health` remains portable and database-free; it
 checks migration history but never runs `pnpm db:migrate:ci`.
 
+This one disposable, runner-local service uses
+`POSTGRES_HOST_AUTH_METHOD=trust`, so it requires no database password or
+repository secret. That exception is limited to the fresh, short-lived
+GitHub-hosted service. Never use trust authentication for local DEV/TEST,
+staging, production, persistent, shared, or externally reachable PostgreSQL.
+The guarded workstation wrappers and their authentication policies are
+unchanged.
+
 Playwright browser binaries are stored under the ignored
 `var/playwright-browsers/` directory. Playwright temporary files use the
 ignored `var/tmp/` directory.

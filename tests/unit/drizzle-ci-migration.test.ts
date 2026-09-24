@@ -14,8 +14,6 @@ const postgresConstructor = vi.hoisted(() =>
 vi.mock("postgres", () => ({ default: postgresConstructor }));
 
 import {
-  CI_PASSWORD_LENGTH,
-  CI_PASSWORD_PATTERN,
   CI_POSTGRES_IDENTITY,
   assertCiRuntime,
   assertDatabaseIdentity,
@@ -34,12 +32,9 @@ import {
   deriveLatestSnapshotPath,
   parseAndValidateJournal,
   parseAndValidateSnapshot,
-  readValidatedCiPassword,
-  redactErrorMessage,
   validateMigrationArtifacts,
 } from "../../scripts/drizzle-migrate-ci.mjs";
 
-const validPassword = "nomi-ci-postgres-ephemeral-password-0000001";
 const validRuntime = {
   CI: "true",
   GITHUB_ACTIONS: "true",
@@ -207,37 +202,21 @@ describe("CI runtime boundary", () => {
     expect(() => assertNoAmbientDatabaseConfiguration({ [name]: "" })).toThrow(name);
   });
 
-  it("validates the disposable password without disclosing it", () => {
-    expect(validPassword).toHaveLength(CI_PASSWORD_LENGTH);
-    expect(validPassword).toMatch(CI_PASSWORD_PATTERN);
-    expect(readValidatedCiPassword({ NOMI_CI_POSTGRES_PASSWORD: validPassword })).toBe(
-      validPassword,
-    );
-    expect(() => readValidatedCiPassword({})).toThrow("URL-safe characters");
-    expect(() =>
-      readValidatedCiPassword({ NOMI_CI_POSTGRES_PASSWORD: `${validPassword}!` }),
-    ).toThrow("URL-safe characters");
-
-    const redacted = redactErrorMessage(
-      new Error(`connection failed with ${validPassword}`),
-      validPassword,
-    );
-    expect(redacted).toContain("[REDACTED]");
-    expect(redacted).not.toContain(validPassword);
-  });
-
-  it("builds only the immutable loopback identity", () => {
-    const options = buildFixedConnectionOptions(validPassword);
+  it("builds only the immutable passwordless loopback identity", () => {
+    const options = buildFixedConnectionOptions();
     expect(options).toMatchObject({
       host: "127.0.0.1",
       port: 55433,
       database: "nomi_numi_shop_test",
       username: "nomi_numi_test",
-      password: validPassword,
       ssl: false,
       max: 1,
       prepare: false,
     });
+    expect(options).not.toHaveProperty("password");
+    expect(options).not.toHaveProperty("pass");
+    expect(options).not.toHaveProperty("url");
+    expect(options).not.toHaveProperty("connectionString");
     expect(options.port).not.toBe(5433);
     expect(CI_POSTGRES_IDENTITY).toEqual({
       host: "127.0.0.1",

@@ -61,6 +61,12 @@ with no persistent volume, production credentials, or production resources.
 The fixed runner-local endpoint is `127.0.0.1:55433`; protected workstation
 port `5433` is never used.
 
+This disposable service alone uses `POSTGRES_HOST_AUTH_METHOD=trust` and
+therefore needs no database password or repository secret. Trust
+authentication must never be copied to local DEV/TEST, staging, production,
+persistent, shared, or externally reachable PostgreSQL. Workstation database
+wrappers and authentication policies remain unchanged.
+
 `pnpm db:migrate:ci` is intentionally CI-only and refuses local use. It proves
 the database is empty, applies every committed Drizzle migration from zero,
 and then checks the exact schemas, relations, migration hashes, and migration

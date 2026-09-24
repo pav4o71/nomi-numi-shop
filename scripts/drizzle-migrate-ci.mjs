@@ -17,9 +17,6 @@ export const CI_POSTGRES_IDENTITY = Object.freeze({
   ssl: false,
 });
 
-export const CI_PASSWORD_LENGTH = 43;
-export const CI_PASSWORD_PATTERN = /^[A-Za-z0-9_-]{43}$/;
-
 const EXPECTED_RUNTIME = Object.freeze({
   CI: "true",
   GITHUB_ACTIONS: "true",
@@ -169,27 +166,13 @@ export function assertNoAmbientDatabaseConfiguration(env) {
   }
 }
 
-export function readValidatedCiPassword(env) {
-  const password = env.NOMI_CI_POSTGRES_PASSWORD;
-  if (
-    typeof password !== "string" ||
-    password.length !== CI_PASSWORD_LENGTH ||
-    !CI_PASSWORD_PATTERN.test(password)
-  ) {
-    fail(`NOMI_CI_POSTGRES_PASSWORD must be ${CI_PASSWORD_LENGTH} URL-safe characters`);
-  }
-  return password;
-}
-
-export function buildFixedConnectionOptions(password) {
-  readValidatedCiPassword({ NOMI_CI_POSTGRES_PASSWORD: password });
+export function buildFixedConnectionOptions() {
   if (CI_POSTGRES_IDENTITY.port === 5433) fail("Protected port 5433 is forbidden");
   return {
     host: CI_POSTGRES_IDENTITY.host,
     port: CI_POSTGRES_IDENTITY.port,
     database: CI_POSTGRES_IDENTITY.database,
     username: CI_POSTGRES_IDENTITY.user,
-    password,
     ssl: CI_POSTGRES_IDENTITY.ssl,
     max: 1,
     idle_timeout: 5,
@@ -499,12 +482,6 @@ export function assertMigrationBookkeeping(actualRows, expectedRows) {
   assertExactArray(actual, expectedRows, "Migration bookkeeping rows");
 }
 
-export function redactErrorMessage(error, password) {
-  const message = error instanceof Error ? error.message : String(error);
-  if (typeof password !== "string" || password.length === 0) return message;
-  return message.split(password).join("[REDACTED]");
-}
-
 async function readDatabaseIdentity(sql) {
   const rows = await sql`
     SELECT
@@ -622,10 +599,9 @@ export async function main({
   assertNoArguments(argv);
   assertCiRuntime(env, platform);
   assertNoAmbientDatabaseConfiguration(env);
-  const password = readValidatedCiPassword(env);
   const workspace = assertWorkspace(env.GITHUB_WORKSPACE, cwd);
   const expectedState = validateMigrationArtifacts(workspace);
-  const connectionOptions = buildFixedConnectionOptions(password);
+  const connectionOptions = buildFixedConnectionOptions();
   const sql = postgres(connectionOptions);
 
   try {
@@ -645,7 +621,7 @@ function isMainModule() {
 
 if (isMainModule()) {
   main().catch((error) => {
-    const message = redactErrorMessage(error, process.env.NOMI_CI_POSTGRES_PASSWORD);
+    const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`ERROR: ${message}\n`);
     process.exitCode = 1;
   });
