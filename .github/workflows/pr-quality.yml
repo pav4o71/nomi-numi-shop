@@ -135,6 +135,57 @@ jobs:
       - name: Production build
         run: pnpm build
 
+  postgres-integration:
+    name: PostgreSQL migration integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      CI: "true"
+      NOMI_CI_POSTGRES_PASSWORD: nomi-ci-postgres-ephemeral-password-0000001
+
+    services:
+      postgres:
+        image: postgres:16.15-bookworm@sha256:efedf3595f1d6f415c08568ba171029bf54052e754cc9f030e3f2412b21f3d67
+        env:
+          POSTGRES_DB: nomi_numi_shop_test
+          POSTGRES_USER: nomi_numi_test
+          POSTGRES_PASSWORD: ${{ env.NOMI_CI_POSTGRES_PASSWORD }}
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd "pg_isready --host 127.0.0.1 --port 5432 --username nomi_numi_test --dbname nomi_numi_shop_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - name: Check out repository
+        # actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        # pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+        with:
+          version: 11.26.0
+
+      - name: Set up Node.js
+        # actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply and verify committed migrations
+        run: pnpm db:migrate:ci
+
   e2e:
     name: E2E tests
     runs-on: ubuntu-latest
@@ -195,7 +246,7 @@ jobs:
     name: PR Quality Gate
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [path-filter, static, unit-build, e2e]
+    needs: [path-filter, static, unit-build, postgres-integration, e2e]
     if: always()
     steps:
       - name: Aggregate status
@@ -204,6 +255,7 @@ jobs:
           echo "Relevant code changes: ${{ needs.path-filter.outputs.code }}"
           echo "Static checks: ${{ needs.static.result }}"
           echo "Unit tests and build: ${{ needs.unit-build.result }}"
+          echo "PostgreSQL migration integration: ${{ needs.postgres-integration.result }}"
           echo "E2E tests: ${{ needs.e2e.result }}"
 
           if [ "${{ needs.path-filter.result }}" != "success" ]; then
@@ -218,6 +270,11 @@ jobs:
 
           if [ "${{ needs.unit-build.result }}" != "success" ]; then
             echo "Unit tests or build failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.postgres-integration.result }}" != "success" ]; then
+            echo "PostgreSQL migration integration failed"
             exit 1
           fi
 

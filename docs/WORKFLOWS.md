@@ -38,9 +38,12 @@ This workflow runs several checks in parallel:
 3. **Typecheck** — runs TypeScript compiler to verify type correctness
 4. **Migration history check** — runs `pnpm db:check:portable`
 5. **Unit tests** — runs `pnpm test:ci` (the portable unit test suite,
-   including `drizzle-migration-contract.test.ts`)
+   including `drizzle-migration-contract.test.ts` and the connection-free
+   `drizzle-ci-migration.test.ts` runner contract tests)
 6. **Production build** — runs `pnpm build` to verify the app can be built
-7. **E2E tests** — installs Chromium and runs Playwright E2E tests with `pnpm test:e2e`
+7. **PostgreSQL migration integration** — starts a fresh disposable
+   PostgreSQL 16 service and runs `pnpm db:migrate:ci`
+8. **E2E tests** — installs Chromium and runs Playwright E2E tests with `pnpm test:e2e`
 
 All of these checks must pass for the workflow to succeed.
 
@@ -49,6 +52,24 @@ The workflow job that branch protection watches is named exactly:
 **`PR Quality Gate`**
 
 This is the required status check that must be green before you can merge.
+
+### Disposable PostgreSQL migration job
+
+The unconditional **PostgreSQL migration integration** job is independent of
+the workstation DEV/TEST containers. It uses a fresh GitHub-hosted service
+with no persistent volume, production credentials, or production resources.
+The fixed runner-local endpoint is `127.0.0.1:55433`; protected workstation
+port `5433` is never used.
+
+`pnpm db:migrate:ci` is intentionally CI-only and refuses local use. It proves
+the database is empty, applies every committed Drizzle migration from zero,
+and then checks the exact schemas, relations, migration hashes, and migration
+timestamps. Local database work continues to use the guarded DEV/TEST
+wrappers.
+
+The final `PR Quality Gate` job has this integration job as a mandatory
+dependency and fails unless it succeeds. `pnpm health` remains database-free:
+it runs the portable migration-history check, not the live migration command.
 
 ### What E2E tests run in CI?
 

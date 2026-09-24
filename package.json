@@ -34,6 +34,7 @@
     "db:generate": "./scripts/drizzle-local.sh generate",
     "db:check": "./scripts/drizzle-local.sh check",
     "db:check:portable": "drizzle-kit check --config drizzle.config.ts",
+    "db:migrate:ci": "node scripts/drizzle-migrate-ci.mjs",
     "db:dev:migrate": "./scripts/drizzle-local.sh migrate dev",
     "db:test:migrate": "./scripts/drizzle-local.sh migrate test",
     "db:test:rebuild": "./scripts/db-test-rebuild.sh",

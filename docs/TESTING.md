@@ -64,6 +64,25 @@ These path locks are **intentional safety guards** preventing accidental
 mutation of external projects or databases. Local full coverage remains
 `pnpm test` (portable + local).
 
+### Isolated migration integration in GitHub Actions
+
+GitHub Actions runs `pnpm db:migrate:ci` only inside the unconditional
+**PostgreSQL migration integration** job. That job creates a disposable
+PostgreSQL 16 service on the hosted runner, applies every committed Drizzle
+migration to a database proven empty, and verifies the final schemas,
+relations, and exact Drizzle bookkeeping rows against committed metadata.
+
+The CI-only command refuses local execution. It requires the exact
+GitHub-hosted job identity and a fixed runner-local target at
+`127.0.0.1:55433` / `nomi_numi_shop_test`. It accepts no connection URL or
+ambient PostgreSQL configuration and never uses protected workstation port
+`5433`. This is separate from the guarded DEV/TEST wrappers, which remain the
+only supported local migration interface.
+
+The service is ephemeral, has no persistent volume, and uses no production
+secrets or resources. `pnpm health` remains portable and database-free; it
+checks migration history but never runs `pnpm db:migrate:ci`.
+
 Playwright browser binaries are stored under the ignored
 `var/playwright-browsers/` directory. Playwright temporary files use the
 ignored `var/tmp/` directory.
@@ -243,8 +262,11 @@ The workflow is split into parallel jobs for faster feedback:
    `catalog-schema-local`, `catalog-domain-local`,
    `catalog-fixtures-local`, `catalog-factories-local`, and
    `catalog-public-local` suites) + `pnpm build`
-3. **e2e** — Chromium Playwright tests (`pnpm test:e2e`)
-4. **quality-gate** — aggregator job named exactly `PR Quality Gate`
+3. **postgres-integration** — creates a fresh disposable PostgreSQL 16
+   service and runs `pnpm db:migrate:ci` to apply and exactly verify every
+   committed migration
+4. **e2e** — Chromium Playwright tests (`pnpm test:e2e`)
+5. **quality-gate** — aggregator job named exactly `PR Quality Gate`
    that depends on all other jobs
 
 The **quality-gate** job is the required status check for branch
@@ -265,7 +287,8 @@ job-level `contents: read` only). Third-party actions are pinned to full
 commit SHAs for supply-chain security. The workflow does not use
 production secrets, production resources, `pull_request_target`, write
 permissions, automatic merge, or protected workstation Docker resources
-such as `beautybook3-pg` / host port `5433`.
+such as `beautybook3-pg` / host port `5433`. Its PostgreSQL service is
+runner-local and disposable.
 
 ### CodeQL security scanning
 
