@@ -37,11 +37,15 @@ Run the available test commands:
 - No hardcoded workstation paths
 - No local Docker/PostgreSQL dependencies
 - Safe for CI without owned infrastructure
+- `drizzle-migration-contract.test.ts` validates migration journal/file
+  alignment, append-only lineage, and absence of workstation-specific
+  targets
 
 **Local-only (`pnpm test:local`)** — requires workstation canonical root:
 
 - `database-safety.test.ts` — verifies `/home/pav4o71/Projects/nomi-numi-shop`
-- `drizzle-foundation.test.ts` — path-locked migration/schema checks
+- `drizzle-foundation.test.ts` — path-locked workstation, tooling, and
+  resource-boundary checks
 - `email-local-safety.test.ts` — path-locked Mailpit helper checks
 - `auth-first-admin-bootstrap-local.test.ts` — DEV/TEST promotion via owned DB
 - `catalog-schema-local.test.ts` — TEST DB constraint enforcement
@@ -231,7 +235,8 @@ Stable check name:
 
 The workflow is split into parallel jobs for faster feedback:
 
-1. **static** — format check, lint, typecheck
+1. **static** — format check, lint, typecheck, and migration history check
+   (`pnpm db:check:portable`)
 2. **unit-build** — `pnpm test:ci` (portable unit tests excluding
    path-locked `database-safety`, `drizzle-foundation`,
    `email-local-safety`, `auth-first-admin-bootstrap-local`,
@@ -308,14 +313,23 @@ Re-run relevant CI and review on the new HEAD before merge.
 1. `pnpm format:check`
 2. `pnpm lint`
 3. `pnpm typecheck`
-4. `pnpm test:ci` (portable unit tests)
-5. `pnpm build`
+4. `pnpm db:check:portable`
+5. `pnpm test:ci` (portable unit tests, including
+   `tests/unit/drizzle-migration-contract.test.ts`)
+6. `pnpm build`
 
 This script is portable and does not require local Docker resources,
 workstation canonical root, or owned PostgreSQL. It matches the GitHub
 Actions static and unit-build jobs but does not include E2E tests (which
 require a separate `pnpm test:e2e:install` step and are run separately
 via `pnpm test:e2e`).
+
+`pnpm db:check:portable` is the credential-free migration-history
+consistency command. It does not apply migrations or contact PostgreSQL.
+The GitHub **Static checks** job runs the same command. The portable
+`drizzle-migration-contract.test.ts` runs in `pnpm test:ci`, while
+`drizzle-foundation.test.ts` remains local/path-locked to protect
+workstation, tooling, and resource boundaries.
 
 ### Local health with path-locked tests
 
