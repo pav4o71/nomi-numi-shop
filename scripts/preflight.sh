@@ -1038,10 +1038,14 @@ done
 
 section "CRITICAL RULE CONTENT"
 
-if grep -Fq "Unknown resources are protected resources." AGENTS.md; then
-  pass "AGENTS.md contains unknown-resource protection"
+GENERIC_PROJECT_BOUNDARY=".agents/rules/00-project-boundary.md"
+
+if [[ ! -f "$GENERIC_PROJECT_BOUNDARY" ]]; then
+  fail "generic project-boundary rule is missing: $GENERIC_PROJECT_BOUNDARY"
+elif grep -Fq "Unknown resources are protected resources." "$GENERIC_PROJECT_BOUNDARY"; then
+  pass "generic project-boundary rule contains unknown-resource protection"
 else
-  fail "AGENTS.md missing unknown-resource protection"
+  fail "generic project-boundary rule missing unknown-resource protection"
 fi
 
 if grep -Fq "beautybook3-pg" docs/PROTECTED_RESOURCES.md; then
