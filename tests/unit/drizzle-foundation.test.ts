@@ -38,54 +38,19 @@ const migrateRunner = readFileSync(
   "utf8",
 );
 
-const migrationSqlFiles = readdirSync(new URL("../../drizzle", import.meta.url))
-  .filter((name) => name.endsWith(".sql"))
-  .map((name) => ({
-    name,
-    contents: readFileSync(new URL(`../../drizzle/${name}`, import.meta.url), "utf8"),
-  }));
-
-/**
- * Phase 1E forbade all domain tables. Phase 3A introduces catalog tables.
- * Keep forbidding commerce/auth-plural and inventory runtime tables that
- * are still out of scope, plus protected-resource / destructive markers.
- */
-const forbiddenDomainMarkers = [
-  "create table users",
-  "create table sessions",
-  "create table orders",
-  "create table carts",
-  "create table payments",
-  "create table inventory_balances",
-  "create table inventory_movements",
-  "create table inventory_reservations",
-];
-
-const phase3aCatalogTables = [
-  "store_settings",
-  "categories",
-  "collections",
-  "products",
-  "product_categories",
-  "collection_products",
-  "product_options",
-  "product_option_values",
-  "product_variants",
-  "product_variant_option_values",
-  "variant_prices",
-  "product_media",
-];
-
-describe("Phase 1E drizzle foundation invariants", () => {
+describe("local Drizzle tooling safety invariants", () => {
   it("pins drizzle-orm, drizzle-kit, and postgres.js", () => {
     expect(packageManifest.dependencies["drizzle-orm"]).toBe("0.45.2");
     expect(packageManifest.dependencies.postgres).toBe("3.4.9");
     expect(packageManifest.devDependencies["drizzle-kit"]).toBe("0.31.10");
   });
 
-  it("exposes generate/check/migrate scripts without push/drop/reset", () => {
+  it("exposes guarded local and portable tooling without push/drop/reset", () => {
     expect(packageManifest.scripts["db:generate"]).toBe("./scripts/drizzle-local.sh generate");
     expect(packageManifest.scripts["db:check"]).toBe("./scripts/drizzle-local.sh check");
+    expect(packageManifest.scripts["db:check:portable"]).toBe(
+      "drizzle-kit check --config drizzle.config.ts",
+    );
     expect(packageManifest.scripts["db:dev:migrate"]).toBe(
       "./scripts/drizzle-local.sh migrate dev",
     );
@@ -185,46 +150,5 @@ describe("Phase 1E drizzle foundation invariants", () => {
       }
     };
     walk(MIGRATIONS_FOLDER);
-  });
-
-  it("keeps committed migrations free of out-of-scope domain tables and protected port bindings", () => {
-    expect(migrationSqlFiles.length).toBeGreaterThan(0);
-
-    for (const file of migrationSqlFiles) {
-      const normalized = file.contents.toLowerCase();
-      for (const marker of forbiddenDomainMarkers) {
-        expect(normalized).not.toContain(marker);
-      }
-      expect(file.contents).not.toContain("5433");
-      expect(file.contents).not.toContain("nomi_numi_shop_dev");
-      expect(file.contents).not.toContain("nomi_numi_shop_test");
-      expect(file.contents).not.toMatch(/drop\s+table/i);
-    }
-
-    const journal = JSON.parse(
-      readFileSync(new URL("../../drizzle/meta/_journal.json", import.meta.url), "utf8"),
-    ) as { entries: Array<{ tag: string }> };
-
-    expect(journal.entries.length).toBeGreaterThanOrEqual(1);
-    expect(journal.entries.length).toBe(migrationSqlFiles.length);
-    expect(journal.entries[0]?.tag).toBe("0000_phase1e_baseline");
-    expect(journal.entries.some((entry) => entry.tag === "0003_phase3a_catalog_schema")).toBe(true);
-    expect(
-      path.basename(new URL("../../drizzle/0000_phase1e_baseline.sql", import.meta.url).pathname),
-    ).toBe("0000_phase1e_baseline.sql");
-
-    for (const entry of journal.entries) {
-      expect(migrationSqlFiles.some((file) => file.name === `${entry.tag}.sql`)).toBe(true);
-    }
-
-    const phase3a = migrationSqlFiles.find(
-      (file) => file.name === "0003_phase3a_catalog_schema.sql",
-    );
-    expect(phase3a).toBeDefined();
-    const phase3aSql = phase3a!.contents.toLowerCase();
-    for (const tableName of phase3aCatalogTables) {
-      expect(phase3aSql).toContain(`create table "${tableName}"`);
-    }
-    expect(phase3aSql).not.toContain("parent_id");
   });
 });

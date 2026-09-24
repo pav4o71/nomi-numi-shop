@@ -36,9 +36,11 @@ This workflow runs several checks in parallel:
 1. **Format check** — ensures all code is properly formatted with Prettier
 2. **Lint** — runs ESLint to catch common errors and enforce code style
 3. **Typecheck** — runs TypeScript compiler to verify type correctness
-4. **Unit tests** — runs `pnpm test:ci` (the portable unit test suite)
-5. **Production build** — runs `pnpm build` to verify the app can be built
-6. **E2E tests** — installs Chromium and runs Playwright E2E tests with `pnpm test:e2e`
+4. **Migration history check** — runs `pnpm db:check:portable`
+5. **Unit tests** — runs `pnpm test:ci` (the portable unit test suite,
+   including `drizzle-migration-contract.test.ts`)
+6. **Production build** — runs `pnpm build` to verify the app can be built
+7. **E2E tests** — installs Chromium and runs Playwright E2E tests with `pnpm test:e2e`
 
 All of these checks must pass for the workflow to succeed.
 
@@ -212,10 +214,12 @@ This runs the portable quality checks:
 - Format check
 - Lint
 - Typecheck
+- `pnpm db:check:portable` (credential-free migration history validation)
 - `pnpm test:ci` (portable unit tests)
 - `pnpm build`
 
-This does **not** run E2E tests.
+The migration check does not apply migrations or contact PostgreSQL.
+This health command does **not** run E2E tests.
 
 ### Full local health check
 

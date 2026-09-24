@@ -88,6 +88,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Migration history check
+        run: pnpm db:check:portable
+
   unit-build:
     name: Unit tests and build
     runs-on: ubuntu-latest
