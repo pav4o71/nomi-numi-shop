@@ -1,7 +1,16 @@
 import { notFound } from "next/navigation";
+import { cookies, headers } from "next/headers";
 import { getRuntimeDb } from "@/db/runtime";
 import { DrizzleCheckoutRepository } from "@/checkout/repository";
 import { CheckoutDb } from "@/checkout/db";
+import { CheckoutService } from "@/checkout/service";
+import { CartService } from "@/cart/service";
+import { DrizzleCartRepository } from "@/cart/repository";
+import { CatalogService } from "@/catalog/service";
+import { DrizzleCatalogRepository } from "@/catalog/repository";
+import { getAuthorizationPrincipal } from "@/auth/authorization";
+import { orderAccessCookieName, parseOrderAccess } from "@/checkout/public";
+import { isCheckoutError } from "@/checkout/errors";
 import { Container } from "@/components/container";
 import { formatPublicMoney } from "@/catalog/public/format-money";
 
@@ -17,19 +26,24 @@ export default async function OrderSuccessPage({
   const { orderId } = await params;
 
   const db = getRuntimeDb();
-  const repo = new DrizzleCheckoutRepository(db as unknown as CheckoutDb);
-
-  const order = await repo.transaction(async (tx) => {
-    return repo.getOrderById(tx, orderId);
-  });
-
-  if (!order) {
-    notFound();
+  const catalog = new CatalogService(new DrizzleCatalogRepository(db));
+  const service = new CheckoutService(
+    new DrizzleCheckoutRepository(db as unknown as CheckoutDb),
+    new CartService(new DrizzleCartRepository(db as unknown as CheckoutDb), catalog),
+    catalog,
+  );
+  const principal = await getAuthorizationPrincipal(await headers());
+  const cookieStore = await cookies();
+  let order;
+  try {
+    order = await service.getOrderForViewer(orderId, {
+      customerId: principal?.role === "customer" ? principal.userId : undefined,
+      guestAccessToken: parseOrderAccess(cookieStore.get(orderAccessCookieName(orderId))?.value),
+    });
+  } catch (error) {
+    if (isCheckoutError(error) && error.code === "NOT_FOUND") notFound();
+    throw error;
   }
-
-  const items = await repo.transaction(async (tx) => {
-    return repo.getOrderItems(tx, orderId);
-  });
 
   return (
     <main className="section-shell py-12 sm:py-24 bg-muted/30">
@@ -85,7 +99,7 @@ export default async function OrderSuccessPage({
           <div className="border-t border-border pt-6 mt-6 text-left">
             <h2 className="font-semibold text-lg mb-4">Order Summary</h2>
             <ul className="space-y-4">
-              {items.map((item) => (
+              {order.items.map((item) => (
                 <li key={item.id} className="flex justify-between text-sm">
                   <div>
                     <p className="font-medium">{item.title}</p>

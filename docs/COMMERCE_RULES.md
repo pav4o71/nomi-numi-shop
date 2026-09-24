@@ -4,6 +4,10 @@ This document defines commerce invariants.
 
 Implementation must not silently invent conflicting behavior.
 
+The approved Phase 7/8 cart, guest/customer checkout, order-access,
+idempotency, reservation, and mock-payment contract is defined in
+`docs/CHECKOUT.md`.
+
 ## 1. Money
 
 Money is stored as integer minor units.

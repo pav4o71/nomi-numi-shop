@@ -21,11 +21,14 @@ import {
  * Phase 2C6 live auth security / lifecycle E2E.
  *
  * Skipped in portable CI (no .env.local / owned Docker). Local `pnpm test:e2e`
- * exercises real browser + Mailpit + DEV Postgres when infrastructure is up.
+ * exercises real browser + Mailpit + TEST Postgres when infrastructure is up.
  */
 
 test.describe("Phase 2C6 live auth security", () => {
-  test.skip(!shouldRunLiveAuthE2E(), "live auth E2E requires local DEV/Mailpit (skipped in CI)");
+  test.skip(
+    !shouldRunLiveAuthE2E(),
+    "live auth E2E requires local TEST DB/Mailpit (skipped in CI)",
+  );
 
   test.describe.configure({ mode: "serial" });
 
@@ -262,7 +265,7 @@ test.describe("Phase 2C6 live auth security", () => {
 
     // Admin: verified customer + test-only SQL role assignment (no HTTP promote API).
     // Phase 2C4 bootstrap guarantees remain covered by auth-first-admin-bootstrap-local
-    // against TEST (zero-admin / race / DEV-TEST boundary). App auth runtime is DEV-only.
+    // against TEST (zero-admin / race / DEV-TEST boundary).
     await signupCustomer(page, {
       name: "Matrix Admin",
       email: adminEmail,

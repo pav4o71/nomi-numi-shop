@@ -74,6 +74,14 @@ describe("Phase 3D public catalog reads against TEST database", () => {
 
   beforeEach(async () => {
     await sql`DELETE FROM product_media`;
+    await sql`DELETE FROM payment_events`;
+    await sql`DELETE FROM inventory_reservations`;
+    await sql`DELETE FROM order_items`;
+    await sql`DELETE FROM orders`;
+    await sql`DELETE FROM cart_items`;
+    await sql`DELETE FROM carts`;
+    await sql`DELETE FROM inventory_movements`;
+    await sql`DELETE FROM inventory_balances`;
     await sql`DELETE FROM variant_prices`;
     await sql`DELETE FROM product_variant_option_values`;
     await sql`DELETE FROM product_option_values`;

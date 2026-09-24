@@ -410,6 +410,25 @@ export class DrizzleCatalogRepository {
     return rows[0] ?? null;
   }
 
+  async getVariantProductMappings(executor: CatalogExecutor, variantIds: string[]) {
+    if (variantIds.length === 0) return [];
+    return executor
+      .select({ variantId: productVariants.id, productId: productVariants.productId })
+      .from(productVariants)
+      .where(inArray(productVariants.id, variantIds))
+      .orderBy(asc(productVariants.id));
+  }
+
+  async lockVariants(executor: CatalogExecutor, variantIds: string[]): Promise<VariantRow[]> {
+    if (variantIds.length === 0) return [];
+    return executor
+      .select()
+      .from(productVariants)
+      .where(inArray(productVariants.id, variantIds))
+      .orderBy(asc(productVariants.id))
+      .for("update");
+  }
+
   async getVariantBySku(executor: CatalogExecutor, sku: string): Promise<VariantRow | null> {
     const rows = await executor
       .select()

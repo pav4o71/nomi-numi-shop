@@ -67,6 +67,14 @@ describe("Phase 3C catalog fixtures against TEST database", () => {
 
   beforeEach(async () => {
     await sql`DELETE FROM product_media`;
+    await sql`DELETE FROM payment_events`;
+    await sql`DELETE FROM inventory_reservations`;
+    await sql`DELETE FROM order_items`;
+    await sql`DELETE FROM orders`;
+    await sql`DELETE FROM cart_items`;
+    await sql`DELETE FROM carts`;
+    await sql`DELETE FROM inventory_movements`;
+    await sql`DELETE FROM inventory_balances`;
     await sql`DELETE FROM variant_prices`;
     await sql`DELETE FROM product_variant_option_values`;
     await sql`DELETE FROM product_option_values`;
@@ -286,6 +294,14 @@ describe("Phase 3C catalog fixtures against TEST database", () => {
     });
     // Create a product then attach a DEVFIX SKU that belongs to moonlight tumbler.
     // First remove tumbler variant to free SKU.
+    await sql`DELETE FROM payment_events`;
+    await sql`DELETE FROM inventory_reservations`;
+    await sql`DELETE FROM order_items`;
+    await sql`DELETE FROM orders`;
+    await sql`DELETE FROM cart_items`;
+    await sql`DELETE FROM carts`;
+    await sql`DELETE FROM inventory_movements`;
+    await sql`DELETE FROM inventory_balances`;
     await sql`DELETE FROM variant_prices WHERE variant_id = ${tumblerVariant.id}`;
     await sql`DELETE FROM product_variants WHERE id = ${tumblerVariant.id}`;
     const other = await service.createProduct({
@@ -388,6 +404,14 @@ describe("Phase 3C catalog fixtures against TEST database", () => {
     const hug = await service.getProductBySlug("dev-fixture-hug-plush");
 
     await sql`DELETE FROM product_variant_option_values WHERE product_id = ${hug.id}`;
+    await sql`DELETE FROM payment_events`;
+    await sql`DELETE FROM inventory_reservations`;
+    await sql`DELETE FROM order_items`;
+    await sql`DELETE FROM orders`;
+    await sql`DELETE FROM cart_items`;
+    await sql`DELETE FROM carts`;
+    await sql`DELETE FROM inventory_movements`;
+    await sql`DELETE FROM inventory_balances`;
     await sql`DELETE FROM variant_prices WHERE variant_id IN (SELECT id FROM product_variants WHERE product_id = ${hug.id})`;
     await sql`DELETE FROM product_variants WHERE product_id = ${hug.id}`;
     await sql`DELETE FROM product_option_values WHERE option_id IN (SELECT id FROM product_options WHERE product_id = ${hug.id})`;

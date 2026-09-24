@@ -2,6 +2,10 @@ import { DrizzleCartRepository } from "./repository";
 import { CatalogService } from "@/catalog/service";
 import { carts } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import type { CatalogCurrency } from "@/catalog/money";
+import type { CatalogExecutor } from "@/catalog/db";
+import { isCatalogError } from "@/catalog/errors";
+import { cartConflict, cartNotFound, invalidCartInput } from "./errors";
 
 export type ResolvedCartItem = {
   id: string;
@@ -9,6 +13,7 @@ export type ResolvedCartItem = {
   productId: string;
   title: string;
   sku: string | null;
+  selectedOptions: Array<{ name: string; value: string }>;
   unitPrice: number;
   quantity: number;
   available: number;
@@ -19,7 +24,7 @@ export type ResolvedCart = {
   id: string;
   customerId: string | null;
   sessionId: string | null;
-  currency: string;
+  currency: CatalogCurrency;
   items: ResolvedCartItem[];
   totalAmount: number;
 };
@@ -33,64 +38,57 @@ export class CartService {
   async getCart(params: {
     customerId?: string;
     sessionId?: string;
-    currency: string;
+    currency: CatalogCurrency;
   }): Promise<ResolvedCart> {
-    // Phase 1: Resolve or create the cart and fetch its items inside a fast transaction
     const { cart, items } = await this.repo.transaction(async (tx) => {
-      let cart = null;
-
-      if (params.customerId) {
-        cart = await this.repo.getCartByCustomer(tx, params.customerId);
-      } else if (params.sessionId) {
-        cart = await this.repo.getCartBySession(tx, params.sessionId);
-      }
+      this.assertIdentity(params);
+      await this.repo.lockCartIdentity(tx, params);
+      await this.repo.deleteExpiredCartsForIdentity(tx, params);
+      let cart = await this.repo.getCartByIdentityForUpdate(tx, params);
 
       if (!cart) {
         cart = await this.repo.createCart(tx, params);
+        cart ??= await this.repo.getCartByIdentityForUpdate(tx, params);
       }
+
+      if (!cart) throw cartConflict("Cart could not be created");
 
       const items = await this.repo.getCartItems(tx, cart.id);
       return { cart, items };
     });
 
-    // Phase 2: Resolve catalog details (pricing/inventory) OUTSIDE the cart transaction
-    // This prevents connection pool deadlocks caused by opening nested transactions!
     const resolvedItems: ResolvedCartItem[] = [];
     let totalAmount = 0;
 
     for (const item of items) {
       try {
-        const variant = await this.catalog.getVariantDetails(item.variantId);
-
-        // Ensure price exists for cart currency
-        const priceObj = variant.prices.find((p) => p.currency === cart.currency);
-        const unitPrice = priceObj?.amountMinor ?? 0;
-        const available =
-          (variant.inventoryBalance?.onHand ?? 0) - (variant.inventoryBalance?.reserved ?? 0);
+        const variant = await this.catalog.getCheckoutVariantDetails(
+          item.variantId,
+          cart.currency as CatalogCurrency,
+        );
 
         resolvedItems.push({
           id: item.id,
           variantId: item.variantId,
           productId: variant.productId,
-          title: variant.sku || variant.id,
+          title: variant.title,
           sku: variant.sku,
-          unitPrice,
+          selectedOptions: variant.selectedOptions,
+          unitPrice: variant.unitPrice,
           quantity: item.quantity,
-          available: Math.max(0, available),
-          isActive: true && priceObj !== undefined,
+          available: variant.available,
+          isActive: true,
         });
-
-        if (priceObj) {
-          totalAmount += unitPrice * item.quantity;
-        }
-      } catch {
-        // Variant deleted or not found
+        totalAmount += variant.unitPrice * item.quantity;
+      } catch (error) {
+        if (!isCatalogError(error)) throw error;
         resolvedItems.push({
           id: item.id,
           variantId: item.variantId,
           productId: "",
           title: "Unknown/Inactive Item",
           sku: null,
+          selectedOptions: [],
           unitPrice: 0,
           quantity: item.quantity,
           available: 0,
@@ -103,42 +101,112 @@ export class CartService {
       id: cart.id,
       customerId: cart.customerId,
       sessionId: cart.sessionId,
-      currency: cart.currency,
+      currency: cart.currency as CatalogCurrency,
       items: resolvedItems,
       totalAmount,
     };
   }
 
   async addItem(cartId: string, variantId: string, quantity: number) {
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw invalidCartInput("Quantity must be a positive integer");
+    }
     return this.repo.transaction(async (tx) => {
-      const cart = await this.repo.getCartById(tx, cartId);
-      if (!cart) throw new Error("Cart not found");
-
-      const items = await this.repo.getCartItems(tx, cart.id);
-      const existing = items.find((i) => i.variantId === variantId);
-      const newQuantity = (existing?.quantity ?? 0) + quantity;
-
-      await this.repo.upsertCartItem(tx, cartId, variantId, newQuantity);
+      const cart = await this.repo.getCartByIdForUpdate(tx, cartId);
+      if (!cart) throw cartNotFound();
+      const variant = await this.catalog.getCheckoutVariantDetails(
+        variantId,
+        cart.currency as CatalogCurrency,
+        tx as CatalogExecutor,
+      );
+      const existing = (await this.repo.getCartItems(tx, cartId)).find(
+        (item) => item.variantId === variantId,
+      );
+      const nextQuantity = (existing?.quantity ?? 0) + quantity;
+      if (nextQuantity > variant.available) {
+        throw cartConflict("Requested quantity exceeds available inventory");
+      }
+      await this.repo.setCartItemQuantity(tx, cartId, variantId, nextQuantity);
     });
   }
 
   async updateItem(cartId: string, itemId: string, quantity: number) {
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      throw invalidCartInput("Quantity must be a non-negative integer");
+    }
     return this.repo.transaction(async (tx) => {
+      const cart = await this.repo.getCartByIdForUpdate(tx, cartId);
+      if (!cart) throw cartNotFound();
+      const item = await this.repo.getCartItem(tx, cartId, itemId);
+      if (!item) throw cartNotFound("Cart item not found");
       if (quantity <= 0) {
-        await this.repo.deleteCartItem(tx, itemId);
+        await this.repo.deleteCartItem(tx, cartId, itemId);
       } else {
-        // Fetch item to get variantId, then upsert
-        const items = await this.repo.getCartItems(tx, cartId);
-        const item = items.find((i) => i.id === itemId);
-        if (item) {
-          await this.repo.upsertCartItem(tx, cartId, item.variantId, quantity);
+        const variant = await this.catalog.getCheckoutVariantDetails(
+          item.variantId,
+          cart.currency as CatalogCurrency,
+          tx as CatalogExecutor,
+        );
+        if (quantity > variant.available) {
+          throw cartConflict("Requested quantity exceeds available inventory");
         }
+        await this.repo.setCartItemQuantity(tx, cartId, item.variantId, quantity);
       }
     });
   }
 
+  async getCartForCheckout(
+    params: { customerId?: string; sessionId?: string; currency: CatalogCurrency },
+    tx: CatalogExecutor,
+  ): Promise<ResolvedCart> {
+    this.assertIdentity(params);
+    const cart = await this.repo.getCartByIdentityForUpdate(tx, params);
+    if (!cart || cart.currency !== params.currency) throw cartNotFound();
+    const items = await this.repo.getCartItems(tx, cart.id);
+    await this.catalog.lockCheckoutCatalogAuthority(
+      items.map((item) => item.variantId),
+      tx,
+    );
+    const resolvedItems: ResolvedCartItem[] = [];
+    let totalAmount = 0;
+    for (const item of items) {
+      const variant = await this.catalog.getCheckoutVariantDetails(
+        item.variantId,
+        params.currency,
+        tx,
+      );
+      if (item.quantity > variant.available) {
+        throw cartConflict("Some items exceed available inventory");
+      }
+      resolvedItems.push({
+        id: item.id,
+        variantId: item.variantId,
+        productId: variant.productId,
+        title: variant.title,
+        sku: variant.sku,
+        selectedOptions: variant.selectedOptions,
+        unitPrice: variant.unitPrice,
+        quantity: item.quantity,
+        available: variant.available,
+        isActive: true,
+      });
+      totalAmount += variant.unitPrice * item.quantity;
+    }
+    return {
+      id: cart.id,
+      customerId: cart.customerId,
+      sessionId: cart.sessionId,
+      currency: params.currency,
+      items: resolvedItems,
+      totalAmount,
+    };
+  }
+
   async mergeCart(sessionId: string, customerId: string) {
     return this.repo.transaction(async (tx) => {
+      await this.repo.lockCartIdentity(tx, { customerId });
+      await this.repo.lockCartIdentity(tx, { sessionId });
+      await this.repo.deleteExpiredCartsForIdentity(tx, { customerId, sessionId });
       const anonCart = await this.repo.getCartBySession(tx, sessionId);
       if (!anonCart) return;
 
@@ -156,10 +224,12 @@ export class CartService {
       // Merge items
       const anonItems = await this.repo.getCartItems(tx, anonCart.id);
       for (const item of anonItems) {
-        const existingItems = await this.repo.getCartItems(tx, customerCart.id);
-        const existing = existingItems.find((i) => i.variantId === item.variantId);
-        const newQuantity = (existing?.quantity ?? 0) + item.quantity;
-        await this.repo.upsertCartItem(tx, customerCart.id, item.variantId, newQuantity);
+        await this.repo.incrementCartItemQuantity(
+          tx,
+          customerCart.id,
+          item.variantId,
+          item.quantity,
+        );
       }
 
       await this.repo.deleteCart(tx, anonCart.id);
@@ -170,5 +240,11 @@ export class CartService {
     return this.repo.transaction(async (tx) => {
       await this.repo.deleteCartItems(tx, cartId);
     });
+  }
+
+  private assertIdentity(params: { customerId?: string; sessionId?: string }) {
+    if (Boolean(params.customerId) === Boolean(params.sessionId)) {
+      throw invalidCartInput("Exactly one cart owner is required");
+    }
   }
 }

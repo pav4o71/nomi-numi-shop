@@ -3,6 +3,7 @@ description: Mandatory database target verification, migration safety, and test 
 alwaysApply: true
 ---
 
+
 # Database Safety
 
 Database mutations require verified environment ownership.

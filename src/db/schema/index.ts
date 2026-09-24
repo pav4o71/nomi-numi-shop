@@ -60,6 +60,14 @@ export {
   cartItemsRelations,
   orders,
   ordersRelations,
+  guestOrderAccessCapabilities,
+  guestOrderAccessCapabilitiesRelations,
   orderItems,
   orderItemsRelations,
+  inventoryReservations,
+  inventoryReservationsRelations,
+  paymentEvents,
+  paymentEventsRelations,
 } from "./checkout";
+
+export type { OrderItemOptionSnapshot } from "./checkout";

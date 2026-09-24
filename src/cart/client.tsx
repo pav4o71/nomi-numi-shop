@@ -3,7 +3,7 @@
 import React, { createContext, useContext } from "react";
 import { createStore, useStore } from "zustand";
 import useSWR from "swr";
-import type { ResolvedCart } from "./service";
+import type { PublicCart } from "./public";
 
 interface CartState {
   isCartOpen: boolean;
@@ -36,10 +36,14 @@ export function useCartUI() {
   return useStore(store);
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = async (url: string) => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Cart request failed with status ${response.status}`);
+  return response.json();
+};
 
 export function useCartData() {
-  const { data, error, mutate, isLoading } = useSWR<ResolvedCart>("/api/cart", fetcher);
+  const { data, error, mutate, isLoading } = useSWR<PublicCart>("/api/cart", fetcher);
 
   return {
     cart: data,

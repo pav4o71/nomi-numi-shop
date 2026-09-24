@@ -3,6 +3,7 @@ description: Mandatory repository, resource ownership, and cross-project safety 
 alwaysApply: true
 ---
 
+
 # Mandatory Project Boundary
 
 You are operating on `nomi-numi-shop`.
