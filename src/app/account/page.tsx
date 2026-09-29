@@ -62,18 +62,27 @@ export default async function AccountPage() {
               postalCode: address.postalCode,
               country: address.country,
               isDefault: address.isDefault,
+              createdAt: address.createdAt.toISOString(),
+              updatedAt: address.updatedAt.toISOString(),
             }))}
             initialWishlist={wishlist.map((item) => ({
               id: item.id,
               variantId: item.variantId,
+              createdAt: item.createdAt.toISOString(),
             }))}
             orders={orders.map((order) => ({
               id: order.id,
+              email: order.email,
               currency: order.currency,
-              totalAmount: order.totalAmount,
               orderStatus: order.orderStatus,
               paymentStatus: order.paymentStatus,
+              fulfillmentStatus: order.fulfillmentStatus,
+              subtotalAmount: order.subtotalAmount,
+              shippingAmount: order.shippingAmount,
+              taxAmount: order.taxAmount,
+              totalAmount: order.totalAmount,
               createdAt: order.createdAt.toISOString(),
+              updatedAt: order.updatedAt.toISOString(),
             }))}
           />
         </div>

@@ -1,6 +1,7 @@
 import { loadStorefrontMerchandising } from "@/catalog/public/storefront";
 
-export const dynamic = "force-dynamic";
+/** Revalidate storefront merchandising every 5 minutes. */
+export const revalidate = 300;
 import { HomeClosingCta } from "@/components/home/home-closing-cta";
 import { HomeFeaturedCategories } from "@/components/home/home-featured-categories";
 import { HomeFeaturedCollections } from "@/components/home/home-featured-collections";

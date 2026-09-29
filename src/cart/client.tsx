@@ -4,6 +4,16 @@ import React, { createContext, useContext } from "react";
 import { createStore, useStore } from "zustand";
 import useSWR from "swr";
 import type { PublicCart } from "./public";
+import {
+  fetchCart,
+  addCartItem,
+  updateCartItem,
+  removeCartItem,
+  type CartResult,
+  type VoidResult,
+} from "@/lib/api/cart-api";
+
+// ─── UI state (Zustand) ───────────────────────────────────────────────────────
 
 interface CartState {
   isCartOpen: boolean;
@@ -26,7 +36,6 @@ const CartContext = createContext<CartStore | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [store] = React.useState(() => createCartStore());
-
   return <CartContext.Provider value={store}>{children}</CartContext.Provider>;
 }
 
@@ -36,14 +45,10 @@ export function useCartUI() {
   return useStore(store);
 }
 
-const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Cart request failed with status ${response.status}`);
-  return response.json();
-};
+// ─── Data state (SWR) ────────────────────────────────────────────────────────
 
 export function useCartData() {
-  const { data, error, mutate, isLoading } = useSWR<PublicCart>("/api/cart", fetcher);
+  const { data, error, mutate, isLoading } = useSWR<PublicCart>("/api/cart", fetchCart);
 
   return {
     cart: data,
@@ -51,4 +56,36 @@ export function useCartData() {
     isError: error,
     mutateCart: mutate,
   };
+}
+
+// ─── Mutation helpers (typed, error-safe) ─────────────────────────────────────
+
+/**
+ * Returns typed wrappers for cart mutations.
+ * Each function revalidates the SWR cache after the request completes,
+ * regardless of success or failure, so the UI always reflects server state.
+ * Callers receive a discriminated union — they MUST check `result.ok`.
+ */
+export function useCartApi() {
+  const { mutateCart } = useCartData();
+
+  const addItem = async (variantId: string, quantity: number): Promise<CartResult> => {
+    const result = await addCartItem(variantId, quantity);
+    await mutateCart();
+    return result;
+  };
+
+  const updateItem = async (itemId: string, quantity: number): Promise<CartResult> => {
+    const result = await updateCartItem(itemId, quantity);
+    await mutateCart();
+    return result;
+  };
+
+  const removeItem = async (itemId: string): Promise<VoidResult> => {
+    const result = await removeCartItem(itemId);
+    await mutateCart();
+    return result;
+  };
+
+  return { addItem, updateItem, removeItem };
 }
