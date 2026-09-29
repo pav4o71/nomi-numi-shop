@@ -5,6 +5,9 @@ import { formatListingPrice } from "@/catalog/public/format-money";
 import { MediaPlaceholder } from "@/components/catalog/media-placeholder";
 import { Container } from "@/components/container";
 
+// Stagger delays for featured product cards.
+const STAGGER_DELAYS = ["0ms", "80ms", "160ms", "240ms"];
+
 type HomeFeaturedProductsProps = {
   products: PublicProductListingCard[];
 };
@@ -32,9 +35,10 @@ export function HomeFeaturedProducts({ products }: HomeFeaturedProductsProps) {
           </div>
           <Link
             href="/products"
-            className="focus-ring text-sm font-medium text-primary underline-offset-4 hover:underline"
+            className="focus-ring inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
             Browse all products
+            <span aria-hidden="true">→</span>
           </Link>
         </div>
 
@@ -50,28 +54,35 @@ export function HomeFeaturedProducts({ products }: HomeFeaturedProductsProps) {
             data-testid="home-featured-products-grid"
             className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
           >
-            {products.map((product) => (
-              <li key={product.slug}>
-                <Link
-                  href={`/products/${product.slug}`}
-                  className="surface-card focus-ring block overflow-hidden transition-transform motion-safe:hover:-translate-y-0.5"
-                  data-testid={`home-featured-product-${product.slug}`}
+            {products.map((product, index) => {
+              const delay = STAGGER_DELAYS[Math.min(index, STAGGER_DELAYS.length - 1)];
+              return (
+                <li
+                  key={product.slug}
+                  className="motion-safe:animate-[fade-up_500ms_ease-out_both]"
+                  style={{ animationDelay: delay }}
                 >
-                  <MediaPlaceholder
-                    className="rounded-none rounded-t-[inherit] shadow-none"
-                    label="Image coming soon"
-                  />
-                  <div className="space-y-2 px-5 py-4">
-                    <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
-                      {product.title}
-                    </h3>
-                    <p className="text-sm font-medium text-foreground">
-                      {formatListingPrice(product.price, product.priceDisplayMode)}
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            ))}
+                  <Link
+                    href={`/products/${product.slug}`}
+                    className="surface-card focus-ring group flex h-full flex-col overflow-hidden transition-all duration-200 ease-out motion-safe:hover:-translate-y-1.5 hover:shadow-soft border-t-2 border-t-primary/10 hover:border-t-primary/50"
+                    data-testid={`home-featured-product-${product.slug}`}
+                  >
+                    <MediaPlaceholder
+                      className="rounded-none rounded-t-[inherit] shadow-none"
+                      label={`${product.title} image`}
+                    />
+                    <div className="flex flex-1 flex-col gap-1.5 px-5 py-4">
+                      <h3 className="font-display text-lg font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
+                        {product.title}
+                      </h3>
+                      <p className="text-sm font-semibold text-primary">
+                        {formatListingPrice(product.price, product.priceDisplayMode)}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Container>

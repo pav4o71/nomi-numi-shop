@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers, cookies } from "next/headers";
-import { getAuthorizationPrincipal } from "@/auth/authorization";
+
 import { CartService } from "@/cart/service";
 import { DrizzleCartRepository } from "@/cart/repository";
 import { type CartDb } from "@/cart/db";
@@ -14,21 +14,7 @@ import { isCatalogError } from "@/catalog/errors";
 import { toPublicCart } from "@/cart/public";
 import { authorizationErrorResponse } from "@/auth/http";
 
-const CART_SESSION_COOKIE = "nomi_cart_session";
-const DEFAULT_CURRENCY = "USD";
-
-async function getCartIdentity() {
-  const reqHeaders = await headers();
-  const principal = await getAuthorizationPrincipal(reqHeaders);
-
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(CART_SESSION_COOKIE);
-
-  return {
-    customerId: principal?.role === "customer" ? principal.userId : null,
-    sessionId: sessionCookie?.value ?? null,
-  };
-}
+import { CART_SESSION_COOKIE, DEFAULT_CURRENCY, getCartIdentity } from "@/lib/commerce/session";
 
 function getServices() {
   const db = getRuntimeDb();

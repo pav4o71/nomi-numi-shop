@@ -6,6 +6,8 @@ import { requireAdminPage } from "@/auth/guards";
 import { AUTH_UI_ROUTES, PROTECTED_SURFACE_ROUTES } from "@/auth/routes";
 import { cn } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: {
     template: "%s · Admin · Nomi Numi",

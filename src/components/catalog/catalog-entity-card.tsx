@@ -32,25 +32,39 @@ export function CatalogEntityCard({
       href={href}
       data-testid={testId}
       className={cn(
-        "surface-card focus-ring flex h-full flex-col overflow-hidden transition-transform motion-safe:hover:-translate-y-0.5",
+        // Base card
+        "surface-card focus-ring group flex h-full flex-col overflow-hidden",
+        // Hover lift + shadow deepening
+        "transition-all duration-200 ease-out",
+        "motion-safe:hover:-translate-y-1 hover:shadow-soft",
+        // Accent top border that intensifies on hover
+        "border-t-2 border-t-primary/20 hover:border-t-primary/60",
         className,
       )}
     >
       {showPlaceholder ? (
         <MediaPlaceholder
           className="rounded-none rounded-t-[inherit] shadow-none"
-          label="Image coming soon"
+          label={`${name} image`}
         />
       ) : null}
       <div className="flex flex-1 flex-col gap-2 px-5 py-4 sm:px-6 sm:py-5">
-        <TitleTag className="font-display text-xl font-semibold tracking-tight text-foreground">
+        <TitleTag className="font-display text-xl font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
           {name}
         </TitleTag>
         {description ? (
-          <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+          <p className="flex-1 text-sm leading-relaxed text-muted-foreground line-clamp-3">
             {description}
           </p>
         ) : null}
+        {/* Animated arrow indicator */}
+        <span
+          aria-hidden="true"
+          className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary/60 transition-all duration-150 group-hover:gap-2 group-hover:text-primary"
+        >
+          View
+          <span className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
+        </span>
       </div>
     </Link>
   );

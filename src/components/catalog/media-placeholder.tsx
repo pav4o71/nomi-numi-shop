@@ -1,41 +1,49 @@
-import type { ReactNode } from "react";
-
 import { cn } from "@/lib/utils";
+import { DecorativeMotif } from "@/components/brand/decorative-motif";
 
 type MediaPlaceholderProps = {
   className?: string;
   label?: string;
-  children?: ReactNode;
+  aspectRatio?: "4/3" | "1/1" | "3/4";
 };
 
 /**
- * Neutral non-product media surface for when real catalog imagery is unavailable.
- * Decorative by default — never presents invented product photography.
+ * Warm-toned gradient placeholder shown before real product images exist.
+ * Always decorative — aria-hidden so screen readers skip it.
  */
 export function MediaPlaceholder({
   className,
   label = "Image coming soon",
-  children,
+  aspectRatio = "4/3",
 }: MediaPlaceholderProps) {
+  const aspectClass =
+    aspectRatio === "1/1"
+      ? "aspect-square"
+      : aspectRatio === "3/4"
+        ? "aspect-[3/4]"
+        : "aspect-[4/3]";
+
   return (
     <div
+      role="img"
+      aria-label={label}
       className={cn(
-        "relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl bg-accent/80 text-accent-foreground shadow-card",
+        "relative flex items-center justify-center overflow-hidden",
+        "bg-gradient-to-br from-accent to-muted",
+        aspectClass,
         className,
       )}
-      aria-hidden={children ? undefined : true}
-      role={children ? "img" : undefined}
-      aria-label={children ? label : undefined}
     >
+      {/* Subtle inner radial glow */}
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgb(196_120_138/0.18),transparent_55%),radial-gradient(ellipse_at_80%_80%,rgb(216_228_222/0.55),transparent_50%)]"
+        className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgb(196_120_138_/_0.12),transparent_70%)]"
         aria-hidden="true"
       />
-      {children ?? (
-        <span className="relative px-3 text-center text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {label}
-        </span>
-      )}
+      <DecorativeMotif
+        variant="heart"
+        className="relative h-10 w-10 text-blush/40"
+        aria-hidden={true}
+      />
     </div>
   );
 }

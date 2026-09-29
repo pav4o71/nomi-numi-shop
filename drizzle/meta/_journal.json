@@ -64,6 +64,13 @@
       "when": 1790254982523,
       "tag": "0008_elite_yellowjacket",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790670789036,
+      "tag": "0009_acoustic_sprite",
+      "breakpoints": true
     }
   ]
 }

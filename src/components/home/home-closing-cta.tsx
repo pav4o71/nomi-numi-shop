@@ -8,7 +8,7 @@ export function HomeClosingCta() {
   return (
     <section className="py-16 sm:py-20" aria-labelledby="closing-heading">
       <Container>
-        <div className="relative overflow-hidden rounded-2xl bg-primary px-6 py-12 text-primary-foreground shadow-soft sm:px-10 sm:py-14">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary-hover to-brown px-6 py-12 text-primary-foreground shadow-soft sm:px-10 sm:py-14">
           <div
             className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary-foreground/10 motion-safe:animate-[pulse_10s_ease-in-out_infinite]"
             aria-hidden="true"
@@ -19,10 +19,10 @@ export function HomeClosingCta() {
           />
           <DecorativeMotif
             variant="paw"
-            className="pointer-events-none absolute right-8 top-8 h-10 w-10 text-primary-foreground/25 sm:right-12 sm:top-12"
+            className="pointer-events-none absolute right-4 top-4 h-32 w-32 opacity-10 sm:-right-4 sm:-top-4 sm:h-48 sm:w-48"
           />
 
-          <div className="relative max-w-2xl">
+          <div className="relative max-w-2xl motion-safe:animate-[fade-up_600ms_ease-out_both]">
             <h2
               id="closing-heading"
               className="font-display text-3xl font-semibold tracking-tight sm:text-4xl"

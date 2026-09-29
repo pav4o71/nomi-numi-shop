@@ -20,12 +20,12 @@ export const carts = pgTable(
     customerId: text("customer_id").references(() => user.id, { onDelete: "cascade" }),
     sessionId: text("session_id"),
     currency: text("currency").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     uniqueIndex("carts_customer_uidx")
@@ -62,7 +62,7 @@ export const cartItems = pgTable(
       .notNull()
       .references(() => productVariants.id, { onDelete: "cascade" }),
     quantity: integer("quantity").notNull(),
-    addedAt: timestamp("added_at").defaultNow().notNull(),
+    addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     unique("cart_items_cart_variant_uidx").on(table.cartId, table.variantId),

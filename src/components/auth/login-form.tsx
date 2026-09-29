@@ -66,7 +66,7 @@ export function LoginForm({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 motion-safe:animate-[fade-up_600ms_ease-out_both]" style={{ animationDelay: "150ms" }}>
       {verified ? (
         <AuthAlert tone="success">
           Email verified. You can sign in if you are not already.
@@ -74,61 +74,63 @@ export function LoginForm({
       ) : null}
       {resetComplete ? <AuthAlert tone="success">{AUTH_UI_COPY.resetSuccess}</AuthAlert> : null}
 
-      <form
-        className="space-y-5"
-        onSubmit={onSubmit}
-        noValidate
-        aria-describedby={error ? `${formId}-error` : undefined}
-      >
-        <AuthFormField
-          id={`${formId}-email`}
-          name="email"
-          label="Email"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          required
-          disabled={pending}
-        />
-        <AuthFormField
-          id={`${formId}-password`}
-          name="password"
-          label="Password"
-          type="password"
-          autoComplete="current-password"
-          required
-          disabled={pending}
-        />
+      <div className="surface-card px-6 py-8 sm:px-8 sm:py-10">
+        <form
+          className="space-y-5"
+          onSubmit={onSubmit}
+          noValidate
+          aria-describedby={error ? `${formId}-error` : undefined}
+        >
+          <AuthFormField
+            id={`${formId}-email`}
+            name="email"
+            label="Email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            required
+            disabled={pending}
+          />
+          <AuthFormField
+            id={`${formId}-password`}
+            name="password"
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            required
+            disabled={pending}
+          />
 
-        {error ? (
-          <AuthAlert id={`${formId}-error`} tone="error">
-            {error}
-          </AuthAlert>
-        ) : null}
+          {error ? (
+            <AuthAlert id={`${formId}-error`} tone="error">
+              {error}
+            </AuthAlert>
+          ) : null}
 
-        <Button type="submit" className="w-full" disabled={pending} aria-busy={pending}>
-          {pending ? "Signing in…" : "Sign in"}
-        </Button>
-      </form>
+          <Button type="submit" className="w-full" disabled={pending} aria-busy={pending}>
+            {pending ? "Signing in…" : "Sign in"}
+          </Button>
+        </form>
 
-      <div className="space-y-2 text-sm text-muted-foreground">
-        <p>
-          <Link
-            href={AUTH_UI_ROUTES.forgotPassword}
-            className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Forgot password?
-          </Link>
-        </p>
-        <p>
-          Need an account?{" "}
-          <Link
-            href={AUTH_UI_ROUTES.signup}
-            className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Sign up
-          </Link>
-        </p>
+        <div className="mt-8 space-y-2 text-sm text-muted-foreground">
+          <p>
+            <Link
+              href={AUTH_UI_ROUTES.forgotPassword}
+              className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Forgot password?
+            </Link>
+          </p>
+          <p>
+            Need an account?{" "}
+            <Link
+              href={AUTH_UI_ROUTES.signup}
+              className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

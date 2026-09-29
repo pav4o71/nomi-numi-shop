@@ -33,7 +33,8 @@ export function AccountDashboard({
 
   async function handleAddAddress(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const input: CreateAddressInput = {
       type: (form.get("type") as "billing" | "shipping") ?? "shipping",
       name: String(form.get("name") ?? ""),
@@ -56,7 +57,7 @@ export function AccountDashboard({
       ),
       result.address,
     ]);
-    event.currentTarget.reset();
+    formElement.reset();
     toast.success("Address saved.");
   }
 
