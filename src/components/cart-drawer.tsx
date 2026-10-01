@@ -23,7 +23,7 @@ import {
 export function CartDrawer() {
   const { isCartOpen, closeCart } = useCartUI();
   const { cart, isLoading } = useCartData();
-  const { updateItem, removeItem } = useCartApi();
+  const { updateItem, removeItem, applyPromo } = useCartApi();
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -201,12 +201,62 @@ export function CartDrawer() {
         {/* Checkout footer */}
         {cart?.items && cart.items.length > 0 && (
           <SheetFooter className="border-t border-border bg-surface/60 backdrop-blur-sm px-6 pb-6 pt-4 gap-4">
+            <div className="flex flex-col gap-2 w-full">
+              {cart.promoCode ? (
+                <div className="flex justify-between items-center text-sm font-medium bg-muted p-2 rounded-md">
+                  <span className="flex items-center gap-2 text-primary">
+                    <span className="font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded">{cart.promoCode}</span>
+                    applied
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-primary">
+                      -{formatPublicMoney({
+                        currency: cart.currency as CatalogCurrency,
+                        amountMinor: cart.discountAmount || 0,
+                        compareAtAmountMinor: null,
+                      })}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive text-muted-foreground"
+                      onClick={async () => {
+                        const result = await applyPromo(null);
+                        if (!result.ok) toast.error(result.error);
+                      }}
+                      aria-label="Remove promo code"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2 w-full">
+                  <Input
+                    placeholder="Promo code (optional)"
+                    className="h-8 text-sm"
+                    onKeyDown={async (e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const code = e.currentTarget.value.trim();
+                        if (code) {
+                          const result = await applyPromo(code);
+                          if (!result.ok) toast.error(result.error);
+                          else e.currentTarget.value = "";
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-between text-base font-semibold">
               <span>Total</span>
               <span>
                 {formatPublicMoney({
                   currency: cart.currency as CatalogCurrency,
-                  amountMinor: cart.totalAmount,
+                  amountMinor: cart.totalAmount - (cart.discountAmount || 0),
                   compareAtAmountMinor: null,
                 })}
               </span>

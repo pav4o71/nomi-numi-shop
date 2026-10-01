@@ -9,6 +9,7 @@ import {
   addCartItem,
   updateCartItem,
   removeCartItem,
+  applyPromoCode,
   type CartResult,
   type VoidResult,
 } from "@/lib/api/cart-api";
@@ -87,5 +88,11 @@ export function useCartApi() {
     return result;
   };
 
-  return { addItem, updateItem, removeItem };
+  const applyPromo = async (promoCode: string | null): Promise<CartResult> => {
+    const result = await applyPromoCode(promoCode);
+    await mutateCart();
+    return result;
+  };
+
+  return { addItem, updateItem, removeItem, applyPromo };
 }

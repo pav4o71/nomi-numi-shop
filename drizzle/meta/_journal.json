@@ -71,6 +71,27 @@
       "when": 1790670789036,
       "tag": "0009_acoustic_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790775339849,
+      "tag": "0010_complex_boom_boom",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790825942082,
+      "tag": "0011_ambitious_vulcan",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790827271595,
+      "tag": "0012_numerous_joseph",
+      "breakpoints": true
     }
   ]
 }

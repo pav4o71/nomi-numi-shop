@@ -12,6 +12,8 @@ const mockCart: PublicCart = {
   items: [],
   totalAmount: 0,
   currency: "USD",
+  promoCode: null,
+  discountAmount: 0,
 };
 
 describe("Client-side cart API", () => {

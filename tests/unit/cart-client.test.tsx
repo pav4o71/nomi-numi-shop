@@ -22,6 +22,8 @@ const mockCart: PublicCart = {
   items: [],
   totalAmount: 0,
   currency: "USD",
+  promoCode: null,
+  discountAmount: 0,
 };
 
 describe("Cart Client Hooks", () => {

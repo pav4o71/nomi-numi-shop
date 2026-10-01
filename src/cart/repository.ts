@@ -181,4 +181,8 @@ export class DrizzleCartRepository {
   async deleteCart(tx: CartExecutor, cartId: string) {
     await tx.delete(carts).where(eq(carts.id, cartId));
   }
+
+  async setPromoCode(tx: CartExecutor, cartId: string, promoCode: string | null) {
+    await tx.update(carts).set({ promoCode }).where(eq(carts.id, cartId));
+  }
 }

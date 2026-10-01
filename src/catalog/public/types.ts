@@ -58,6 +58,7 @@ export type PublicVariant = {
 };
 
 export type PublicProductDetail = {
+  id: string;
   slug: string;
   title: string;
   description: string | null;

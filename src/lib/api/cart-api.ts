@@ -104,3 +104,17 @@ export async function removeCartItem(itemId: string): Promise<VoidResult> {
   if (!response.ok) return parseCartError(response);
   return { ok: true };
 }
+
+/**
+ * Apply or remove a promo code.
+ */
+export async function applyPromoCode(promoCode: string | null): Promise<CartResult> {
+  const response = await fetch("/api/cart", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ promoCode }),
+  });
+  if (!response.ok) return parseCartError(response);
+  const cart = (await response.json()) as PublicCart;
+  return { ok: true, cart };
+}

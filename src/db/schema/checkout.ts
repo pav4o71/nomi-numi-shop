@@ -26,6 +26,7 @@ export const carts = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    promoCode: text("promo_code"),
   },
   (table) => [
     uniqueIndex("carts_customer_uidx")
@@ -110,6 +111,8 @@ export const orders = pgTable(
     idempotencyScope: text("idempotency_scope").notNull(),
     idempotencyKey: text("idempotency_key").notNull(),
     requestFingerprint: text("request_fingerprint").notNull(),
+    promoCode: text("promo_code"),
+    discountAmount: integer("discount_amount").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
@@ -136,9 +139,10 @@ export const orders = pgTable(
     check("orders_shipping_nonneg_chk", sql`${table.shippingAmount} >= 0`),
     check("orders_tax_nonneg_chk", sql`${table.taxAmount} >= 0`),
     check("orders_total_nonneg_chk", sql`${table.totalAmount} >= 0`),
+    check("orders_discount_nonneg_chk", sql`${table.discountAmount} >= 0`),
     check(
       "orders_total_sum_chk",
-      sql`${table.totalAmount} = ${table.subtotalAmount} + ${table.shippingAmount} + ${table.taxAmount}`,
+      sql`${table.totalAmount} = ${table.subtotalAmount} + ${table.shippingAmount} + ${table.taxAmount} - ${table.discountAmount}`,
     ),
   ],
 );

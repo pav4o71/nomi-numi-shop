@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ProductDetailView } from "@/components/catalog/product-detail-view";
 import { Container } from "@/components/container";
 import { getPublicCatalogReads, PUBLIC_STOREFRONT_CURRENCY } from "@/catalog/public/storefront";
+import { ProductReviews } from "@/components/reviews/review-list";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,9 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     <main className="section-shell py-12 sm:py-16">
       <Container>
         <ProductDetailView product={product} />
+        <ProductReviews productId={product.id} />
       </Container>
     </main>
   );
 }
+
