@@ -3,6 +3,10 @@
 Custom ecommerce platform for a multi-category gifting and merchandise
 store.
 
+This README is an operational guide. Command examples and safety summaries
+refer to the canonical policies below; they do not authorize executing an
+operation.
+
 ## Current phase
 
 Phase 7 customer/account/cart + Phase 8 checkout/order closure
@@ -118,7 +122,15 @@ pnpm-lock.yaml.
 
 ## Authoritative project documentation
 
-Before implementation, read the documents relevant to the current task:
+Before beginning a repository task, read `AGENTS.md` and all shared rules
+in `.agents/rules/`. These apply to every coding agent, including Codex
+and Cursor. `AGENTS.md` defines authority and conflict handling.
+
+`docs/PROTECTED_RESOURCES.md` owns resource identities and resource-specific
+restrictions. `docs/COMMERCE_RULES.md` and its referenced contracts own
+commerce behavior. Shared agent procedures live in `.agents/rules/`.
+
+Read the relevant domain documentation:
 
 - AGENTS.md
 - .agents/rules/
@@ -134,11 +146,16 @@ Before implementation, read the documents relevant to the current task:
 - docs/ENVIRONMENTS.md
 - docs/PROTECTED_RESOURCES.md
 
-Cursor project rules:
-
-- .cursor/rules/
+Cursor loading adapters live in `.cursor/rules/`. They retain their
+always-on metadata and explicitly direct Cursor to read the canonical
+files; they do not define alternative shared policies.
 
 ## Local PostgreSQL and Drizzle
+
+The endpoints and command examples below summarize
+`docs/PROTECTED_RESOURCES.md` and `.agents/rules/02-database-safety.md`.
+Read and follow those files before database operations. Migration and
+validation command details are documented in `docs/TESTING.md`.
 
 Development:
 
@@ -191,22 +208,18 @@ TEST rebuild (destructive, TEST only; DEV is never reset by this command):
 
     pnpm db:test:rebuild -- --confirm RESET-NOMI-TEST-DATABASE
 
-The confirmation token is required and is not a secret. Direct invocation
-of the internal rebuild runner is refused without the public wrapper.
-The command drops and recreates only `nomi_numi_shop_test`, then reapplies committed
-migrations. Unexpected active TEST sessions cause refusal; connections
-are not terminated. There is no `db:dev:reset`, generic drop tool, or
-raw SQL console. Production and host port `5433` cannot be selected.
+Read `.agents/rules/02-database-safety.md` for authorization, the exact
+TEST identity, confirmation requirements, active-session refusal, and
+wrapper-only rebuild behavior. The command example does not authorize a
+rebuild.
 
 DEV catalog fixtures (Phase 3C; development data only):
 
     pnpm catalog:seed:dev -- --confirm SEED-NOMI-DEV-CATALOG
 
-The command targets project-owned DEV only (`127.0.0.1:55432` /
-`nomi_numi_shop_dev`). It runs a complete read-only fixture preflight
-before writes, creates only missing fixture state, no-ops when already
-matching, and aborts on conflict without overwrite/delete/truncate.
-Production seed/import is unsupported. Public catalog pages
+Read `.agents/rules/02-database-safety.md` for the DEV fixture target,
+preflight, conflict handling, and production seed/import prohibition.
+Public catalog pages
 (`/products`, `/categories`, `/collections`) read published data via
 `PublicCatalogReads` with temporary USD.
 
