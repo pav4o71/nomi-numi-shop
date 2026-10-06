@@ -11,16 +11,14 @@ Canonical local repository root:
 
 `/home/pav4o71/Projects/nomi-numi-shop`
 
-Before modifying anything, confirm that the Git root is exactly the canonical repository root.
+Before modifying anything, confirm that the Git root is exactly the canonical repository root. If it is not, STOP. Do not repair, initialize, relocate, clean, reset, or modify another repository.
 
-If it is not, STOP.
+Read and follow:
 
-Do not repair, initialize, relocate, clean, reset, or modify another repository.
-
-Read and obey:
-
-- `AGENTS.md`
-- `docs/PROTECTED_RESOURCES.md`
+- `docs/PROTECTED_RESOURCES.md` for resource identities and resource-specific restrictions.
+- `.agents/rules/02-database-safety.md` before database or schema work.
+- `.agents/rules/04-workflow.md` for Git authorization, branch discipline, planning, and validation.
+- `.agents/rules/05-security.md` before beginning any task, including when this rule is loaded through another agent entry point.
 
 ## Core safety rule
 
@@ -28,65 +26,28 @@ Unknown resources are protected resources.
 
 Prove project ownership before mutation.
 
-If ownership cannot be proven, stop and report the ambiguity.
+If ownership cannot be proven or a safety check fails, STOP and report the ambiguity. Do not guess or automatically repair external state.
 
-## External projects
+## External projects and filesystem boundaries
 
-Never modify sibling repositories including:
+Never mutate the protected sibling repositories listed in `docs/PROTECTED_RESOURCES.md`, including their files, Git state, remotes, and configuration. Inspect them only when explicitly required for read-only conflict diagnostics.
 
-- `/home/pav4o71/Projects/beautybook3`
-- `/home/pav4o71/Projects/beautybook3-current`
-- `/home/pav4o71/Projects/biz-research`
-- `/home/pav4o71/Projects/game_of_night`
-- `/home/pav4o71/Projects/thirty-three`
+Modify files only within this repository unless the user explicitly approves a specific external operation. Such approval does not waive a specific protected-resource prohibition. System directories, shell/SSH configuration, and unrelated user files are not implicitly writable.
 
-Read-only inspection is permitted only when necessary for diagnostics.
+## Resource identities and endpoints
 
-## Protected external Docker/database resource
+Use the exact endpoints, database names, Compose namespaces, networks, and volumes in `docs/PROTECTED_RESOURCES.md`. Do not silently substitute standard or unrelated ports, or reuse external resources merely to save configuration.
 
-The Docker container:
-
-`beautybook3-pg`
-
-and host port:
-
-`5433`
-
-do not belong to this project.
-
-Never stop, restart, remove, rename, reconfigure, migrate against, repurpose, or otherwise mutate that container or port.
-
-## Nomi Numi local resources
-
-Reserved development endpoints:
-
-- application: `127.0.0.1:3100`
-- E2E application: `127.0.0.1:3101`
-- development PostgreSQL: `127.0.0.1:55432`
-- test PostgreSQL: `127.0.0.1:55433`
-- Mailpit SMTP: `127.0.0.1:11025`
-- Mailpit UI: `127.0.0.1:18025`
-
-Expected databases:
-
-- `nomi_numi_shop_dev`
-- `nomi_numi_shop_test`
-
-Expected Docker Compose namespaces:
-
-- `nomi-numi-shop-dev`
-- `nomi-numi-shop-test`
-
-Do not silently substitute standard or unrelated ports.
+Critical resource warning: `beautybook3-pg` and host port `5433` belong to another project. Never stop, restart, remove, rename, reconfigure, migrate against, repurpose, or attach webshop services to that container. Never bind webshop services to that port.
 
 ## Mutation restrictions
 
-Do not perform destructive or external mutations merely to resolve an unexpected state.
+Do not perform destructive or external mutations merely to resolve an unexpected state. Investigate before attempting repair.
 
 Do not use destructive shortcuts such as:
 
 - `git reset --hard`
-- `git clean -fd`
+- `git clean -fd` or `git clean -fdx`
 - force push
 - Docker prune commands
 - unknown Docker volume deletion
@@ -94,59 +55,22 @@ Do not use destructive shortcuts such as:
 - database dropping
 - filesystem deletion outside this repository
 
-unless the action is explicitly authorized and project ownership is proven.
+unless the specific operation is explicitly authorized, project ownership is proven, and its destructive impact is understood. General authorization does not waive resource-specific prohibitions, including the ban on force-pushing `main` or rewriting published history.
 
-Investigate unexpected state before attempting repair.
+Implement only the requested scope. Read `.agents/rules/04-workflow.md` before Git mutations or publishing operations.
 
-## Git discipline
+## Docker ownership and inspection
 
-`main` is the stable integration branch.
+Only mutate Docker resources proven to belong to the project's namespaces. A matching name alone is insufficient. A stopped, old, unfamiliar, or apparently unused resource, or one without Docker labels, is not thereby disposable.
 
-Normal implementation belongs on a narrowly scoped non-`main` branch such as:
+Before Docker mutation, inspect relevant state with read-only operations such as `docker ps`, `docker ps -a`, `docker inspect`, `docker compose config`, and `docker compose ps`. These examples do not authorize container lifecycle operations or override task constraints.
 
-- `feature/...`
-- `fix/...`
-- `chore/...`
-- `docs/...`
+Preserve the protected networks, volumes, and built-in network exclusions in `docs/PROTECTED_RESOURCES.md`. Do not attach services to external networks without the required explicit architecture decision. Mailpit must remain on its owned network and use its project lifecycle wrappers.
 
-Before changing code, inspect the repository root, current branch, Git status, relevant diff, and relevant history.
-
-Do not commit, push, merge, deploy, or create remote resources unless the current task explicitly authorizes it.
-
-## Database boundary
-
-Never run migrations, seeds, resets, truncation, destructive tests, or other database mutations against an unverified target.
-
-Development database operations must target the owned development database.
-
-Automated data-mutating tests must target the owned isolated test database.
-
-Port `5433` must never be accepted as a Nomi Numi database target.
-
-Additional database safety requirements are defined in:
-
-`.agents/rules/02-database-safety.md`
-
-## Secrets
-
-Never expose or commit secrets, credentials, private keys, tokens, customer data, or production data.
-
-Do not weaken `.gitignore`, `.cursorignore`, or related protections in order to access secrets.
+Bind local infrastructure only to documented endpoints; prefer loopback binding over `0.0.0.0`. Stop if ownership or a target is ambiguous.
 
 ## Production
 
-Production infrastructure is not selected yet.
+Production infrastructure is not selected yet; its status and exclusions are recorded in `docs/PROTECTED_RESOURCES.md`.
 
-Do not assume any existing server, domain, DNS record, reverse proxy, database, Docker resource, credential, or deployment belongs to this project.
-
-Do not create or mutate production infrastructure unless a later explicitly authorized production phase permits it.
-
-## Failure behavior
-
-When a safety check fails or ownership is ambiguous:
-
-STOP.
-
-Report what was found.
-
-Do not guess and do not automatically repair external state.
+Do not assume any existing server, domain, DNS record, reverse proxy, database, Docker resource, credential, or deployment belongs to this project. Do not create or mutate production infrastructure unless a later explicitly authorized production phase permits it after the required infrastructure audit.

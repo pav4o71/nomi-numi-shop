@@ -3,95 +3,11 @@ description: Mandatory validation, regression checks, and quality gates for nomi
 alwaysApply: true
 ---
 
+# Cursor adapter
 
-# Testing and Quality
+Read and follow these canonical files before beginning a repository task:
 
-Every implementation step must be validated according to its scope.
+- `.agents/rules/04-workflow.md`
+- `.agents/rules/02-database-safety.md`
 
-## Before implementation
-
-Understand:
-
-- requested behavior
-- affected modules
-- existing tests
-- relevant architecture rules
-- expected failure cases
-
-Do not modify tests merely to make an incorrect implementation pass.
-
-## Required validation
-
-As the project develops, the standard validation pipeline will include:
-
-- formatting checks
-- lint
-- TypeScript type checking
-- unit tests
-- integration tests where applicable
-- Playwright E2E tests where applicable
-- production build
-
-Until those commands exist, do not invent fake success.
-
-State explicitly which validations are not yet available.
-
-## Test database
-
-Data-mutating automated tests must use:
-
-`nomi_numi_shop_test`
-
-on:
-
-`127.0.0.1:55433`
-
-They must never target the development database.
-
-## Regression coverage
-
-When fixing a reproducible bug, add or update a regression test when
-practical so the same defect is detected in the future.
-
-## Failure handling
-
-If validation fails:
-
-1. investigate the cause;
-2. fix only within approved scope;
-3. rerun the failed validation;
-4. rerun affected broader validation;
-5. inspect the final diff.
-
-Do not continue to the next phase while known relevant validation
-failures remain.
-
-## No false claims
-
-Never claim:
-
-- tests passed
-- build passed
-- lint passed
-- deployment succeeded
-- Nomi PR Verifier PASS for the exact current SHA
-
-unless that action actually ran and produced the stated result for the
-exact current commit SHA. Stale SHA-bound review verdicts do not count.
-Nomi PASS permits human merge consideration only; it does not grant
-merge authority.
-
-## Review after implementation
-
-Inspect:
-
-- `git status`
-- `git diff`
-- unexpected files
-- generated artifacts
-- unrelated changes
-- security-sensitive changes
-- database migrations
-- environment changes
-
-Small validated steps are preferred over large speculative batches.
+This file supplies Cursor loading instructions only. Shared policies are defined in `.agents/rules/`, and domain authorities are identified in `AGENTS.md`. Do not treat this adapter as an alternative policy source.

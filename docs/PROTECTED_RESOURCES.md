@@ -1,7 +1,14 @@
 # Nomi Numi Shop — Resource Boundaries
 
-This document defines which local resources belong to `nomi-numi-shop`
-and which resources are external and therefore protected.
+This document is authoritative for project resource identities and
+resource-specific restrictions. It defines which local resources belong
+to `nomi-numi-shop` and which resources are external and protected.
+
+Read and follow `.agents/rules/00-project-boundary.md` for shared ownership
+and Docker inspection procedures, `.agents/rules/02-database-safety.md`
+for database workflows, and `.agents/rules/04-workflow.md` for Git
+procedures and authorization. General permissions do not waive the
+specific protected-resource prohibitions recorded here.
 
 These rules apply to:
 
@@ -284,8 +291,9 @@ Test database target:
 - port: `55433`
 - database: `nomi_numi_shop_test`
 
-Database migrations, resets, truncation, seeds, and destructive tests
-must refuse to run if the target does not match the expected
+Read and follow `.agents/rules/02-database-safety.md` for target
+verification, migration policy, and the isolated TEST workflow. Database
+mutations must refuse a target that does not match the expected
 environment.
 
 In particular, webshop tooling must refuse any database target using:
@@ -341,13 +349,10 @@ Agents must not:
 - modify another repository
 - blindly resolve conflicts using `ours` or `theirs`
 
-Before implementation, agents must inspect:
-
-- `git status`
-- `git diff`
-- recent Git history
-- current branch
-- repository root
+Before implementation, read and follow the pre-edit inspection, branch,
+commit/publishing authorization, and validation procedures in
+`.agents/rules/04-workflow.md`. The resource-specific prohibitions above
+remain mandatory.
 
 ---
 
