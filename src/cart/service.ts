@@ -6,6 +6,7 @@ import type { CatalogCurrency } from "@/catalog/money";
 import type { CatalogExecutor } from "@/catalog/db";
 import { isCatalogError } from "@/catalog/errors";
 import { cartConflict, cartNotFound, invalidCartInput } from "./errors";
+import { PromotionService } from "@/promotions/service";
 
 export type ResolvedCartItem = {
   id: string;
@@ -27,6 +28,8 @@ export type ResolvedCart = {
   currency: CatalogCurrency;
   items: ResolvedCartItem[];
   totalAmount: number;
+  promoCode: string | null;
+  discountAmount: number;
 };
 
 export class CartService {
@@ -97,6 +100,25 @@ export class CartService {
       }
     }
 
+    let discountAmount = 0;
+    const promoCode = cart.promoCode;
+
+    if (promoCode && resolvedItems.length > 0) {
+      const evaluation = await PromotionService.evaluatePromotion(
+        promoCode,
+        totalAmount,
+        cart.currency
+      );
+      if (evaluation.isValid && "discount" in evaluation) {
+        discountAmount = evaluation.discount as number;
+      } else {
+        // If the promo became invalid (e.g. expired or min spend not met), we don't apply it.
+        // We could also remove it from the cart here, but leaving it allows it to become valid again (e.g. if they add more items).
+        // For now, just set discount to 0.
+        discountAmount = 0;
+      }
+    }
+
     return {
       id: cart.id,
       customerId: cart.customerId,
@@ -104,6 +126,8 @@ export class CartService {
       currency: cart.currency as CatalogCurrency,
       items: resolvedItems,
       totalAmount,
+      promoCode,
+      discountAmount,
     };
   }
 
@@ -192,6 +216,20 @@ export class CartService {
       });
       totalAmount += variant.unitPrice * item.quantity;
     }
+    let discountAmount = 0;
+    const promoCode = cart.promoCode;
+
+    if (promoCode && resolvedItems.length > 0) {
+      const evaluation = await PromotionService.evaluatePromotion(
+        promoCode,
+        totalAmount,
+        params.currency
+      );
+      if (evaluation.isValid && "discount" in evaluation) {
+        discountAmount = evaluation.discount as number;
+      }
+    }
+
     return {
       id: cart.id,
       customerId: cart.customerId,
@@ -199,6 +237,8 @@ export class CartService {
       currency: params.currency,
       items: resolvedItems,
       totalAmount,
+      promoCode,
+      discountAmount,
     };
   }
 
@@ -239,6 +279,39 @@ export class CartService {
   async clearCart(cartId: string) {
     return this.repo.transaction(async (tx) => {
       await this.repo.deleteCartItems(tx, cartId);
+      await this.repo.setPromoCode(tx, cartId, null);
+    });
+  }
+
+  async applyPromoCode(cartId: string, promoCode: string | null) {
+    return this.repo.transaction(async (tx) => {
+      const cart = await this.repo.getCartByIdForUpdate(tx, cartId);
+      if (!cart) throw cartNotFound();
+      
+      if (promoCode) {
+        // Evaluate it before applying
+        const items = await this.repo.getCartItems(tx, cartId);
+        let subtotal = 0;
+        for (const item of items) {
+          const variant = await this.catalog.getCheckoutVariantDetails(
+            item.variantId,
+            cart.currency as CatalogCurrency,
+            tx as CatalogExecutor,
+          );
+          subtotal += variant.unitPrice * item.quantity;
+        }
+        
+        const evaluation = await PromotionService.evaluatePromotion(
+          promoCode,
+          subtotal,
+          cart.currency
+        );
+        if (!evaluation.isValid) {
+          throw invalidCartInput(("error" in evaluation ? evaluation.error : undefined) || "Invalid promo code");
+        }
+      }
+
+      await this.repo.setPromoCode(tx, cartId, promoCode);
     });
   }
 

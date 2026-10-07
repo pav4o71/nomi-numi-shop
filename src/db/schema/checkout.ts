@@ -20,12 +20,13 @@ export const carts = pgTable(
     customerId: text("customer_id").references(() => user.id, { onDelete: "cascade" }),
     sessionId: text("session_id"),
     currency: text("currency").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    promoCode: text("promo_code"),
   },
   (table) => [
     uniqueIndex("carts_customer_uidx")
@@ -62,7 +63,7 @@ export const cartItems = pgTable(
       .notNull()
       .references(() => productVariants.id, { onDelete: "cascade" }),
     quantity: integer("quantity").notNull(),
-    addedAt: timestamp("added_at").defaultNow().notNull(),
+    addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     unique("cart_items_cart_variant_uidx").on(table.cartId, table.variantId),
@@ -110,6 +111,8 @@ export const orders = pgTable(
     idempotencyScope: text("idempotency_scope").notNull(),
     idempotencyKey: text("idempotency_key").notNull(),
     requestFingerprint: text("request_fingerprint").notNull(),
+    promoCode: text("promo_code"),
+    discountAmount: integer("discount_amount").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
@@ -136,9 +139,10 @@ export const orders = pgTable(
     check("orders_shipping_nonneg_chk", sql`${table.shippingAmount} >= 0`),
     check("orders_tax_nonneg_chk", sql`${table.taxAmount} >= 0`),
     check("orders_total_nonneg_chk", sql`${table.totalAmount} >= 0`),
+    check("orders_discount_nonneg_chk", sql`${table.discountAmount} >= 0`),
     check(
       "orders_total_sum_chk",
-      sql`${table.totalAmount} = ${table.subtotalAmount} + ${table.shippingAmount} + ${table.taxAmount}`,
+      sql`${table.totalAmount} = ${table.subtotalAmount} + ${table.shippingAmount} + ${table.taxAmount} - ${table.discountAmount}`,
     ),
   ],
 );

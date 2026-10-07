@@ -553,13 +553,21 @@ export class CatalogService {
         // Technically, releasing reservation shouldn't exceed the currently reserved amount,
         // but for robustness against manual admin adjustments, we just apply the delta.
         // A sale drops BOTH onHand and reserved. A failure only drops reserved.
-        const deltaOnHand = isSuccess ? -item.quantity : 0;
-        const deltaReserved = -item.quantity;
+        let deltaOnHand = isSuccess ? -item.quantity : 0;
+        let deltaReserved = -item.quantity;
 
         if (balance.reserved + deltaReserved < 0) {
-          // If an admin manually cleared the reservation during the 15-minute window,
-          // we log it or let the CHECK constraint handle it. The repo's recordInventoryMovement
-          // respects DB constraints.
+          console.warn(
+            `[CatalogService] Finalizing checkout inventory but reserved balance is insufficient for variant ${item.variantId}. Admin may have cleared the reservation. Clamping deltaReserved.`,
+          );
+          deltaReserved = -balance.reserved;
+        }
+
+        if (balance.onHand + deltaOnHand < 0) {
+          console.warn(
+            `[CatalogService] Finalizing checkout inventory but on-hand balance is insufficient for variant ${item.variantId}. Clamping deltaOnHand.`,
+          );
+          deltaOnHand = -balance.onHand;
         }
 
         await this.repo.recordInventoryMovement(

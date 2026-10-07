@@ -11,6 +11,7 @@ import { cartItems } from "@/db/schema";
 import { createOrderAccessToken, digestOrderAccessToken } from "./access";
 import { checkoutConflict, checkoutNotFound, invalidCheckoutInput } from "./errors";
 import { DrizzleCheckoutRepository } from "./repository";
+import { PromotionService } from "@/promotions/service";
 
 type CartIdentity = {
   customerId?: string;
@@ -103,7 +104,9 @@ export class CheckoutService {
           subtotalAmount: resolvedCart.totalAmount,
           shippingAmount: 0,
           taxAmount: 0,
-          totalAmount: resolvedCart.totalAmount,
+          totalAmount: resolvedCart.totalAmount - resolvedCart.discountAmount,
+          discountAmount: resolvedCart.discountAmount,
+          promoCode: resolvedCart.promoCode,
           idempotencyScope: scope,
           idempotencyKey,
           requestFingerprint,
@@ -143,6 +146,10 @@ export class CheckoutService {
         })),
       );
       await tx.delete(cartItems).where(eq(cartItems.cartId, resolvedCart.id));
+
+      if (resolvedCart.promoCode) {
+        await PromotionService.recordUsage(resolvedCart.promoCode);
+      }
 
       return { order, guestAccessToken, created: true };
     });
@@ -269,7 +276,7 @@ export class CheckoutService {
       .map((item) => `${item.variantId}:${item.quantity}`)
       .sort((a, b) => a.localeCompare(b));
     return createHash("sha256")
-      .update(JSON.stringify({ email, currency: cart.currency, lines }))
+      .update(JSON.stringify({ email, currency: cart.currency, lines, promoCode: cart.promoCode }))
       .digest("hex");
   }
 }

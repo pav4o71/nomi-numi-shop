@@ -6,6 +6,8 @@ export function toPublicCart(cart: ResolvedCart) {
     currency: cart.currency,
     items: cart.items,
     totalAmount: cart.totalAmount,
+    promoCode: cart.promoCode,
+    discountAmount: cart.discountAmount,
   };
 }
 

@@ -6,6 +6,8 @@ import { requireAdminPage } from "@/auth/guards";
 import { AUTH_UI_ROUTES, PROTECTED_SURFACE_ROUTES } from "@/auth/routes";
 import { cn } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: {
     template: "%s · Admin · Nomi Numi",
@@ -15,9 +17,17 @@ export const metadata: Metadata = {
 
 const ADMIN_NAV_ITEMS = [
   { href: "/admin", label: "Dashboard" },
+  { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/products", label: "Products" },
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/collections", label: "Collections" },
-  { href: "/admin/products", label: "Products" },
+  { href: "/admin/customers", label: "Customers" },
+  { href: "/admin/promotions", label: "Promotions" },
+  { href: "/admin/reviews", label: "Reviews" },
+  { href: "/admin/pages", label: "Pages" },
+  { href: "/admin/navigation", label: "Navigation" },
+  { href: "/admin/homepage-sections", label: "Homepage Sections" },
+  { href: "/admin/settings", label: "Settings" },
 ] as const;
 
 /**

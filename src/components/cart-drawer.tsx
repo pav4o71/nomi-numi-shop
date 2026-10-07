@@ -1,19 +1,36 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useCartUI, useCartData } from "@/cart/client";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+
+import { useCartUI, useCartData, useCartApi } from "@/cart/client";
+import { submitCheckout } from "@/lib/api/checkout-api";
+import { formatPublicMoney } from "@/catalog/public/format-money";
+import type { CatalogCurrency } from "@/catalog/money";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@/components/ui/sheet";
 
 export function CartDrawer() {
   const { isCartOpen, closeCart } = useCartUI();
-  const { cart, isLoading, mutateCart } = useCartData();
+  const { cart, isLoading } = useCartData();
+  const { updateItem, removeItem, applyPromo } = useCartApi();
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const attemptKey = useRef<string | null>(null);
   const router = useRouter();
 
+  // Reset idempotency key when cart contents change.
   const cartSignature = cart?.items
     ? cart.items
         .map((item) => `${item.variantId}:${item.quantity}`)
@@ -24,162 +41,249 @@ export function CartDrawer() {
     attemptKey.current = null;
   }, [cartSignature]);
 
-  if (!isCartOpen) return null;
-
   const handleCheckout = async () => {
     setCheckoutError(null);
     if (!email.trim()) {
       setCheckoutError("Enter the email address for your receipt.");
       return;
     }
+
     setIsCheckingOut(true);
     attemptKey.current ??= crypto.randomUUID();
+
     try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          idempotencyKey: attemptKey.current,
-        }),
+      const result = await submitCheckout({
+        email: email.trim(),
+        idempotencyKey: attemptKey.current,
       });
 
-      if (response.status === 409) {
-        const body = (await response.json()) as { error?: string };
-        setCheckoutError(body.error ?? "Some items became unavailable. Please review your cart.");
-        await mutateCart();
+      if (!result.ok) {
+        if (result.isInventoryConflict) {
+          // Inventory issue — show inline error and let the user review their cart.
+          setCheckoutError(result.error);
+        } else {
+          toast.error(result.error);
+        }
         return;
       }
 
-      if (!response.ok) {
-        const body = (await response.json()) as { error?: string };
-        throw new Error(body.error ?? "Checkout failed");
-      }
-
-      const result = (await response.json()) as { successPath: string };
+      // Success
       attemptKey.current = null;
-      await mutateCart();
       closeCart();
       router.push(result.successPath);
-    } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : "Checkout failed");
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsCheckingOut(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/50">
-      <div className="w-full max-w-md bg-background p-6 shadow-xl h-full flex flex-col">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Your Cart</h2>
-          <Button variant="ghost" onClick={closeCart}>
-            Close
-          </Button>
-        </div>
+  const itemCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
+  return (
+    <Sheet open={isCartOpen} onOpenChange={(open) => !open && closeCart()}>
+      <SheetContent side="right" className="flex flex-col p-0">
+        <SheetHeader className="px-6 pt-6 pb-0">
+          <SheetTitle>
+            Your Cart
+            {itemCount > 0 && (
+              <span className="ml-2 text-base font-normal text-muted-foreground">
+                ({itemCount} {itemCount === 1 ? "item" : "items"})
+              </span>
+            )}
+          </SheetTitle>
+        </SheetHeader>
+
+        {/* Error banner — inventory conflicts only */}
         {checkoutError && (
-          <div className="mb-4 rounded bg-destructive/15 p-3 text-sm text-destructive">
+          <div className="mx-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {checkoutError}
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto">
+        {/* Cart items */}
+        <div className="flex-1 overflow-y-auto px-6">
           {isLoading ? (
-            <p>Loading cart...</p>
+            <div className="space-y-4 py-4">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="flex items-center gap-3">
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : !cart?.items || cart.items.length === 0 ? (
-            <p>Your cart is empty.</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <p className="text-muted-foreground">Your cart is empty.</p>
+              <Button
+                variant="link"
+                className="mt-2"
+                onClick={closeCart}
+                asChild={false}
+              >
+                Continue shopping
+              </Button>
+            </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="divide-y divide-border py-2" aria-label="Cart items">
               {cart.items.map((item) => (
-                <li key={item.id} className="flex justify-between border-b pb-2">
-                  <div>
-                    <p className="font-medium">{item.title}</p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={async () => {
-                          await fetch(`/api/cart/${item.id}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ quantity: item.quantity - 1 }),
-                          });
-                          mutateCart();
-                        }}
-                      >
-                        -
-                      </Button>
-                      <span className="text-sm">{item.quantity}</span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-6 w-6"
-                        disabled={!item.isActive || item.quantity >= item.available}
-                        onClick={async () => {
-                          await fetch(`/api/cart/${item.id}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ quantity: item.quantity + 1 }),
-                          });
-                          mutateCart();
-                        }}
-                      >
-                        +
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-xs text-muted-foreground"
-                        onClick={async () => {
-                          await fetch(`/api/cart/${item.id}`, { method: "DELETE" });
-                          mutateCart();
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </div>
+                <li key={item.id} className="flex items-start gap-4 py-4">
+                  <div className="flex-1 space-y-1 min-w-0">
+                    <p className="truncate font-medium text-foreground">{item.title}</p>
+                    <p className="text-sm font-medium text-primary">
+                      {formatPublicMoney({
+                        currency: cart.currency as CatalogCurrency,
+                        amountMinor: item.unitPrice,
+                        compareAtAmountMinor: null,
+                      })}
+                    </p>
                     {!item.isActive && (
-                      <p className="text-xs text-destructive mt-1">Item is no longer available.</p>
+                      <p className="text-xs text-destructive">Item is no longer available.</p>
                     )}
                     {item.isActive && item.available < item.quantity && (
-                      <p className="text-xs text-destructive mt-1">
+                      <p className="text-xs text-destructive">
                         Only {item.available} available.
                       </p>
                     )}
                   </div>
-                  <p className="font-medium text-right">${(item.unitPrice / 100).toFixed(2)}</p>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      aria-label={`Decrease quantity of ${item.title}`}
+                      onClick={async () => {
+                        const result = await updateItem(item.id, item.quantity - 1);
+                        if (!result.ok) toast.error(result.error);
+                      }}
+                    >
+                      –
+                    </Button>
+                    <span className="w-6 text-center text-sm tabular-nums">
+                      {item.quantity}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      aria-label={`Increase quantity of ${item.title}`}
+                      disabled={!item.isActive || item.quantity >= item.available}
+                      onClick={async () => {
+                        const result = await updateItem(item.id, item.quantity + 1);
+                        if (!result.ok) toast.error(result.error);
+                      }}
+                    >
+                      +
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                      aria-label={`Remove ${item.title} from cart`}
+                      onClick={async () => {
+                        const result = await removeItem(item.id);
+                        if (!result.ok) toast.error(result.error);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
 
+        {/* Checkout footer */}
         {cart?.items && cart.items.length > 0 && (
-          <div className="mt-6 border-t pt-4">
-            <div className="flex justify-between mb-4 font-semibold text-lg">
-              <span>Total</span>
-              <span>${(cart.totalAmount / 100).toFixed(2)}</span>
+          <SheetFooter className="border-t border-border bg-surface/60 backdrop-blur-sm px-6 pb-6 pt-4 gap-4">
+            <div className="flex flex-col gap-2 w-full">
+              {cart.promoCode ? (
+                <div className="flex justify-between items-center text-sm font-medium bg-muted p-2 rounded-md">
+                  <span className="flex items-center gap-2 text-primary">
+                    <span className="font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded">{cart.promoCode}</span>
+                    applied
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-primary">
+                      -{formatPublicMoney({
+                        currency: cart.currency as CatalogCurrency,
+                        amountMinor: cart.discountAmount || 0,
+                        compareAtAmountMinor: null,
+                      })}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive text-muted-foreground"
+                      onClick={async () => {
+                        const result = await applyPromo(null);
+                        if (!result.ok) toast.error(result.error);
+                      }}
+                      aria-label="Remove promo code"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2 w-full">
+                  <Input
+                    placeholder="Promo code (optional)"
+                    className="h-8 text-sm"
+                    onKeyDown={async (e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const code = e.currentTarget.value.trim();
+                        if (code) {
+                          const result = await applyPromo(code);
+                          if (!result.ok) toast.error(result.error);
+                          else e.currentTarget.value = "";
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </div>
-            <label className="mb-4 block text-sm font-medium" htmlFor="checkout-email">
-              Receipt email
-              <input
+
+            <div className="flex justify-between text-base font-semibold">
+              <span>Total</span>
+              <span>
+                {formatPublicMoney({
+                  currency: cart.currency as CatalogCurrency,
+                  amountMinor: cart.totalAmount - (cart.discountAmount || 0),
+                  compareAtAmountMinor: null,
+                })}
+              </span>
+            </div>
+            <Separator />
+            <label className="block space-y-1.5" htmlFor="checkout-email">
+              <span className="text-sm font-medium">Receipt email</span>
+              <Input
                 id="checkout-email"
                 type="email"
                 required
                 autoComplete="email"
+                placeholder="you@example.com"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 font-normal"
+                onChange={(e) => setEmail(e.target.value)}
               />
             </label>
-            <Button className="w-full" disabled={isCheckingOut} onClick={handleCheckout}>
+            <Button
+              className="w-full"
+              disabled={isCheckingOut}
+              onClick={handleCheckout}
+            >
               {isCheckingOut ? "Processing…" : "Proceed to Checkout"}
             </Button>
-          </div>
+          </SheetFooter>
         )}
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useCartUI, useCartData } from "@/cart/client";
+import { toast } from "sonner";
+
+import { useCartUI, useCartApi } from "@/cart/client";
 import { Button } from "@/components/ui/button";
 
 export function AddToCartButton({
@@ -12,23 +14,20 @@ export function AddToCartButton({
   disabled?: boolean;
 }) {
   const { openCart } = useCartUI();
-  const { mutateCart } = useCartData();
+  const { addItem } = useCartApi();
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = async () => {
     setIsAdding(true);
     try {
-      const response = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ variantId, quantity: 1 }),
-      });
-      if (response.ok) {
-        await mutateCart();
+      const result = await addItem(variantId, 1);
+      if (result.ok) {
         openCart();
+      } else {
+        toast.error(result.error);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      toast.error("Could not add item to cart. Please try again.");
     } finally {
       setIsAdding(false);
     }
@@ -41,7 +40,7 @@ export function AddToCartButton({
       disabled={disabled || isAdding}
       className="ml-auto shrink-0"
     >
-      {isAdding ? "Adding..." : "Add to Cart"}
+      {isAdding ? "Adding…" : "Add to Cart"}
     </Button>
   );
 }

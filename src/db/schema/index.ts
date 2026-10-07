@@ -71,3 +71,13 @@ export {
 } from "./checkout";
 
 export type { OrderItemOptionSnapshot } from "./checkout";
+
+export { productReviews, productReviewsRelations } from "./reviews";
+
+export { promotions } from "./promotions";
+
+export {
+  pages,
+  navigation,
+  homepageSections,
+} from "./cms";

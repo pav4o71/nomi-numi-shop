@@ -19,6 +19,9 @@ const steps = [
   },
 ] as const;
 
+// Stagger delays matching the 3 steps.
+const DELAYS = ["0ms", "120ms", "240ms"];
+
 export function HomeHowItWorks() {
   return (
     <section
@@ -39,12 +42,26 @@ export function HomeHowItWorks() {
           </p>
         </div>
 
-        <ol className="mt-10 grid gap-8 sm:grid-cols-3">
-          {steps.map((item) => (
-            <li key={item.step} className="space-y-3">
-              <p className="text-sm font-semibold tracking-[0.18em] text-primary uppercase">
-                Step {item.step}
-              </p>
+        <ol className="mt-12 grid gap-8 sm:grid-cols-3">
+          {steps.map((item, index) => (
+            <li
+              key={item.step}
+              className="relative space-y-4 motion-safe:animate-[fade-up_500ms_ease-out_both]"
+              style={{ animationDelay: DELAYS[index] }}
+            >
+              {/* Connector line between steps (desktop only) */}
+              {index < steps.length - 1 && (
+                <span className="step-connector hidden sm:block" aria-hidden="true" />
+              )}
+
+              {/* Step number badge */}
+              <div
+                aria-hidden="true"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground shadow-soft"
+              >
+                {item.step}
+              </div>
+
               <h3 className="font-display text-xl font-semibold tracking-tight text-foreground">
                 {item.title}
               </h3>

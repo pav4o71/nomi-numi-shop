@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers, cookies } from "next/headers";
-import { getAuthorizationPrincipal } from "@/auth/authorization";
+
 import { CartService } from "@/cart/service";
 import { DrizzleCartRepository } from "@/cart/repository";
 import { type CartDb } from "@/cart/db";
@@ -14,21 +14,7 @@ import { isCatalogError } from "@/catalog/errors";
 import { toPublicCart } from "@/cart/public";
 import { authorizationErrorResponse } from "@/auth/http";
 
-const CART_SESSION_COOKIE = "nomi_cart_session";
-const DEFAULT_CURRENCY = "USD";
-
-async function getCartIdentity() {
-  const reqHeaders = await headers();
-  const principal = await getAuthorizationPrincipal(reqHeaders);
-
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(CART_SESSION_COOKIE);
-
-  return {
-    customerId: principal?.role === "customer" ? principal.userId : null,
-    sessionId: sessionCookie?.value ?? null,
-  };
-}
+import { CART_SESSION_COOKIE, DEFAULT_CURRENCY, getCartIdentity } from "@/lib/commerce/session";
 
 function getServices() {
   const db = getRuntimeDb();
@@ -159,6 +145,73 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status });
     }
     console.error("Cart POST error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+const updateCartSchema = z.object({
+  promoCode: z.string().nullable().optional(),
+});
+
+export async function PATCH(request: Request) {
+  try {
+    const identity = await getCartIdentity();
+    const { customerId } = identity;
+    let { sessionId } = identity;
+
+    if (!customerId && !sessionId) {
+      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const parsed = updateCartSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+
+    const { cart } = getServices();
+
+    if (customerId && sessionId) {
+      await cart.mergeCart(sessionId, customerId);
+      const cookieStore = await cookies();
+      cookieStore.delete(CART_SESSION_COOKIE);
+      sessionId = null;
+    }
+
+    const resolvedCart = await cart.getCart({
+      customerId: customerId ?? undefined,
+      sessionId: sessionId ?? undefined,
+      currency: DEFAULT_CURRENCY,
+    });
+
+    if (parsed.data.promoCode !== undefined) {
+      await cart.applyPromoCode(resolvedCart.id, parsed.data.promoCode);
+    }
+
+    const updatedCart = await cart.getCart({
+      customerId: customerId ?? undefined,
+      sessionId: sessionId ?? undefined,
+      currency: DEFAULT_CURRENCY,
+    });
+
+    return NextResponse.json(toPublicCart(updatedCart));
+  } catch (error) {
+    const authResponse = authorizationErrorResponse(error);
+    if (authResponse) return authResponse;
+    if (isCartError(error) || isCatalogError(error)) {
+      const status = error.code === "INVALID_INPUT" ? 400 : error.code === "NOT_FOUND" ? 404 : 409;
+      return NextResponse.json({ error: error.message }, { status });
+    }
+    console.error("Cart PATCH error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

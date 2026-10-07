@@ -185,6 +185,9 @@ jobs:
       - name: Apply and verify committed migrations
         run: pnpm db:migrate:ci
 
+      - name: Database Integration tests
+        run: pnpm test:local
+
   e2e:
     name: E2E tests
     runs-on: ubuntu-latest
