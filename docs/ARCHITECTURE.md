@@ -30,6 +30,11 @@ Framework major:
 
 - Next.js 16 App Router
 
+Development uses the Next.js 16 default Turbopack bundler. Production builds
+use Next.js's supported `--webpack` mode so the portable quality gate does not
+depend on Turbopack's local worker-port transport in restricted execution
+environments.
+
 Exact package versions are pinned in `package.json` and
 `pnpm-lock.yaml`.
 
@@ -86,6 +91,9 @@ Current implemented source foundation:
         server.ts / lifecycle.ts / authorization.ts / …
       catalog/         (Phase 3B domain + Phase 3C fixtures + Phase 3D public)
         public/        (Phase 3D published-only read models)
+      cart/            (customer/guest cart ownership and server-authoritative reads)
+      checkout/        (orders, reservations, guest capabilities, mock payments)
+      customer/        (customer-scoped addresses and wishlists)
       components/
         auth/
         catalog/       (Phase 3D presentation components)
@@ -186,8 +194,11 @@ DEV fixtures and TEST factories under `src/catalog/fixtures/` and
 (`/products`, `/categories`, `/collections`) with temporary USD at the
 page boundary. Catalog pages use `src/db/runtime.ts` with
 `DATABASE_URL`-only validation (`src/db/env.ts`); Better Auth secrets
-remain auth-path only. Inventory runtime and admin catalog HTTP/UI remain
-later phases.
+remain auth-path only. Inventory ledger/runtime, admin catalog HTTP/UI,
+customer account/cart, and checkout/order/mock-payment flows are implemented.
+Their persisted contracts are defined by migrations `0004` through `0008`,
+with customer and checkout schema modules in `src/db/schema/customer.ts` and
+`src/db/schema/checkout.ts`.
 
 If implementation requirements conflict with those invariants, stop and
 resolve the design instead of silently choosing different behavior.

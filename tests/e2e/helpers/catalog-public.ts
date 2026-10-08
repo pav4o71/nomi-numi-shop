@@ -17,6 +17,7 @@ export const CATALOG_PUBLIC_E2E_FIXTURES = {
   draftSlug: "dev-fixture-heart-keychain",
   /** Listing/PDP USD amount for the min-price hug-plush variant. */
   productUsdDisplay: "$24.99",
+  productTwoUnitLineTotalDisplay: "$49.98",
   productListingPriceDisplay: "From $24.99",
 } as const;
 

@@ -15,7 +15,7 @@ const steps = [
     step: "3",
     title: "Continue into the growing catalog",
     description:
-      "Return anytime as Nomi Numi expands. Checkout and personal messages are not available yet.",
+      "Choose a gift, add it to your cart, and complete checkout when you are ready. Personal messages are still coming later.",
   },
 ] as const;
 

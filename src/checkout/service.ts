@@ -186,7 +186,23 @@ export class CheckoutService {
         providerEventId: transactionId,
         status: isSuccess ? "paid" : "failed",
       });
-      if (!eventInserted || order.paymentStatus !== "pending") return order;
+      if (!eventInserted) {
+        const existingEvent = await this.repo.getPaymentEventByProviderId(
+          tx,
+          "mock",
+          transactionId,
+        );
+        const eventStatus = isSuccess ? "paid" : "failed";
+        if (
+          !existingEvent ||
+          existingEvent.orderId !== orderId ||
+          existingEvent.status !== eventStatus
+        ) {
+          throw checkoutConflict("Payment event ID was already used for a different event");
+        }
+        return order;
+      }
+      if (order.paymentStatus !== "pending") return order;
 
       const reservations = await this.repo.getReservationsForOrderForUpdate(tx, orderId);
       const activeReservations = reservations.filter(

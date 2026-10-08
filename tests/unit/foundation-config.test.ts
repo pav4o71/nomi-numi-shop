@@ -14,6 +14,7 @@ interface PackageManifest {
 const packageManifest = JSON.parse(
   readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
 ) as PackageManifest;
+const rootLayoutSource = readFileSync(new URL("../../src/app/layout.tsx", import.meta.url), "utf8");
 
 describe("application foundation configuration", () => {
   it("keeps Next.js agent rule rewriting disabled", () => {
@@ -30,5 +31,9 @@ describe("application foundation configuration", () => {
     expect(packageManifest.scripts.dev).toBe("next dev --hostname 127.0.0.1 --port 3100");
     expect(packageManifest.scripts.start).toBe("next start --hostname 127.0.0.1 --port 3100");
     expect(packageManifest.scripts["dev:e2e"]).toBe("next dev --hostname 127.0.0.1 --port 3101");
+  });
+
+  it("declares intentional smooth scrolling for Next.js route transitions", () => {
+    expect(rootLayoutSource).toContain('data-scroll-behavior="smooth"');
   });
 });

@@ -1,6 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { AuthorizationError } from "@/auth/authorization";
 import { GET as getAddresses, POST as postAddresses } from "@/app/api/account/addresses/route";
+import {
+  DELETE as deleteAddress,
+  PATCH as patchAddress,
+} from "@/app/api/account/addresses/[addressId]/route";
 import { GET as getWishlist, POST as postWishlist } from "@/app/api/account/wishlist/route";
 import * as auth from "@/auth/authorization";
 
@@ -55,6 +59,50 @@ describe("Account API route error handling", () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.error).toBe("Invalid JSON");
+  });
+
+  it("PATCH address returns 401 on unauthenticated", async () => {
+    vi.mocked(auth.requireCustomer).mockRejectedValueOnce(unauthenticatedError);
+    const res = await patchAddress(
+      new Request("http://localhost", { method: "PATCH", body: "{}" }),
+      { params: Promise.resolve({ addressId: "addr_1" }) },
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("PATCH address returns 403 on forbidden", async () => {
+    vi.mocked(auth.requireCustomer).mockRejectedValueOnce(forbiddenError);
+    const res = await patchAddress(
+      new Request("http://localhost", { method: "PATCH", body: "{}" }),
+      { params: Promise.resolve({ addressId: "addr_1" }) },
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("PATCH address returns 400 on malformed JSON", async () => {
+    vi.mocked(auth.requireCustomer).mockResolvedValueOnce({ userId: "u_1", role: "customer" });
+    const res = await patchAddress(
+      new Request("http://localhost", { method: "PATCH", body: "invalid json" }),
+      { params: Promise.resolve({ addressId: "addr_1" }) },
+    );
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toMatchObject({ error: "Invalid JSON" });
+  });
+
+  it("DELETE address returns 401 on unauthenticated", async () => {
+    vi.mocked(auth.requireCustomer).mockRejectedValueOnce(unauthenticatedError);
+    const res = await deleteAddress(new Request("http://localhost", { method: "DELETE" }), {
+      params: Promise.resolve({ addressId: "addr_1" }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE address returns 403 on forbidden", async () => {
+    vi.mocked(auth.requireCustomer).mockRejectedValueOnce(forbiddenError);
+    const res = await deleteAddress(new Request("http://localhost", { method: "DELETE" }), {
+      params: Promise.resolve({ addressId: "addr_1" }),
+    });
+    expect(res.status).toBe(403);
   });
 
   it("GET wishlist returns 401 on unauthenticated", async () => {
