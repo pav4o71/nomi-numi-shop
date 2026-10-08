@@ -107,7 +107,7 @@ export default async function OrderSuccessPage({
                   </div>
                   <p className="font-medium">
                     {formatPublicMoney({
-                      amountMinor: item.unitPrice,
+                      amountMinor: item.lineTotal,
                       currency: order.currency as CatalogCurrency,
                       compareAtAmountMinor: null,
                     })}

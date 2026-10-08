@@ -19,6 +19,14 @@ test.describe("Cart and Checkout Flow", () => {
     await expect(cartDrawer).toBeVisible();
     await expect(cartDrawer.getByText(/Your Cart/i)).toBeVisible();
     await expect(cartDrawer.getByText(/Plush/i).first()).toBeVisible();
+    const cartLine = cartDrawer.locator("li").filter({ hasText: /Plush/i }).first();
+    await cartLine.getByRole("button", { name: "+" }).click();
+    await expect(cartLine.getByText("2", { exact: true })).toBeVisible();
+    await expect(
+      cartLine.getByText(CATALOG_PUBLIC_E2E_FIXTURES.productTwoUnitLineTotalDisplay, {
+        exact: true,
+      }),
+    ).toBeVisible();
 
     // Complete checkout
     await cartDrawer.getByLabel("Receipt email").fill("guest-checkout@example.com");
@@ -31,7 +39,13 @@ test.describe("Cart and Checkout Flow", () => {
 
     // Check order summary
     await expect(page.getByText(/Plush/i).first()).toBeVisible();
-    await expect(page.locator("text=Qty: 1")).toBeVisible();
+    const orderLine = page.locator("li").filter({ hasText: /Plush/i }).first();
+    await expect(orderLine.getByText("Qty: 2", { exact: true })).toBeVisible();
+    await expect(
+      orderLine.getByText(CATALOG_PUBLIC_E2E_FIXTURES.productTwoUnitLineTotalDisplay, {
+        exact: true,
+      }),
+    ).toBeVisible();
 
     await page.context().clearCookies();
     const unauthorizedResponse = await page.goto(successUrl);

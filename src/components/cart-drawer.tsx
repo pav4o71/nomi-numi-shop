@@ -149,7 +149,9 @@ export function CartDrawer() {
                       </p>
                     )}
                   </div>
-                  <p className="font-medium text-right">${(item.unitPrice / 100).toFixed(2)}</p>
+                  <p className="font-medium text-right">
+                    ${((item.unitPrice * item.quantity) / 100).toFixed(2)}
+                  </p>
                 </li>
               ))}
             </ul>
