@@ -197,6 +197,11 @@ Better Auth tables live in `src/db/schema/auth.ts`:
 - `drizzle/0001_phase2a_better_auth.sql` — core auth tables
 - `drizzle/0002_phase2b_auth_role.sql` — server-owned `user.role`
 - `drizzle/0003_phase3a_catalog_schema.sql` — foundational catalog schema
+- `drizzle/0004_tiny_slipstream.sql` — initial inventory balance and movement tables
+- `drizzle/0005_inventory_ledger_contract.sql` — finalized inventory ledger deltas and constraints
+- `drizzle/0006_acoustic_valkyrie.sql` — customer addresses, wishlists, carts, and order snapshots
+- `drizzle/0007_romantic_ender_wiggin.sql` — checkout reservations, payment events, and commerce constraints
+- `drizzle/0008_elite_yellowjacket.sql` — multiple guest order access capabilities
 
 Migrations remain Drizzle-managed (do not run Better Auth migrate).
 Application roles are `customer` (default) and `admin`. See `docs/AUTH.md`.

@@ -59,6 +59,8 @@ Run the available test commands:
   idempotency, inventory races, guest access, and reservation expiry
 - `checkout-webhook-local.test.ts` — TEST DB payment replay and terminal
   reservation transitions
+- `customer-service-local.test.ts` — TEST DB address/default ownership and
+  wishlist isolation
 
 These path locks are **intentional safety guards** preventing accidental
 mutation of external projects or databases. Local full coverage remains
@@ -349,6 +351,18 @@ Re-run relevant CI and review on the new HEAD before merge.
    `tests/unit/drizzle-migration-contract.test.ts`)
 6. `pnpm build`
 
+The production build runs `next build --webpack`. Next.js 16 supports this
+explicit opt-out from its default Turbopack builder; development remains on
+Turbopack. The explicit production builder keeps local and CI health checks
+consistent in restricted environments where Turbopack cannot bind its
+internal CSS worker transport.
+
+`pnpm typecheck` first regenerates production route types with
+`next typegen`, then checks current source, tests, root TypeScript files, and
+`.next/types` through `tsconfig.typecheck.json`. It excludes only
+`.next/dev`, so stale development route validators left by branch switches
+cannot affect the result.
+
 This script is portable and does not require local Docker resources,
 workstation canonical root, or owned PostgreSQL. It matches the GitHub
 Actions static and unit-build jobs but does not include E2E tests (which
@@ -376,7 +390,10 @@ This includes path-locked tests requiring the workstation canonical root
 and/or owned local PostgreSQL (`database-safety`, `drizzle-foundation`,
 `email-local-safety`, `auth-first-admin-bootstrap-local`,
 `catalog-schema-local`, `catalog-domain-local`, `catalog-fixtures-local`,
-`catalog-factories-local`, `catalog-public-local`).
+`catalog-factories-local`, `catalog-public-local`). Customer, cart, and
+checkout local suites are included as well, including
+`customer-service-local`, `cart-service-local`, `checkout-service-local`,
+and `checkout-webhook-local`.
 
 Use `pnpm health:local` for comprehensive local validation before
 requesting review. Use `pnpm health` for quick portable checks.
@@ -391,9 +408,10 @@ Expands to:
 
     ./scripts/preflight.sh phase1
 
-This validates project identity, Git state, runtime versions, Docker
-ownership, reserved ports, and safety documentation. A failed preflight
-is evidence to investigate, not bypass.
+This inspects project identity, Git state, runtime versions, Docker ownership,
+reserved ports, safety documentation, and prerequisite readiness. It does not
+replace the executable `pnpm health` quality gate. A failed preflight is
+evidence to investigate, not bypass.
 
 On synchronized `main`:
 

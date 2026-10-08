@@ -217,7 +217,7 @@ process_is_project_owned() {
 
 # Token/path-aware Next.js recognition only.
 # Accepts node/next CLI tokens and the exact Next.js listener title
-# "next-server" / "next-server (v16.3.4)".
+# "next-server" / "next-server (v<version>)".
 # Rejects nextcloud-server, next-server-old-helper, nextsomething, etc.
 # Do not use a bare "next" or "next-server" substring match.
 command_is_project_next_form() {

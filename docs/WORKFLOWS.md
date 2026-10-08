@@ -40,7 +40,8 @@ This workflow runs several checks in parallel:
 5. **Unit tests** — runs `pnpm test:ci` (the portable unit test suite,
    including `drizzle-migration-contract.test.ts` and the connection-free
    `drizzle-ci-migration.test.ts` runner contract tests)
-6. **Production build** — runs `pnpm build` to verify the app can be built
+6. **Production build** — runs `pnpm build` (`next build --webpack`) to verify
+   the app can be built without relying on Turbopack's internal worker port
 7. **PostgreSQL migration integration** — starts a fresh disposable
    PostgreSQL 16 service and runs `pnpm db:migrate:ci`
 8. **E2E tests** — installs Chromium and runs Playwright E2E tests with `pnpm test:e2e`
@@ -268,10 +269,14 @@ and Mailpit.
 
 For full E2E coverage, you need:
 
-- Development PostgreSQL running (`pnpm db:dev:up`)
+- The owned TEST PostgreSQL already running and migrated at
+  `127.0.0.1:55433` / `nomi_numi_shop_test`
 - Mailpit running (`pnpm email:up`)
-- DEV catalog fixtures seeded (`pnpm catalog:seed:dev -- --confirm SEED-NOMI-DEV-CATALOG`)
 - `.env.local` configured with auth secrets
+
+The guarded Playwright global setup installs deterministic catalog fixtures
+and stock into TEST. Do not substitute DEV or start infrastructure unless the
+current task authorizes lifecycle changes.
 
 ### Force CI environment locally
 
@@ -290,7 +295,7 @@ Before opening a PR, you can run the preflight script:
 ./scripts/preflight.sh phase1
 ```
 
-This verifies:
+This inspects:
 
 - Repository ownership and state
 - Git configuration
@@ -298,17 +303,23 @@ This verifies:
 - Cursor rules are present
 - Docker resources are not conflicting
 - Database safety guards
-- Format, lint, typecheck, tests, and build all pass
+- Prerequisite readiness and project safety boundaries
+
+Run `pnpm health` separately for format, lint, generated-route typecheck,
+portable migration consistency, portable tests, and the production build.
 
 ### Wait for CI and Nomi
 
-There is no automated script to wait for CI and Nomi yet.
+After an authorized push and PR creation, run:
 
-After pushing, you need to:
+```bash
+./scripts/wait-quality-and-nomi.sh <pr-number>
+```
 
-1. Open your PR on GitHub
-2. Watch the Actions tab for the PR Quality Gate to complete
-3. Wait for Nomi PR Verifier to post its review comment
+The helper pins the expected PR HEAD, fails closed if it changes, waits for
+the `PR Quality Gate`, and requires the latest Nomi PR Verifier comment to
+report `PASS` for that exact SHA. It observes readiness only; it does not
+merge the PR.
 
 ---
 

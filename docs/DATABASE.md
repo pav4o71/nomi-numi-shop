@@ -29,8 +29,13 @@ repository/service layer in `src/catalog/` without schema changes.
 Phase 3C adds deterministic DEV fixtures (`src/catalog/fixtures/`) and
 TEST factories; it does not add schema/migrations or store_settings seed.
 Phase 3D adds public catalog reads (`src/catalog/public/`) and App Router
-storefront catalog pages; no new migrations. Inventory ledger tables
-remain absent. Public catalog pages use the lazy runtime DB client in
+storefront catalog pages; no new migrations. Migrations `0004` and `0005`
+implement the variant inventory balance and immutable movement ledger.
+Migration `0006` adds customer addresses, wishlists, customer/guest carts,
+orders, and order-item snapshots. Migration `0007` completes checkout with
+reservations, payment events, scoped idempotency, totals, and database
+constraints; migration `0008` adds multiple guest order capabilities.
+Public catalog pages use the lazy runtime DB client in
 `src/db/runtime.ts`, which validates `DATABASE_URL` only via
 `src/db/env.ts` (temporary USD; no Better Auth secrets). Auth continues
 to validate Better Auth env in `src/auth/env.ts` and reuses the shared
@@ -119,11 +124,18 @@ Committed migrations:
 - `drizzle/0001_phase2a_better_auth.sql` (Better Auth core tables)
 - `drizzle/0002_phase2b_auth_role.sql` (`user.role` authorization field)
 - `drizzle/0003_phase3a_catalog_schema.sql` (Phase 3A catalog foundation)
+- `drizzle/0004_tiny_slipstream.sql` (initial inventory ledger tables)
+- `drizzle/0005_inventory_ledger_contract.sql` (inventory ledger contract)
+- `drizzle/0006_acoustic_valkyrie.sql` (customer, cart, and order foundation)
+- `drizzle/0007_romantic_ender_wiggin.sql` (checkout and payment closure)
+- `drizzle/0008_elite_yellowjacket.sql` (guest order access capabilities)
 
 Canonical schema modules:
 
 - `src/db/schema/auth.ts` (Better Auth; isolated)
-- `src/db/schema/catalog.ts` (Phase 3A catalog tables)
+- `src/db/schema/catalog.ts` (catalog and inventory ledger tables)
+- `src/db/schema/customer.ts` (customer addresses and wishlists)
+- `src/db/schema/checkout.ts` (carts, orders, reservations, and payment events)
 
 Guarded local helper:
 
@@ -350,10 +362,12 @@ Custom video:
 - custom_video_requests
 - private_media_metadata
 
-Phase 3A implements the foundational catalog subset listed above
-(excluding inventory ledger tables) in `src/db/schema/catalog.ts` with
-migration `0003_phase3a_catalog_schema`. Inventory, commerce, CMS,
-reviews, and custom-video tables remain deferred to their phases.
+Phase 3A implements the foundational catalog subset in
+`src/db/schema/catalog.ts` with migration `0003_phase3a_catalog_schema`.
+Inventory is implemented by migrations `0004`–`0005`; customer, cart,
+order, reservation, and payment persistence is implemented by migrations
+`0006`–`0008`. Promotions, CMS, reviews, and custom-video tables remain
+deferred to their phases.
 Authoritative catalog contract: `docs/STORE_CATALOG.md`.
 
 ## 11. Core database invariants
