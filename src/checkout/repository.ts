@@ -128,6 +128,23 @@ export class DrizzleCheckoutRepository {
     return inserted.length === 1;
   }
 
+  async getPaymentEventByProviderId(
+    tx: CheckoutExecutor,
+    provider: "mock",
+    providerEventId: string,
+  ) {
+    const [event] = await tx
+      .select()
+      .from(paymentEvents)
+      .where(
+        and(
+          eq(paymentEvents.provider, provider),
+          eq(paymentEvents.providerEventId, providerEventId),
+        ),
+      );
+    return event ?? null;
+  }
+
   async updateOrderStatus(
     tx: CheckoutExecutor,
     orderId: string,

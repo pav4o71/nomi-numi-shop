@@ -102,6 +102,16 @@ describe("checkout payment webhook concurrency (local)", () => {
     await pgSql.end();
   });
 
+  async function createPendingOrder(sessionId: string, idempotencyKey: string) {
+    const cart = await cartService.getCart({ sessionId, currency: "USD" });
+    await cartService.addItem(cart.id, variantId, 1);
+    return service.createOrderFromCart(
+      { sessionId, currency: "USD" },
+      `${sessionId}@example.com`,
+      idempotencyKey,
+    );
+  }
+
   it("processes concurrent identical webhooks idempotently without double-deduction", async () => {
     // Both webhooks arrive at the same time
     const attempts = Array.from({ length: 2 }, () =>
@@ -272,5 +282,63 @@ describe("checkout payment webhook concurrency (local)", () => {
         expect.objectContaining({ providerEventId: laterSuccessEventId, status: "paid" }),
       ]),
     );
+  });
+
+  it("rejects reuse of a provider event ID with the opposite status", async () => {
+    const transactionId = "tx-status-conflict";
+    await service.processPaymentWebhook(orderId, true, transactionId);
+
+    const balanceBefore = await catalogService.getVariantInventoryBalance(variantId);
+    const movementsBefore = await catalogService.getVariantInventoryMovements(variantId);
+    const eventsBefore = await db.select().from(paymentEvents);
+
+    await expect(
+      service.processPaymentWebhook(orderId, false, transactionId),
+    ).rejects.toMatchObject({
+      code: "CONFLICT",
+    });
+
+    expect(await catalogService.getVariantInventoryBalance(variantId)).toEqual(balanceBefore);
+    expect(await catalogService.getVariantInventoryMovements(variantId)).toEqual(movementsBefore);
+    expect(await db.select().from(paymentEvents)).toEqual(eventsBefore);
+    const [persistedOrder] = await db.select().from(orders).where(eq(orders.id, orderId));
+    expect(persistedOrder).toMatchObject({
+      orderStatus: "confirmed",
+      paymentStatus: "paid",
+      fulfillmentStatus: "unfulfilled",
+    });
+  });
+
+  it("rejects reuse of a provider event ID for another order without mutating it", async () => {
+    const second = await createPendingOrder("sess-second", "idem-second");
+    const transactionId = "tx-order-conflict";
+    await service.processPaymentWebhook(orderId, true, transactionId);
+
+    const balanceBefore = await catalogService.getVariantInventoryBalance(variantId);
+    const movementsBefore = await catalogService.getVariantInventoryMovements(variantId);
+    const eventsBefore = await db.select().from(paymentEvents);
+    const [reservationBefore] = await db
+      .select()
+      .from(inventoryReservations)
+      .where(eq(inventoryReservations.orderId, second.order.id));
+
+    await expect(
+      service.processPaymentWebhook(second.order.id, true, transactionId),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+
+    expect(await catalogService.getVariantInventoryBalance(variantId)).toEqual(balanceBefore);
+    expect(await catalogService.getVariantInventoryMovements(variantId)).toEqual(movementsBefore);
+    expect(await db.select().from(paymentEvents)).toEqual(eventsBefore);
+    const [persistedOrder] = await db.select().from(orders).where(eq(orders.id, second.order.id));
+    expect(persistedOrder).toMatchObject({
+      orderStatus: "pending",
+      paymentStatus: "pending",
+      fulfillmentStatus: "unfulfilled",
+    });
+    const [reservationAfter] = await db
+      .select()
+      .from(inventoryReservations)
+      .where(eq(inventoryReservations.orderId, second.order.id));
+    expect(reservationAfter).toEqual(reservationBefore);
   });
 });
