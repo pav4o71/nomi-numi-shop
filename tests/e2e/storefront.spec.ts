@@ -36,7 +36,14 @@ test("renders the public storefront homepage", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 2, name: "Why Nomi Numi" })).toBeVisible();
   await expect(page.locator("#why-nomi-numi")).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "How It Works" })).toBeVisible();
-  await expect(page.locator("#how-it-works")).toBeVisible();
+  const howItWorks = page.locator("#how-it-works");
+  await expect(howItWorks).toBeVisible();
+  await expect(
+    howItWorks.getByText(
+      "Choose a gift, add it to your cart, and complete checkout when you are ready. Personal messages are still coming later.",
+      { exact: true },
+    ),
+  ).toBeVisible();
   await expect(page.getByRole("contentinfo")).toBeVisible();
   await expect(page.getByRole("contentinfo").getByText("Nomi Numi", { exact: true })).toBeVisible();
 });
