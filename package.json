@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3100",
     "dev:e2e": "next dev --hostname 127.0.0.1 --port 3101",
+    "remotion:studio": "remotion studio src/remotion/index.ts",
     "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 3100",
     "lint": "eslint .",
@@ -47,6 +48,7 @@
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.3",
     "@radix-ui/react-slot": "1.3.3",
+    "@remotion/player": "4.0.534",
     "better-auth": "1.7.3",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
@@ -55,6 +57,7 @@
     "postgres": "3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "remotion": "4.0.534",
     "swr": "^2.5.1",
     "tailwind-merge": "3.6.0",
     "zod": "4.6.4",
@@ -62,6 +65,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "@remotion/cli": "4.0.534",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
