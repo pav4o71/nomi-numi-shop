@@ -38,6 +38,21 @@ catalog HTTP/UI and inventory tracking are implemented. Phase 7
 customer/account/cart and Phase 8 checkout/order/payment runtime are implemented
 and in closure.
 
+## Homepage animation
+
+The "Across every mile" section sits below the homepage hero. Its decorative
+letter-to-gift animation is authored in `src/remotion/root.tsx` and embedded
+with the Remotion Player through `src/components/home/`. Visitors who prefer
+reduced motion see a still frame; the section's message and link remain normal
+page content.
+
+Preview and edit the `HomepageGifting` composition in Remotion Studio:
+
+    pnpm remotion:studio
+
+Studio starts a local preview server and opens the composition in a browser.
+The homepage uses the same component without requiring a rendered video file.
+
 Hardening progress includes SHA-pinned GitHub Actions (all third-party
 actions pinned to full commit SHAs), minimal workflow permissions
 (`permissions: {}` at workflow level; granular job permissions), CodeQL

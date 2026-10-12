@@ -6,6 +6,7 @@ import { HomeFeaturedCategories } from "@/components/home/home-featured-categori
 import { HomeFeaturedCollections } from "@/components/home/home-featured-collections";
 import { HomeFeaturedProducts } from "@/components/home/home-featured-products";
 import { HomeGiftDirections } from "@/components/home/home-gift-directions";
+import { HomeGiftingStory } from "@/components/home/home-gifting-story";
 import { HomeHero } from "@/components/home/home-hero";
 import { HomeHowItWorks } from "@/components/home/home-how-it-works";
 import { HomeSeasonalCollections } from "@/components/home/home-seasonal-collections";
@@ -18,6 +19,7 @@ export default async function HomePage() {
   return (
     <main>
       <HomeHero />
+      <HomeGiftingStory />
       <HomeFeaturedProducts products={merchandising.featuredProducts} />
       <HomeFeaturedCategories categories={merchandising.featuredCategories} />
       <HomeFeaturedCollections collections={merchandising.featuredCollections} />

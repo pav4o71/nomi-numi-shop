@@ -98,6 +98,7 @@ Current implemented source foundation:
         auth/
         catalog/       (Phase 3D presentation components)
         home/          (homepage sections)
+      remotion/         (HomepageGifting composition and Studio entry point)
       db/
         runtime.ts
         schema/
