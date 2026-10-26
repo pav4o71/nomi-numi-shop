@@ -32,7 +32,7 @@ jobs:
 
       - name: Initialize CodeQL
         # github/codeql-action/init@v4.38.0
-        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with:
           languages: javascript-typescript
           queries: security-extended
@@ -61,7 +61,7 @@ jobs:
 
       - name: Initialize CodeQL for Actions
         # github/codeql-action/init@v4.38.0
-        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with:
           languages: actions
 
