@@ -46,7 +46,7 @@
     "catalog:seed:dev": "./scripts/catalog-seed-dev.sh"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "1.7.3",
+    "@better-auth/drizzle-adapter": "1.7.7",
     "@radix-ui/react-slot": "1.3.3",
     "@remotion/player": "4.0.534",
     "better-auth": "1.7.3",
